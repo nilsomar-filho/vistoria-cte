@@ -511,6 +511,20 @@ a.btn{text-decoration:none;display:flex;align-items:center;justify-content:cente
   .pks{grid-template-columns:repeat(6,minmax(0,1fr))}
 }
 .pit.st-ATN .pit-s{background:#f5a81c;color:#2a1a00}.pst-i.st-ATN{border-left:4px solid var(--pv-bg)}
+
+.pacoes{display:flex;gap:8px;margin-left:auto;flex-wrap:wrap}
+.pac-b{padding:8px 14px;font-size:14px;min-height:38px}
+.ptopo{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.ficha{padding:14px 16px}
+.ficha-g{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px 18px}
+.fx span{display:block;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:#58595b}
+.fx b{display:block;font-size:14px;color:#002639;font-weight:600;margin-top:2px}
+.fx-w{grid-column:span 2}
+.fx .fx-pend{display:inline;color:#b06e00;font-weight:500;font-size:13px;text-transform:none;letter-spacing:0}
+.fx-nota{margin:10px 0 4px}
+.fh-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;grid-column:1/-1}
+.fh-t{width:136px;height:102px;border-radius:6px;border:1px solid #d3d9de;background:#eef1f3 center/cover no-repeat;cursor:zoom-in;padding:0}
+@media (max-width:600px){.fx-w{grid-column:auto}.pacoes{width:100%}.pac-b{flex:1}}
 </style>
 
 <header class="top">
@@ -878,7 +892,7 @@ function gerarPDF(M){
   const d=new PDF(); const W=297, H=210, m=10, LOGO=logoBytes();
   const cab=(sub)=>{ d.rect(0,0,W,16,NAVY); d.image(LOGO,LOGO_JPG_W,LOGO_JPG_H,m,3,10*LOGO_JPG_W/LOGO_JPG_H,10);
     d.text(sub,W/2,10,10,true,[255,255,255],"c"); d.text(M.num,W-m,10,8.5,true,[255,255,255],"r"); };
-  const rod=(k,n)=>{ d.text("CTE Gerenciamento · Protótipo – dados de teste · Toda NC possui lastro identificável; sem referência conclusiva, o item é PV.",m,H-5,6.5,false,GR); d.text(`página ${k} de ${n}`,W-m,H-5,7,false,GR,"r"); };
+  const rod=(k,n)=>{ d.text("CTE Gerenciamento · Toda NC possui lastro identificável; sem referência conclusiva, o item é PV.",m,H-5,6.5,false,GR); d.text(`página ${k} de ${n}`,W-m,H-5,7,false,GR,"r"); };
   const nFotoPags=Math.ceil(M.fotos.length/6);
   // capa
   d.addPage(); const cw0=112; d.rect(0,0,cw0,H,NAVY); d.image(LOGO,LOGO_JPG_W,LOGO_JPG_H,18,H/2-14,70,70*LOGO_JPG_H/LOGO_JPG_W);
@@ -1012,7 +1026,7 @@ function gerarDOCX(M){
     for(const im of a.imgs){ let w=27.6, h=w*im.h/im.w; if(h>18.6){ h=18.6; w=h*im.w/im.h; } body+=brk+par(img(im.bytes,w,h),{align:"center",after:0}); }
   }
   const doc=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><w:body>${body}<w:sectPr><w:footerReference w:type="default" r:id="rIdFt"/><w:pgSz w:w="16838" w:h="11906" w:orient="landscape"/><w:pgMar w:top="567" w:right="567" w:bottom="567" w:left="567" w:header="284" w:footer="284" w:gutter="0"/><w:pgNumType w:start="0"/><w:titlePg/></w:sectPr></w:body></w:document>`;
-  const footer=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:ftr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:p><w:pPr><w:tabs><w:tab w:val="right" w:pos="15704"/></w:tabs></w:pPr><w:r><w:rPr><w:sz w:val="13"/><w:color w:val="58595B"/></w:rPr><w:t xml:space="preserve">${xe(M.rodape||"CTE Gerenciamento · Protótipo – dados de teste · Toda NC possui lastro identificável; sem referência conclusiva, o item é PV.")}</w:t></w:r><w:r><w:rPr><w:sz w:val="14"/></w:rPr><w:tab/><w:t xml:space="preserve">página </w:t></w:r><w:r><w:rPr><w:sz w:val="14"/></w:rPr><w:fldChar w:fldCharType="begin"/></w:r><w:r><w:rPr><w:sz w:val="14"/></w:rPr><w:instrText xml:space="preserve"> PAGE </w:instrText></w:r><w:r><w:rPr><w:sz w:val="14"/></w:rPr><w:fldChar w:fldCharType="end"/></w:r></w:p></w:ftr>`;
+  const footer=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:ftr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:p><w:pPr><w:tabs><w:tab w:val="right" w:pos="15704"/></w:tabs></w:pPr><w:r><w:rPr><w:sz w:val="13"/><w:color w:val="58595B"/></w:rPr><w:t xml:space="preserve">${xe(M.rodape||"CTE Gerenciamento · Toda NC possui lastro identificável; sem referência conclusiva, o item é PV.")}</w:t></w:r><w:r><w:rPr><w:sz w:val="14"/></w:rPr><w:tab/><w:t xml:space="preserve">página </w:t></w:r><w:r><w:rPr><w:sz w:val="14"/></w:rPr><w:fldChar w:fldCharType="begin"/></w:r><w:r><w:rPr><w:sz w:val="14"/></w:rPr><w:instrText xml:space="preserve"> PAGE </w:instrText></w:r><w:r><w:rPr><w:sz w:val="14"/></w:rPr><w:fldChar w:fldCharType="end"/></w:r></w:p></w:ftr>`;
   const styles=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Segoe UI" w:hAnsi="Segoe UI" w:cs="Segoe UI" w:eastAsia="Segoe UI"/><w:sz w:val="18"/><w:lang w:val="pt-BR"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="60" w:line="240" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults><w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/></w:style></w:styles>`;
   const rels=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rIdSt" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/><Relationship Id="rIdFt" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer" Target="footer1.xml"/>${media.map((_,k)=>`<Relationship Id="rIdImg${k+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/image${k+1}.jpeg"/>`).join("")}</Relationships>`;
   const ct=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="jpeg" ContentType="image/jpeg"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/><Override PartName="/word/footer1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"/></Types>`;
@@ -1141,7 +1155,7 @@ async function modeloRF(r){
   const av=r.kind==="AV";
   const linhasCapa = av? [r.local?`Local: ${r.local}`:""].filter(Boolean) : [[r.inicio?`Início da obra: ${fmtData(r.inicio)}`:"",r.termino?`Término contratual: ${fmtData(r.termino)}`:""].filter(Boolean).join("   ·   ")].filter(Boolean);
   return {r,obra:av?{nome:r.obraNome}:obra,fotos,num:numRF(r),titulo:av?(r.titulo||"Relatório").toUpperCase():"RELATÓRIO FOTOGRÁFICO",sub:av?"RELATÓRIO AVULSO DE FOTOS":`${r.tipo.toUpperCase()} | ${r.periodo.toUpperCase()}`,linhasCapa,intro:av?(r.info||""):"",
-    rodape:"CTE Gerenciamento · Protótipo – dados de teste · Registro fotográfico de acompanhamento; não constitui aceite de serviços."};
+    rodape:"CTE Gerenciamento · Registro fotográfico de acompanhamento; não constitui aceite de serviços."};
 }
 function gerarRF_PDF(M){
   const d=new PDF(); const W=297,H=210,m=10,LOGO=logoBytes();
@@ -1404,7 +1418,7 @@ function cardRF(r){ const o=S.obras.find(x=>x.id===r.obraId)||{}; const loc=[...
     <span class="t">${av? esc(r.titulo) : esc(o.nome)+" · "+esc(r.periodo)}</span><span class="muted small">${av? esc(r.obraNome)+" · "+fmtData(r.data)+" · " : ""}${r.fotos.length} foto(s) · ${loc.length} local(is)${(r.anexos||[]).length?` · ${r.anexos.length} anexo(s)`:""}</span></button>`; }
 function rodapeInicio(){
   return `<div class="card"><h3>Seus registros de teste</h3><p class="muted small">Neste protótipo, fotos e registros ficam só neste aparelho. Use o botão Desfazer no topo para voltar qualquer ação.</p>
-    <div class="row"><button class="btn danger" data-act="limpar">Apagar meus relatórios de teste</button></div></div>
+    </div>
   <footer class="foot">Protótipo para validação com a equipe. Uso interno CTE. Projeto mandatório: o app não substitui projeto, memorial e especificação.</footer>`;
 }
 function vInicio(){
@@ -1712,7 +1726,7 @@ function vObras(){
     return `<button class="vcard${o.modelo?" is-modelo":""}" data-act="abrirobra" data-v="${o.id}"><span class="row between"><span class="code">${esc(o.codigo)}</span>${o.modelo?chipModelo:""}</span>
       <span class="t">${esc(o.nome)}</span><span class="muted small">${esc(o.contratada||"")} · coord. ${esc(nomeUser(o.coordId))}</span>
       <span class="row"><span class="chip ${k.ncAbertas?"solid-nc":"c"}">${k.ncAbertas} NC aberta(s)</span><span class="muted small">${k.rnc} RNC · ${k.rf} RF · ${k.av} avulso(s)${k.aprovPend?` · ${k.aprovPend} p/ aprovar`:""}</span></span></button>`; }).join("")}</div>
-  ${isCoord()?`<div class="card"><h3>Seus registros de teste</h3><p class="muted small">Fotos e registros ficam só neste aparelho no protótipo.</p><div class="row"><button class="btn danger" data-act="limpar">Apagar meus relatórios de teste</button></div></div>`:""}
+  ${isCoord()?``:""}
   <footer class="foot">Protótipo para validação com a equipe. Uso interno CTE. Projeto mandatório: o app não substitui projeto, memorial e especificação.</footer>`;
 }
 function vNovaObra(){
@@ -1802,7 +1816,7 @@ function gerarDashPDF(o){
     d.text(d.wrap(x.local,62,7,false)[0],cx[2]+1.5,y+3.9,7,false); d.text(String(x.dias),cx[3]+1.5,y+3.9,7,false); d.text(x.prazo?fmtData(x.prazo):"-",cx[4]+1.5,y+3.9,7,false,x.venc?RED:[20,35,45]);
     d.text(x.verif?"correção a verificar":"aberta",cx[5]+1.5,y+3.9,7,true,x.verif?[176,110,0]:RED); y+=5.6; }
   if(k.lista.length>13) d.text(`+ ${k.lista.length-13} NC não listadas; ver o app.`,m,y+4,7,false,GR);
-  d.text("CTE Gerenciamento · Protótipo – dados de teste · Indicadores calculados a partir dos registros do app.",m,H-5,6.5,false,GR);
+  d.text("CTE Gerenciamento · Indicadores calculados a partir dos registros do app.",m,H-5,6.5,false,GR);
   return new Blob([d.build()],{type:"application/pdf"});
 }
 async function salvarArquivo(nome,blob){
@@ -2016,7 +2030,7 @@ async function modeloRF(r){
   const linhasCapa = av? [r.local?`Local: ${r.local}`:"",`Situação: ${situacaoDoc(r)}`].filter(Boolean)
     : [[r.inicio?`Início da obra: ${fmtData(r.inicio)}`:"",r.termino?`Término contratual: ${fmtData(r.termino)}`:""].filter(Boolean).join("   ·   "),`Situação: ${situacaoDoc(r)}`].filter(Boolean);
   return {r,obra,fotos,num:numRF(r),titulo:av?(r.titulo||"Relatório").toUpperCase():"RELATÓRIO FOTOGRÁFICO",sub:av?"RELATÓRIO AVULSO DE FOTOS":`${r.tipo.toUpperCase()} | ${r.periodo.toUpperCase()}`,linhasCapa,intro:av?(r.info||""):"",
-    rodape:"CTE Gerenciamento · Protótipo – dados de teste · Registro fotográfico de acompanhamento; não constitui aceite de serviços."};
+    rodape:"CTE Gerenciamento · Registro fotográfico de acompanhamento; não constitui aceite de serviços."};
 }
 function renderNav(){
   const nRev=naoOkPendentes().length; const nAp=todosRecs().filter(x=>x.rec.aprov?.st==="pendente" && (obraDe(x.rec.obraId).coordId===S.userId)).length;
@@ -2123,7 +2137,7 @@ function vObras(){
   return `${appbar("Obras",null,"")}
   <div class="rr-list">${obras.map(o=>{ const k=indicadores(o); return `<div class="rr-card" data-act="abrirobra" data-v="${o.id}" role="button" tabindex="0"><span class="rr-ic brief">${IC.brief}</span>
     <span class="rr-t"><b>${esc(o.nome.toUpperCase())}</b><span class="rr-sub">${esc(o.codigo)} · ${k.rnc} RNC · ${k.rf} fotográfico(s) · ${k.av} avulso(s)</span><span class="row">${o.modelo?chipModelo:""}${k.ncAbertas?`<span class="chip solid-nc">${k.ncAbertas} NC aberta(s)</span>`:""}${k.aprovPend?`<span class="chip solid-pv">${k.aprovPend} p/ aprovar</span>`:""}</span></span></div>`; }).join("")}</div>
-  ${isCoord()?`<button class="btn danger block" data-act="limpar">Apagar meus relatórios de teste</button>`:""}
+  ${isCoord()?``:""}
   <footer class="foot">Protótipo para validação com a equipe. Uso interno CTE.</footer>
   ${isEngOuCoord()?`<button class="fab" data-act="go" data-v="novaobra" aria-label="Cadastrar obra">${IC.plus}</button>`:""}`;
 }
@@ -2287,7 +2301,7 @@ function seedObrasReais(){
     let o=S.obras.find(x=>x.id===b.id);
     const {seqRNC,...dados}=b;
     if(!o){ o={...dados, coordId:(S.usuarios.find(u=>u.perfil==="coord")||{}).id||"u1", seq:{RNC:seqRNC}}; S.obras.push(o); }
-    else if(S.obrasReaisVer<2 || S.pacoteAplicado!==(PACOTE?.versao||0)+"|"+(PACOTE?.geradoEm||"")){ const {coordId,seq,...resto}=dados; Object.assign(o,resto); o.seq=o.seq||{}; if((o.seq.RNC||0)<seqRNC) o.seq.RNC=seqRNC; }
+    else if(S.obrasReaisVer<2 || S.pacoteAplicado!==(PACOTE?.versao||0)+"|"+(PACOTE?.geradoEm||"")){ const {coordId,seq,...resto}=dados; if(!o.editadaNoApp) Object.assign(o,resto); o.seq=o.seq||{}; if((o.seq.RNC||0)<seqRNC) o.seq.RNC=seqRNC; }
     else { o.hist=b.hist; o.histBase=b.histBase; }
   }
   S.obrasReaisVer=2; S.pacoteAplicado=(PACOTE?.versao||0)+"|"+(PACOTE?.geradoEm||"");
@@ -2330,7 +2344,7 @@ function vObras(){
     <span class="rr-t"><b>${esc(o.nome.toUpperCase())}</b><span class="rr-sub">${esc(o.codigo)}${o.contratada?` · ${esc(o.contratada)}`:""}${o.situacao?` · ${esc(o.situacao)}`:""}</span>
     <span class="rr-sub">${k.rnc+c.total} RNC${c.total?` (${c.total} anteriores ao app)`:""} · ${k.rf} fotográfico(s) · ${k.av} avulso(s)</span>
     <span class="row">${o.modelo?chipModelo:""}${k.ncAbertas?`<span class="chip solid-nc">${k.ncAbertas} NC aberta(s)</span>`:""}${c.aberta?`<span class="chip solid-nc">${c.aberta} RNC pendente(s)</span>`:""}${c.averif?`<span class="chip solid-pv">${c.averif} a verificar</span>`:""}${k.aprovPend?`<span class="chip solid-pv">${k.aprovPend} p/ aprovar</span>`:""}${(o.pendencias||[]).length?`<span class="chip nv">${o.pendencias.length} dado(s) a validar</span>`:""}</span></span></div>`; }).join("")}</div>
-  ${isCoord()?`<button class="btn danger block" data-act="limpar">Apagar meus relatórios de teste</button>`:""}
+  ${isCoord()?``:""}
   <footer class="foot">Dados reais de obra – uso interno CTE. O app é privado: compartilhe só com a equipe autorizada.</footer>
   ${isEngOuCoord()?`<button class="fab" data-act="go" data-v="novaobra" aria-label="Cadastrar obra">${IC.plus}</button>`:""}`;
 }
@@ -2620,8 +2634,199 @@ document.addEventListener("click", e=>{ const a=e.target.closest("[data-act='dad
 { const _vObras=vObras; vObras=function(){ return _vObras()+`<button class="btn block" data-act="dados" style="margin:12px 0">Dados deste aparelho · importar pacote, backup</button>`; }; }
 if(typeof vPainel==="function"){ const _vPainel=vPainel; vPainel=function(){ const h=_vPainel(); return PACOTE? h : `<section class="card"><h2>Painel sem histórico de obra</h2><p class="small">Este aparelho ainda não tem o pacote de dados das obras. Importe o arquivo recebido da coordenação para ver o painel completo. Os registros feitos no app aparecem aqui normalmente.</p><button class="btn primary block" data-act="dados">Importar pacote de obra</button></section>`+h; }; }
 
+/* ================= ONDA 2 · ficha da obra, nova obra, PDF do painel, sem obra modelo, fotos do histórico ================= */
+const VIGENCIAS=["Contrato original","1º Aditamento","2º Aditamento","3º Aditamento","4º Aditamento","5º Aditamento"];
+const SITUACOES=["Pré-obra","Em obra","Concluída","Paralisada"];
+function fichaCampos(o){ return [["Contratante",o.contratante],["Construtora",o.contratada],["Gerenciadora",o.gerenciadora],["Endereço",o.endereco],
+  ["Início",o.inicio?fmtData(o.inicio):""],["Término",o.termino?fmtData(o.termino):""],["Prazo vigente",o.vigencia]]; }
+function fichaObra(o){
+  const v=x=>x?esc(x):'<span class="fx-pend">pendente de validação</span>';
+  return `<section class="card ficha"><div class="ficha-g">${fichaCampos(o).map(([k,x])=>`<div class="fx${k==="Endereço"?" fx-w":""}"><span>${k}</span><b>${v(x)}</b></div>`).join("")}</div>
+    ${o.terminoNota?`<p class="muted small fx-nota">${esc(o.terminoNota)}</p>`:""}
+    <button class="link small" data-act="editficha" data-v="${o.id}">Editar dados da obra</button></section>`;
+}
+function barraPainel(){ const pv=UI.pv;
+  return `<div class="pacoes"><button class="btn pac-b" data-act="pnovaobra">+ Nova obra</button>${pv.nivel==="obra"?`<button class="btn primary pac-b" data-act="pdfpainel" data-v="${pv.oid}">Gerar PDF</button>`:""}</div>`; }
+{ const _vp=vPainel; vPainel=function(){ let h=_vp(); const pv=UI.pv;
+    const i=h.indexOf('<div class="trilha">'); if(i>=0){ const e=h.indexOf('</div>',i)+6; h=h.slice(0,e)+barraPainel()+h.slice(e); }
+    if(pv.nivel==="obra"){ const o=obraDe(pv.oid); const a=h.indexOf('</h1>');
+      if(o&&a>=0){ const b=h.indexOf('</p>',a); const at=(b>=0&&b-a<400)?b+4:a+5; h=h.slice(0,at)+fichaObra(o)+h.slice(at); } }
+    return h; }; }
+
+/* ---------- cadastro / edição de obra ---------- */
+vNovaObra=function(){
+  const o = UI.editObra? obraDe(UI.editObra) : {gerenciadora:"CTE Gerenciamento",vigencia:"Contrato original",situacao:"Em obra"};
+  const sel=(id,ops,v)=>`<select id="${id}">${ops.map(x=>`<option ${x===v?"selected":""}>${esc(x)}</option>`).join("")}</select>`;
+  const coords=S.usuarios.filter(u=>u.perfil==="coord");
+  return `<div><button class="link" data-act="pport">‹ Painel</button><h1>${UI.editObra?"Editar dados da obra":"Nova obra"}</h1>
+  <p class="muted small">Dados básicos que aparecem no painel e no PDF da obra.</p></div>
+  <form id="f-obra" class="card" novalidate>
+    <div class="grid2"><label class="f"><span class="req">Nome da obra</span><input id="o-nome" value="${esc(o.nome)}" placeholder="ex.: Ed. Aurora"></label>
+      <label class="f"><span class="req">Código (numeração dos relatórios)</span><input id="o-cod" maxlength="6" value="${esc(o.codigo)}" placeholder="ex.: AUR"></label></div>
+    <div class="grid2"><label class="f"><span class="req">Contratante</span><input id="o-ctte" value="${esc(o.contratante)}"></label>
+      <label class="f">Construtora<input id="o-ctda" value="${esc(o.contratada)}" placeholder="ou: A contratar"></label></div>
+    <div class="grid2"><label class="f"><span class="req">Gerenciadora</span><input id="o-ger" value="${esc(o.gerenciadora)}"></label>
+      <label class="f">Situação${sel("o-sit",SITUACOES,o.situacao)}</label></div>
+    <label class="f"><span class="req">Endereço</span><input id="o-end" value="${esc(o.endereco)}" placeholder="rua, número – bairro – cidade/UF"></label>
+    <div class="grid2"><label class="f">Início da obra<input id="o-ini" type="date" value="${esc(o.inicio)}"></label>
+      <label class="f">Término<input id="o-fim" type="date" value="${esc(o.termino)}"></label></div>
+    <div class="grid2"><label class="f">Prazo vigente${sel("o-vig",VIGENCIAS,o.vigencia||"Contrato original")}</label>
+      <label class="f">Observação do prazo<input id="o-nota" value="${esc(o.terminoNota)}" placeholder="ex.: 1º Aditamento assinado em 01/10/2026"></label></div>
+    <label class="f">Pavimentos e áreas (um por linha)<textarea id="o-pav" class="ta" rows="4" placeholder="Térreo&#10;1º pavimento&#10;Cobertura">${esc((o.pavimentos||[]).join("\n"))}</textarea></label>
+    ${coords.length?`<label class="f">Coordenador (recebe as aprovações)<select id="o-coord">${coords.map(u=>`<option value="${u.id}" ${o.coordId===u.id?"selected":""}>${esc(u.nome)}</option>`).join("")}</select></label>`:""}
+    <p id="o-err" class="warn" hidden></p><button class="btn primary block" type="submit">Salvar obra</button></form>`;
+};
+salvarObra=function(e){ e.preventDefault(); const g=id=>($("#"+id)?.value||"").trim();
+  const d={nome:g("o-nome"),codigo:g("o-cod").toUpperCase().replace(/[^A-Z0-9]/g,""),contratante:g("o-ctte"),contratada:g("o-ctda")||"A contratar",gerenciadora:g("o-ger"),
+    situacao:g("o-sit"),endereco:g("o-end"),inicio:g("o-ini"),termino:g("o-fim"),vigencia:g("o-vig"),terminoNota:g("o-nota"),
+    pavimentos:($("#o-pav")?.value||"").split("\n").map(x=>x.trim()).filter(Boolean)};
+  if($("#o-coord")) d.coordId=g("o-coord");
+  const err=$("#o-err"); const falta=[["nome","nome da obra"],["codigo","código"],["contratante","contratante"],["gerenciadora","gerenciadora"],["endereco","endereço"]].filter(([k])=>!d[k]).map(([,t])=>t);
+  if(falta.length){ err.textContent="Preencha: "+falta.join(", ")+"."; err.hidden=false; return; }
+  if(S.obras.some(o=>o.codigo===d.codigo && o.id!==UI.editObra)){ err.textContent="Este código já é usado por outra obra."; err.hidden=false; return; }
+  if(!d.pavimentos.length) d.pavimentos=["Geral"];
+  let oid=UI.editObra;
+  if(oid){ const o=obraDe(oid); Object.assign(o,d); o.editadaNoApp=true; }
+  else { const o={id:uid("o"),...d,seq:{},criadaNoApp:true}; S.obras.push(o); oid=o.id; }
+  UI.editObra=null; UI.oid=oid; save(); UI.view="inicio"; UI.pv={nivel:"obra",oid}; render(); scrollTo(0,0); toast("Obra salva.");
+};
+document.addEventListener("click", e=>{ const a=e.target.closest("[data-act='editficha']"); if(!a) return; e.stopImmediatePropagation();
+  UI.oid=a.dataset.v; UI.editObra=a.dataset.v; UI.view="novaobra"; render(); scrollTo(0,0); }, true);
+/* mês da obra: obras cadastradas no app usam a data de início */
+{ const _om=obraMeta; obraMeta=function(id){ const m=_om(id); if(m&&m.mes1) return m; const o=obraDe(id); return {...(m||{}),id,mes1:o?.inicio?o.inicio.slice(0,7):null}; }; }
+
+/* ---------- sem obra modelo ---------- */
+function purgarModelo(){
+  const remV=S.vistorias.filter(v=>v.modelo), remR=S.rfs.filter(r=>r.modelo); const ids=[];
+  for(const x of [...remV,...remR]) for(const f of (x.fotos||[])) if(f.id) ids.push(f.id);
+  for(const v of remV) for(const a of (v.anexos||[])) if(a.fileId) ids.push(a.fileId);
+  S.vistorias=S.vistorias.filter(v=>!v.modelo); S.rfs=S.rfs.filter(r=>!r.modelo);
+  const usada=id=>S.vistorias.some(v=>v.obraId===id)||S.rfs.some(r=>r.obraId===id);
+  S.obras=S.obras.filter(o=>!(o.modelo || (o.id==="o1" && !usada("o1"))));
+  for(const id of ids){ try{ fotoDel(id); }catch(_){} }
+}
+
+/* ---------- PDF do painel da obra ---------- */
+async function pdfPainelObra(oid){
+  const o=obraDe(oid); if(!o) return; const B=filtrar(baseDados(),oid); const its=B.itens, rn=B.rncs;
+  const d=new PDF(); const W=297, H=210, m=12, LOGO=logoBytes(); const CW=W-2*m;
+  const cnt=(s,L=its)=>L.filter(i=>i.st===s).length; const NC=cnt("NC"), tot=its.filter(i=>["C","NC","PV"].includes(i.st)).length;
+  const marc=its.filter(i=>i.org==="pdf"||i.org==="app"); const cC=cnt("C",marc), cN=cnt("NC",marc), cP=cnt("PV",marc);
+  const conf=(cC+cN+cP)?Math.round(100*cC/(cC+cN+cP))+"%":"–";
+  const pend=rn.filter(r=>r.st==="aberta").length, aver=rn.filter(r=>r.st==="averif").length;
+  const datas=rn.map(r=>r.data).filter(Boolean).sort();
+  const nMes=datas.length? mesesEntre(datas[0].slice(0,7),hoje().slice(0,7))+1 : 0;
+  const media=nMes?(rn.length/nMes).toFixed(1).replace(".",","):"–";
+  const cab=t=>{ d.addPage(); d.rect(0,0,W,16,NAVY); d.image(LOGO,LOGO_JPG_W,LOGO_JPG_H,m,3,10*LOGO_JPG_W/LOGO_JPG_H,10);
+    d.text(t,W/2,10,10,true,[255,255,255],"c"); d.text(fmtData(hoje()),W-m,10,8.5,true,[255,255,255],"r"); };
+  const sec=(t,x,y)=>{ d.text(t,x,y,10.5,true,NAVY); d.rect(x,y+1.6,24,0.6,PET); };
+  /* página 1: ficha, indicadores, gráficos */
+  cab("PAINEL DA OBRA");
+  d.text(o.nome||"",m,27,17,true,NAVY); d.text(`Situação: ${o.situacao||"–"} · dados até ${fmtData(hoje())}`,m,33,8.5,false,GR);
+  const F0=fichaCampos(o); const F=[0,1,2,6,4,5,3].map(i=>F0[i]); const fw=CW/4; let fy=40;
+  F.forEach(([k,v],ix)=>{ const col=ix%4, row=Math.floor(ix/4); const x=m+col*fw, y=fy+row*13; const w=(k==="Endereço"?fw*2-3:fw-3);
+    d.text(k.toUpperCase(),x,y,6.5,true,GR); const t=d.wrap(v||"pendente de validação",w,8.5,true).slice(0,2); t.forEach((s,j)=>d.text(s,x,y+4.2+j*3.6,8.5,true,v?NAVY:[176,110,0])); });
+  if(o.terminoNota){ d.text(d.wrap(o.terminoNota,CW,7,false)[0],m,fy+27,7,false,GR); }
+  const K=[["RNC registradas",String(rn.length)],["Média RNC/mês",media],["Itens verificados",String(tot)],["Não conformidades",String(NC)],["Conformidade",conf],["Pendentes / a verificar",`${pend} / ${aver}`]];
+  const ky=72, kw=(CW-5*3)/6;
+  K.forEach(([t,v],ix)=>{ const x=m+ix*(kw+3); d.rect(x,ky,kw,17,ix===3?[252,236,238]:[241,244,246]); d.rect(x,ky,1.2,17,ix===3?RED:PET);
+    d.text(v,x+4,ky+9,13,true,ix===3?RED:NAVY); d.text(t,x+4,ky+14,6.8,false,GR); });
+  /* RNC por mês */
+  const gy=99, gh=92, gx=m, gw=CW*0.48;
+  sec("RNC por mês",gx,gy);
+  const mesesL=[]; if(datas.length){ let [y,mm]=datas[0].slice(0,7).split("-").map(Number); const [yf,mf]=hoje().slice(0,7).split("-").map(Number);
+    while(y<yf||(y===yf&&mm<=mf)){ mesesL.push(`${y}-${pad(mm)}`); mm++; if(mm>12){mm=1;y++;} } }
+  const porMes=mesesL.map(k=>rn.filter(r=>(r.data||"").slice(0,7)===k).length); const mx=Math.max(1,...porMes);
+  const by=gy+8, bh=gh-14, bw=mesesL.length? Math.min(14,(gw-6)/mesesL.length-2):10;
+  d.rect(gx,by+bh,gw,0.3,LINE);
+  mesesL.forEach((k,ix)=>{ const x=gx+4+ix*(bw+2); const v=porMes[ix], h=bh*v/mx; if(v){ d.rect(x,by+bh-h,bw,h,PCOR[oid]?hexRGB(PCOR[oid]):PET); d.text(String(v),x+bw/2,by+bh-h-1.2,7,true,NAVY,"c"); }
+    d.text(rotMes(k),x+bw/2,by+bh+4,6,false,GR,"c"); });
+  if(!mesesL.length) d.text("Sem RNC com data.",gx,by+10,8,false,GR);
+  /* NC por disciplina */
+  const dx=m+CW*0.52, dw=CW*0.48; sec("Não conformidades por disciplina",dx,gy);
+  const disc=PD.disc.map(x=>[x,its.filter(i=>i.disc===x&&i.st==="NC").length]).filter(x=>x[1]>0).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  const dmx=Math.max(1,...disc.map(x=>x[1])); const lw=48;
+  disc.forEach(([n,v],ix)=>{ const y=by+ix*7.6; d.text(DISC_CURTO(n),dx,y+4,7.5,false,NAVY); const w=(dw-lw-12)*v/dmx; d.rect(dx+lw,y,w,5,[163,76,157]); d.text(String(v),dx+lw+w+1.5,y+4,7.5,true,NAVY); });
+  if(!disc.length) d.text("Sem não conformidades registradas.",dx,by+10,8,false,GR);
+  /* página 2: mês da obra x disciplina e pendências */
+  cab("PAINEL DA OBRA · MOMENTO DA OBRA E PENDÊNCIAS");
+  d.text(o.nome||"",m,27,13,true,NAVY);
+  sec("Não conformidades por disciplina e mês da obra",m,37);
+  const mk=[...new Set(its.filter(i=>i.st==="NC").map(i=>mesDaObra(oid,i.data)).filter(Boolean))].sort((a,b)=>a-b);
+  const dl=PD.disc.filter(x=>its.some(i=>i.disc===x&&i.st==="NC"));
+  if(mk.length&&dl.length){ const x0=m+52, cwid=Math.min(16,(CW-52)/mk.length), y0=45; const vmax=Math.max(1,...dl.flatMap(x=>mk.map(k=>its.filter(i=>i.disc===x&&i.st==="NC"&&mesDaObra(oid,i.data)===k).length)));
+    mk.forEach((k,j)=>d.text(`Mês ${k}`,x0+j*cwid+cwid/2,y0,6.5,true,GR,"c"));
+    dl.forEach((x,r)=>{ const y=y0+3+r*6; d.text(DISC_CURTO(x),m,y+4,7,false,NAVY);
+      mk.forEach((k,j)=>{ const v=its.filter(i=>i.disc===x&&i.st==="NC"&&mesDaObra(oid,i.data)===k).length; const t=v/vmax;
+        const c=v?[Math.round(230-200*t),Math.round(238-160*t),Math.round(242-130*t)]:[247,248,249]; d.rect(x0+j*cwid,y,cwid-0.6,5.4,c);
+        if(v) d.text(String(v),x0+j*cwid+cwid/2,y+3.9,6.5,true,t>0.55?[255,255,255]:NAVY,"c"); }); });
+  } else d.text("Sem dados de mês da obra.",m,48,8,false,GR);
+  let py=Math.max(110, 50+dl.length*6+12);
+  sec("Pendências mais antigas",m,py); py+=7;
+  const pl=rn.filter(r=>r.st==="aberta"||r.st==="averif").sort((a,b)=>(a.data||"9").localeCompare(b.data||"9")).slice(0,12);
+  const colsP=[["RNC",18],["Tema",120],["Disciplina",62],["Emitida",22],["Dias",16],["Situação",35]];
+  const th=(cols,y)=>{ let x=m; d.rect(m,y-4,CW,5.6,[230,238,242]); for(const [t,w] of cols){ d.text(t,x+1.5,y,7,true,NAVY); x+=w; } };
+  th(colsP,py); py+=5.5;
+  for(const r of pl){ let x=m; const vals=[`${pad(r.n)}`,r.tema||"",DISC_CURTO(r.disc||""),r.data?fmtData(r.data):"–",r.data?String(DateDiffDias(r.data)):"–",ST_RNC[r.st]||r.st];
+    vals.forEach((v,k)=>{ const w=colsP[k][1]; d.text(d.wrap(String(v),w-3,7,false)[0]||"",x+1.5,py,7,false,NAVY); x+=w; }); d.rect(m,py+1.6,CW,0.2,LINE); py+=5.2; if(py>H-14) break; }
+  if(!pl.length) d.text("Sem pendências registradas.",m,py,8,false,GR);
+  /* página 3+: lista de RNC */
+  const lista=[...rn].sort((a,b)=>(a.n||0)-(b.n||0));
+  const colsR=[["RNC",14],["Data",20],["Tema",104],["Disciplina",58],["Itens",14],["C",12],["NC",12],["PV",12],["Situação",27]];
+  let ly=999;
+  for(const r of lista){
+    if(ly>H-14){ cab("PAINEL DA OBRA · RNC EMITIDAS"); d.text(o.nome||"",m,27,13,true,NAVY); ly=37; th(colsR,ly); ly+=5.5; }
+    const c=r.cont||{}; const vals=[pad(r.n),r.data?fmtData(r.data):"–",r.tema||"",DISC_CURTO(r.disc||""),c.itens??"–",c.C??"–",c.NC??"–",c.PV??"–",ST_RNC[r.st]||r.st||""];
+    let x=m; vals.forEach((v,k)=>{ const w=colsR[k][1]; d.text(d.wrap(String(v),w-3,7,false)[0]||"",x+1.5,ly,7,k===6&&c.NC?true:false,k===6&&c.NC?RED:NAVY); x+=w; });
+    d.rect(m,ly+1.6,CW,0.2,LINE); ly+=5.2;
+  }
+  const n=d.pages.length;
+  d.pages.forEach((ops,k)=>{ d.ops=ops; d.text(`CTE Gerenciamento · Painel da obra ${o.nome||""} · Base: RNC emitidas e registros do app de vistoria`,m,H-6,6.5,false,GR); d.text(`página ${k+1} de ${n}`,W-m,H-6,7,false,GR,"r"); });
+  const nome=`PAINEL_${o.codigo||"OBRA"}_${hoje()}.pdf`;
+  await entregarArquivo(nome,new Blob([d.build()],{type:"application/pdf"}));
+}
+function hexRGB(h){ const x=h.replace("#",""); return [0,2,4].map(i=>parseInt(x.slice(i,i+2),16)); }
+function DateDiffDias(dt){ return Math.max(0,Math.round((new Date(hoje())-new Date(dt))/86400000)); }
+document.addEventListener("click", async e=>{ const a=e.target.closest("[data-act='pdfpainel']"); if(!a) return; e.stopImmediatePropagation();
+  a.disabled=true; const t=a.textContent; a.textContent="Gerando PDF…";
+  try{ await pdfPainelObra(a.dataset.v); }catch(err){ console.error(err); aviso("Não foi possível gerar o PDF",String(err&&err.message||err)); }
+  a.disabled=false; a.textContent=t; }, true);
+
+/* ---------- fotos do histórico de RNC (pacote de fotos, guardado no aparelho) ---------- */
+let FOTOS_HIST={};  /* chave "oid#rnc#item" -> quantidade */
+async function carregarIndiceFotosHist(){ try{ FOTOS_HIST=(await kvGet("fotosHistIdx"))||{}; }catch(_){ FOTOS_HIST={}; } }
+const chaveFH=(oid,rnc,item)=>`${oid}#${rnc}#${item}`;
+async function importarFotosHist(){
+  const d=await escolherArquivoJSON(); if(!d) return;
+  if(d.tipo!=="cte-vistoria-fotos"||typeof d.fotos!=="object"){ aviso("Arquivo não reconhecido","Este arquivo não é um pacote de fotos do histórico."); return; }
+  toast("Importando fotos…"); let n=0;
+  for(const [k,arr] of Object.entries(d.fotos)){ let j=0;
+    for(const b64 of arr){ await fotoSet(`h:${k}#${j}`,{blob:new Blob([bufDeB64(b64)],{type:"image/jpeg"})}); j++; n++; }
+    FOTOS_HIST[k]=j; }
+  await kvSet("fotosHistIdx",FOTOS_HIST); render();
+  aviso("Fotos importadas",`${n} foto(s) de ${Object.keys(d.fotos).length} item(ns) do histórico${d.obraNome?` (${d.obraNome})`:""}. Elas aparecem junto de cada item das RNC.`);
+}
+{ const _il=itemLinha; itemLinha=function(i){ let h=_il(i); const rnc=i.rnc, k=i.oid&&rnc!=null&&i.n!=null&&i.org!=="app"? chaveFH(i.oid,rnc,i.n):null; const q=k?FOTOS_HIST[k]:0;
+    if(q){ const tiles=Array.from({length:q},(_,j)=>`<button class="fh-t" data-fh="${esc(k)}#${j}" aria-label="Foto ${j+1} do item"></button>`).join("");
+      h=h.replace(/<\/li>$/,`<span class="fh-row">${tiles}</span></li>`); }
+    return h; }; }
+async function preencherFotosHist(){ const els=document.querySelectorAll(".fh-t:not([data-ok])");
+  for(const el of els){ el.setAttribute("data-ok","1"); const r=await fotoGet("h:"+el.dataset.fh); if(r&&r.blob){ const u=URL.createObjectURL(r.blob); el.style.backgroundImage=`url("${u}")`; el.dataset.u=u; } } }
+{ const _render=render; render=function(){ const out=_render.apply(this,arguments); setTimeout(preencherFotosHist,0); return out; }; }
+document.addEventListener("click", e=>{ const t=e.target.closest(".fh-t"); if(!t) return; e.stopImmediatePropagation();
+  const u=t.dataset.u; if(!u) return; abrirSheet(`<div class="row between"><h2>Foto do item</h2><button class="link" data-x="1">Fechar</button></div><img src="${u}" alt="Foto do item" style="width:100%;border-radius:8px">`); }, true);
+{ const _sd=sheetDados; sheetDados=function(){ _sd(); const alvo=[...document.querySelectorAll("#sheet h3")].find(x=>x.textContent==="Backup e consolidação"); if(!alvo) return;
+    const n=Object.values(FOTOS_HIST).reduce((a,b)=>a+b,0);
+    alvo.insertAdjacentHTML("beforebegin",`<h3>Fotos do histórico de RNC</h3><p class="small">${n?`${n} foto(s) ligadas a ${Object.keys(FOTOS_HIST).length} item(ns).`:"Nenhum pacote de fotos importado."}</p><button class="btn block" data-d="fh">Importar fotos do histórico (.json)</button>`); }; }
+document.addEventListener("click", e=>{ const b=e.target.closest("#sheet [data-d='fh']"); if(!b) return; e.stopImmediatePropagation(); fechar(); importarFotosHist(); }, true);
+/* atalho: da ficha da RNC antiga para os itens com fotos */
+{ const _sh=sheetHist; sheetHist=function(oid,n){ _sh(oid,n); const k=oid+"#"+n; if(!baseDados().rncs.some(r=>r.key===k)) return;
+    const h2=document.querySelector("#sheet h2"); const alvo=h2&&h2.closest(".row"); if(alvo) alvo.insertAdjacentHTML("afterend",`<button class="btn primary block" data-act="verhist" data-v="${esc(k)}" style="margin:8px 0">Ver itens e fotos</button>`); }; }
+document.addEventListener("click", e=>{ const a=e.target.closest("[data-act='verhist']"); if(!a) return; e.stopImmediatePropagation();
+  const k=a.dataset.v; fechar(); UI.view="inicio"; UI.pv={nivel:"rnc",oid:k.split("#")[0],key:k}; UI.pfit="todos"; render(); scrollTo(0,0); }, true);
+
 (async function iniciar(){ $("#logo").src=LOGO_DARK; rede(); await openDB(); S=(await kvGet("state2"))||estadoInicial(); if(!S.rfs){ S.rfs=[]; } S.seqAV=S.seqAV||1;
-  migrar(); await criarModelo(); lastJSON=snapJSON(); kvSet("state2",S); UI.oid="o1"; render(); })();
+  migrar(); purgarModelo(); await carregarIndiceFotosHist(); lastJSON=snapJSON(); kvSet("state2",S); UI.oid=(S.obras[0]||{}).id||null; render(); })();
 
 </script>
 
