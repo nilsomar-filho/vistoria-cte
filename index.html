@@ -2583,7 +2583,7 @@ document.addEventListener("click",e=>{
 },true);
 
 /* ================= DADOS DO APARELHO: pacote da obra, backup e consolidação ================= */
-function escolherArquivoJSON(){ return new Promise(res=>{ const i=document.createElement("input"); i.type="file"; i.accept=".json,application/json"; i.style.display="none";
+function escolherArquivoJSON(){ return new Promise(res=>{ const i=document.createElement("input"); i.type="file"; i.style.display="none";
   i.onchange=async()=>{ const f=i.files&&i.files[0]; i.remove(); if(!f){ res(null); return; } try{ res(JSON.parse(await f.text())); }catch(e){ toast("Arquivo inválido: não é um JSON do app."); res(null); } };
   document.body.appendChild(i); i.click(); }); }
 function b64DeBuf(buf){ const u=new Uint8Array(buf); let s=""; for(let i=0;i<u.length;i+=0x8000) s+=String.fromCharCode.apply(null,u.subarray(i,i+0x8000)); return btoa(s); }
@@ -2649,7 +2649,8 @@ function fichaObra(o){
     <button class="link small" data-act="editficha" data-v="${o.id}">Editar dados da obra</button></section>`;
 }
 function barraPainel(){ const pv=UI.pv;
-  return `<div class="pacoes"><button class="btn pac-b" data-act="pnovaobra">+ Nova obra</button>${pv.nivel==="obra"?`<button class="btn primary pac-b" data-act="pdfpainel" data-v="${pv.oid}">Gerar PDF</button>`:""}</div>`; }
+  const semFotos=PACOTE&&!Object.keys(typeof FOTOS_HIST==="object"?FOTOS_HIST:{}).length;
+  return `${semFotos?`<div class="card" style="margin:8px 0;border-left:4px solid #b06e00"><b>Fotos do histórico ainda não importadas neste aparelho.</b><p class="small">Toque em “Dados e fotos” e depois em “Importar fotos do histórico”, selecionando todos os arquivos fotos-… de uma vez.</p></div>`:""}<div class="pacoes"><button class="btn pac-b" data-act="dados">Dados e fotos</button><button class="btn pac-b" data-act="pnovaobra">+ Nova obra</button>${pv.nivel==="obra"?`<button class="btn primary pac-b" data-act="pdfpainel" data-v="${pv.oid}">Gerar PDF</button>`:""}</div>`; }
 { const _vp=vPainel; vPainel=function(){ let h=_vp(); const pv=UI.pv;
     const i=h.indexOf('<div class="trilha">'); if(i>=0){ const e=h.indexOf('</div>',i)+6; h=h.slice(0,e)+barraPainel()+h.slice(e); }
     if(pv.nivel==="obra"){ const o=obraDe(pv.oid); const a=h.indexOf('</h1>');
@@ -2799,7 +2800,7 @@ document.addEventListener("click", async e=>{ const a=e.target.closest("[data-ac
 let FOTOS_HIST={};  /* chave "oid#rnc#item" -> quantidade */
 async function carregarIndiceFotosHist(){ try{ FOTOS_HIST=(await kvGet("fotosHistIdx"))||{}; }catch(_){ FOTOS_HIST={}; } }
 const chaveFH=(oid,rnc,item)=>`${oid}#${rnc}#${item}`;
-function escolherVariosJSON(){ return new Promise(res=>{ const i=document.createElement("input"); i.type="file"; i.multiple=true; i.accept=".json,application/json"; i.style.display="none";
+function escolherVariosJSON(){ return new Promise(res=>{ const i=document.createElement("input"); i.type="file"; i.multiple=true; i.style.display="none";
   i.onchange=async()=>{ const fs=[...(i.files||[])]; i.remove(); const out=[]; for(const f of fs){ try{ out.push(JSON.parse(await f.text())); }catch(e){} } res(out); };
   document.body.appendChild(i); i.click(); }); }
 async function importarFotosHist(){
