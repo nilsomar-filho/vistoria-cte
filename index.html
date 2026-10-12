@@ -2796,15 +2796,19 @@ document.addEventListener("click", async e=>{ const a=e.target.closest("[data-ac
 let FOTOS_HIST={};  /* chave "oid#rnc#item" -> quantidade */
 async function carregarIndiceFotosHist(){ try{ FOTOS_HIST=(await kvGet("fotosHistIdx"))||{}; }catch(_){ FOTOS_HIST={}; } }
 const chaveFH=(oid,rnc,item)=>`${oid}#${rnc}#${item}`;
+function escolherVariosJSON(){ return new Promise(res=>{ const i=document.createElement("input"); i.type="file"; i.multiple=true; i.accept=".json,application/json"; i.style.display="none";
+  i.onchange=async()=>{ const fs=[...(i.files||[])]; i.remove(); const out=[]; for(const f of fs){ try{ out.push(JSON.parse(await f.text())); }catch(e){} } res(out); };
+  document.body.appendChild(i); i.click(); }); }
 async function importarFotosHist(){
-  const d=await escolherArquivoJSON(); if(!d) return;
-  if(d.tipo!=="cte-vistoria-fotos"||typeof d.fotos!=="object"){ aviso("Arquivo não reconhecido","Este arquivo não é um pacote de fotos do histórico."); return; }
-  toast("Importando fotos…"); let n=0;
-  for(const [k,arr] of Object.entries(d.fotos)){ let j=0;
-    for(const b64 of arr){ await fotoSet(`h:${k}#${j}`,{blob:new Blob([bufDeB64(b64)],{type:"image/jpeg"})}); j++; n++; }
-    FOTOS_HIST[k]=j; }
+  const lista=(await escolherVariosJSON()).filter(d=>d&&d.tipo==="cte-vistoria-fotos"&&typeof d.fotos==="object");
+  if(!lista.length){ aviso("Arquivo não reconhecido","Selecione um ou mais pacotes de fotos do histórico (fotos-….json)."); return; }
+  toast("Importando fotos…"); let n=0, it=0; const nomes=new Set();
+  for(const d of lista){ if(d.obraNome) nomes.add(d.obraNome);
+    for(const [k,arr] of Object.entries(d.fotos)){ let j=0;
+      for(const b64 of arr){ await fotoSet(`h:${k}#${j}`,{blob:new Blob([bufDeB64(b64)],{type:"image/jpeg"})}); j++; n++; }
+      FOTOS_HIST[k]=j; it++; } }
   await kvSet("fotosHistIdx",FOTOS_HIST); render();
-  aviso("Fotos importadas",`${n} foto(s) de ${Object.keys(d.fotos).length} item(ns) do histórico${d.obraNome?` (${d.obraNome})`:""}. Elas aparecem junto de cada item das RNC.`);
+  aviso("Fotos importadas",`${n} foto(s) de ${it} item(ns) do histórico, em ${lista.length} arquivo(s)${nomes.size?` (${[...nomes].join(", ")})`:""}. Elas aparecem junto de cada item das RNC.`);
 }
 { const _il=itemLinha; itemLinha=function(i){ let h=_il(i); const rnc=i.rnc, k=i.oid&&rnc!=null&&i.n!=null&&i.org!=="app"? chaveFH(i.oid,rnc,i.n):null; const q=k?FOTOS_HIST[k]:0;
     if(q){ const tiles=Array.from({length:q},(_,j)=>`<button class="fh-t" data-fh="${esc(k)}#${j}" aria-label="Foto ${j+1} do item"></button>`).join("");
@@ -2817,7 +2821,7 @@ document.addEventListener("click", e=>{ const t=e.target.closest(".fh-t"); if(!t
   const u=t.dataset.u; if(!u) return; abrirSheet(`<div class="row between"><h2>Foto do item</h2><button class="link" data-x="1">Fechar</button></div><img src="${u}" alt="Foto do item" style="width:100%;border-radius:8px">`); }, true);
 { const _sd=sheetDados; sheetDados=function(){ _sd(); const alvo=[...document.querySelectorAll("#sheet h3")].find(x=>x.textContent==="Backup e consolidação"); if(!alvo) return;
     const n=Object.values(FOTOS_HIST).reduce((a,b)=>a+b,0);
-    alvo.insertAdjacentHTML("beforebegin",`<h3>Fotos do histórico de RNC</h3><p class="small">${n?`${n} foto(s) ligadas a ${Object.keys(FOTOS_HIST).length} item(ns).`:"Nenhum pacote de fotos importado."}</p><button class="btn block" data-d="fh">Importar fotos do histórico (.json)</button>`); }; }
+    alvo.insertAdjacentHTML("beforebegin",`<h3>Fotos do histórico de RNC</h3><p class="small">${n?`${n} foto(s) ligadas a ${Object.keys(FOTOS_HIST).length} item(ns).`:"Nenhum pacote de fotos importado."}</p><button class="btn block" data-d="fh">Importar fotos do histórico (.json)</button><p class="muted small">Pode selecionar vários arquivos de uma vez (ex.: parte 1, 2 e 3).</p>`); }; }
 document.addEventListener("click", e=>{ const b=e.target.closest("#sheet [data-d='fh']"); if(!b) return; e.stopImmediatePropagation(); fechar(); importarFotosHist(); }, true);
 /* atalho: da ficha da RNC antiga para os itens com fotos */
 { const _sh=sheetHist; sheetHist=function(oid,n){ _sh(oid,n); const k=oid+"#"+n; if(!baseDados().rncs.some(r=>r.key===k)) return;
