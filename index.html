@@ -515,6 +515,9 @@ a.btn{text-decoration:none;display:flex;align-items:center;justify-content:cente
 }
 .pit.st-ATN .pit-s{background:#f5a81c;color:#2a1a00}.pst-i.st-ATN{border-left:4px solid var(--pv-bg)}
 
+.ck-btns{grid-template-columns:1fr 1.3fr 1fr 1fr}
+.ck-btns button[data-v="NA"][aria-pressed="true"]{background:#8b8d90;border-color:#8b8d90;color:#fff}
+.ck.st-NA{border-left-color:#b9bcc0}
 .pacoes{display:flex;gap:8px;margin-left:auto;flex-wrap:wrap}
 .pac-b{padding:8px 14px;font-size:14px;min-height:38px}
 .ptopo{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
@@ -691,7 +694,7 @@ const CHECKLISTS = {
 const ITEM_ALL = {}; for(const k in CHECKLISTS) for(const i of (CHECKLISTS[k].itens||[])) ITEM_ALL[i.cod]=i;
 const itensDe = v => v.snap||v.ck==="LV"? (v.itens||[]) : CHECKLISTS[v.ck||"AM"].itens;
 const itemDe = (v,cod) => itensDe(v).find(i=>i.cod===cod) || ITEM_ALL[cod];
-const nomeCk = v => v.snap&&v.nome? v.nome : CHECKLISTS[v.ck||"AM"].nome;
+const nomeCk = v => v.livre? (v.assunto||"RNC livre") : v.snap&&v.nome? v.nome : CHECKLISTS[v.ck||"AM"].nome;
 
 const LASTROS = ["Projeto","Memorial descritivo","Especificação técnica","Norma ABNT","Norma Regulamentadora","Ficha técnica do fabricante","Procedimento executivo","Requisito de concessionária","Contrato"];
 const PREMISSA = "Este Relatório de Não Conformidade registra as condições observadas pela GERENCIADORA durante as inspeções realizadas nas áreas e elementos indicados, mediante comparação com os projetos, memoriais, especificações, requisitos normativos e demais documentos técnicos aplicáveis e disponibilizados para a inspeção. As verificações possuem caráter técnico e amostral, com abrangência definida conforme as áreas acessíveis, tipologias, etapas executivas, criticidade e condições observadas em campo, podendo ser ampliadas quando identificadas ocorrências recorrentes, sistêmicas ou relevantes. A inspeção e o registro de itens conformes não caracterizam aceite integral da obra nem desobrigam a CONTRATADA de suas responsabilidades quanto à qualidade, conformidade, desempenho, operacionalidade e correção dos serviços. Toda Não Conformidade deverá possuir lastro técnico identificável; na ausência de referência conclusiva, o item deverá ser registrado como Pendente de Validação.";
@@ -737,10 +740,10 @@ const numDoc = v => v.numero || (v.modelo? "RNC-AM-MODELO" : `RNC-AM-${v.data.re
 /* ================= REGRAS ================= */
 // status efetivo: OK | NOK (não ok aguardando revisão) | NC | PV | NV | null
 function stEf(r){ if(!r||!r.status) return null; if(r.status==="NOK"){ if(!r.val) return "NOK"; if(r.val.classe==="C") return "OK"; if(r.val.classe==="NC"&&r.enc?.conf) return "NCE"; return r.val.classe; } return r.status; }
-const LBL = {NCE:"NC – ENCERRADA",OK:"C – CONFORME",NOK:"NÃO OK – A VALIDAR",NC:"NC – NÃO CONFORME",PV:"PV – PENDENTE DE VALIDAÇÃO",NV:"NV – NÃO VERIFICADO"};
-const CORPDF = {NCE:[0,77,109],OK:[63,143,42],NOK:[176,110,0],NC:[190,30,45],PV:[176,110,0],NV:[109,110,113]};
-const GRAV = {NC:5,NOK:4,PV:3,NV:2,NCE:1.5,OK:1};
-function contagem(v){ const c={OK:0,NOK:0,NC:0,NCE:0,PV:0,NV:0,vazio:0}; for(const i of itensDe(v)){ const s=stEf(v.resp[i.cod]); if(s) c[s]++; else c.vazio++; } return c; }
+const LBL = {NCE:"NC – ENCERRADA",OK:"C – CONFORME",NOK:"NÃO OK – A VALIDAR",NC:"NC – NÃO CONFORME",PV:"PV – PENDENTE DE VALIDAÇÃO",NV:"NV – NÃO VERIFICADO",NA:"NA – NÃO SE APLICA"};
+const CORPDF = {NCE:[0,77,109],OK:[63,143,42],NOK:[176,110,0],NC:[190,30,45],PV:[176,110,0],NV:[109,110,113],NA:[150,152,155]};
+const GRAV = {NC:5,NOK:4,PV:3,NV:2,NCE:1.5,OK:1,NA:0.5};
+function contagem(v){ const c={OK:0,NOK:0,NC:0,NCE:0,PV:0,NV:0,NA:0,vazio:0}; for(const i of itensDe(v)){ const s=stEf(v.resp[i.cod]); if(s) c[s]++; else c.vazio++; } return c; }
 function liberacao(v){
   const ab=[],nv=[];
   for(const i of itensDe(v)){ if(!i.trava) continue; const s=stEf(v.resp[i.cod]); if(["NOK","NC","PV"].includes(s)) ab.push(i.cod); else if(!s||s==="NV") nv.push(i.cod); }
@@ -821,20 +824,20 @@ async function modeloRelatorio(v){
   const obra=S.obras.find(o=>o.id===v.obraId)||{}; const c=contagem(v); const l=liberacao(v);
   const tipo = c.NOK? "PRELIMINAR" : (c.NC||c.PV||c.NCE)? "RNC" : "VISTORIA";
   const titulo = tipo==="RNC"? "RELATÓRIO DE NÃO CONFORMIDADE – RNC" : tipo==="PRELIMINAR"? "RELATÓRIO DE VISTORIA – PRELIMINAR" : "RELATÓRIO DE VISTORIA";
-  const local=`${v.pav} | ${v.unid} | ${v.amb}`;
-  const ident=[["Empreendimento",obra.nome],["Objeto",`Vistoria – ${nomeCk(v)} – ${v.amb}`],["Data",fmtData(v.data)],["Local",local],["Contratada",v.contratada],
-    ["Vistoriador",v.vist],["Projeto de referência",`${v.proj} ${v.rev}`],["Documento nº / revisão",`${numDoc(v)} | R00`],["Itens verificados",`${itensDe(v).length} (checklist ${nomeCk(v)})`],["Situação",situacaoDoc(v)]];
+  const local=v.livre?`${v.pav} | ${v.unid}`:`${v.pav} | ${v.unid} | ${v.amb}`;
+  const ident=[["Empreendimento",obra.nome],["Objeto",v.livre?nomeCk(v):`Vistoria – ${nomeCk(v)} – ${v.amb}`],["Data",fmtData(v.data)],["Local",local],["Contratada",v.contratada],
+    ["Vistoriador",v.vist],["Projeto de referência",`${v.proj} ${v.rev}`],["Documento nº / revisão",`${numDoc(v)} | R00`],["Itens verificados",v.livre?`${itensDe(v).length} ponto(s)`:`${itensDe(v).length} (checklist ${nomeCk(v)})`],["Situação",situacaoDoc(v)]];
   const nvs=itensDe(v).filter(i=>stEf(v.resp[i.cod])==="NV").map(i=>`${i.cod} (${v.resp[i.cod].nvMotivo||"sem motivo"})`);
   const nok=itensDe(v).filter(i=>["NOK","NC","PV","NCE"].includes(stEf(v.resp[i.cod]))).map(i=>i.cod);
-  let resumo=`Foi verificado o ${v.amb.toLowerCase()} da unidade ${v.unid} (${v.pav}) com o checklist de ${nomeCk(v)}. Dos ${itensDe(v).length} itens, ${c.OK} estão conformes`;
+  let resumo=(v.livre?`Foi verificado o assunto “${v.assunto}” em ${v.unid} (${v.pav}).`:`Foi verificado o ${v.amb.toLowerCase()} da unidade ${v.unid} (${v.pav}) com o checklist de ${nomeCk(v)}.`)+` Dos ${itensDe(v).length} itens, ${c.OK} estão conformes`;
   resumo += c.NC? `, ${c.NC} não conforme(s) em aberto`:""; resumo += c.NCE? `, ${c.NCE} não conformidade(s) encerrada(s)`:""; resumo += c.PV? `, ${c.PV} pendente(s) de validação`:""; resumo += c.NOK? `, ${c.NOK} não OK aguardando validação do engenheiro`:"";
   resumo += nvs.length? ` e ${nvs.length} não verificado(s): ${nvs.join("; ")}.` : ".";
-  resumo += nok.length? ` Itens com divergência: ${nok.join(", ")}.` : " Não foram registradas divergências.";
+  if(c.NA) resumo += ` ${c.NA} item(ns) marcado(s) NA, fora do objetivo desta inspeção.`; resumo += nok.length? ` Itens com divergência: ${nok.join(", ")}.` : " Não foram registradas divergências.";
   resumo += ` Situação de liberação: ${l.t.toLowerCase()}.`;
   if(tipo==="PRELIMINAR") resumo += " Documento preliminar: os itens NÃO OK ainda serão classificados pelo engenheiro, com lastro técnico.";
   const linhas=itensDe(v).map(i=>{ const r=v.resp[i.cod], s=stEf(r)||"NV"; let obs="";
     if(r.status==="NOK"){ obs=r.obs; if(r.val){ if(r.val.classe==="NC"){ obs+=` Lastro: ${r.val.lastroTipo}, ${r.val.lastroRef}. Ação: ${r.val.acao} Responsável: ${r.val.resp}${r.val.prazo?", até "+fmtData(r.val.prazo):""}.`; if(r.enc) obs+= r.enc.conf? ` Correção verificada em ${fmtDH(r.enc.conf.em)} por ${nomeUser(r.enc.conf.por)}.` : ` Correção registrada em ${fmtDH(r.enc.em)}, aguardando verificação.`; } else if(r.val.classe==="PV") obs+=` Falta para concluir: ${r.val.motivo}`; else obs+=` Não procede: ${r.val.just}`; } }
-    else if(r.status==="NV") obs=r.nvMotivo||"Não verificado"; else if(!r.status) obs="Item não preenchido";
+    else if(r.status==="NV") obs=r.nvMotivo||"Não verificado"; else if(r.status==="NA") obs="Não era objetivo desta inspeção"; else if(!r.status) obs="Item não preenchido";
     return {cod:i.cod,req:i.s,trava:i.trava,st:s,obs}; });
   const fotos=[]; let n=1;
   for(const f of v.fotos){ const rec=await fotoGet(f.id); if(!rec) continue;
@@ -921,8 +924,8 @@ function gerarPDF(M){
   const yIdent=y;
   // resumo
   const rx=m+iw+6, rw=W-m-rx; y=27; d.rect(rx,y,rw,5.5,PET); d.text("RESUMO DA VISTORIA",rx+2,y+3.9,8,true,[255,255,255]); y+=7;
-  const tiles=[["C",M.c.OK,CORPDF.OK],["NC",M.c.NC,CORPDF.NC],["PV",M.c.PV,CORPDF.PV],["NÃO OK",M.c.NOK,CORPDF.NOK],["NV",M.c.NV+M.c.vazio,CORPDF.NV]];
-  const tw=(rw-4*1.5)/5; tiles.forEach(([k,val,cor],j)=>{ const x=rx+j*(tw+1.5); d.rect(x,y,tw,11,null,cor,0.6); d.text(String(val),x+tw/2,y+6.2,11,true,cor,"c"); d.text(k,x+tw/2,y+9.6,6,true,cor,"c"); });
+  const tiles=[["C",M.c.OK,CORPDF.OK],["NC",M.c.NC,CORPDF.NC],["PV",M.c.PV,CORPDF.PV],["NÃO OK",M.c.NOK,CORPDF.NOK],["NV",M.c.NV+M.c.vazio,CORPDF.NV],["NA",M.c.NA,CORPDF.NA]];
+  const tw=(rw-5*1.5)/6; tiles.forEach(([k,val,cor],j)=>{ const x=rx+j*(tw+1.5); d.rect(x,y,tw,11,null,cor,0.6); d.text(String(val),x+tw/2,y+6.2,11,true,cor,"c"); d.text(k,x+tw/2,y+9.6,6,true,cor,"c"); });
   y+=13; const lc=M.l.k==="nao"?RED:M.l.k==="ok"?[104,189,76]:[245,168,28]; d.rect(rx,y,rw,6,lc); d.text(M.l.t,rx+2,y+4.2,8,true,M.l.k==="nao"?[255,255,255]:[20,20,20]); y+=8;
   const rl=d.wrap(M.resumo,rw-2,7,false); d.lines(rl,rx+1,y+2.5,7,false,[20,35,45],3);
   // checklist
@@ -998,7 +1001,7 @@ function gerarDOCX(M){
   body+=par(run("PROTÓTIPO · DADOS DE TESTE · SEM VALIDADE COMO REGISTRO DE OBRA",{b:1,sz:8,color:"FFFFFF"}),{align:"center",shd:"BE1E2D",before:80});
   const iw=[2300,5552,2300,5552], idt=[...M.ident]; if(idt.length%2) idt.push(["",""]);
   const identRows=[]; for(let k=0;k<idt.length;k+=2){ const c=[]; for(const [lab,val] of [idt[k],idt[k+1]]){ c.push(cell(par(run(lab,{b:1,color:"58595B",sz:8}),{after:0}),2300,{fill:"F4F6F8"})); c.push(cell(par(run(val||(lab?"-":""),{sz:8}),{after:0}),5552)); } identRows.push(tr(c)); }
-  const cnt=`C ${M.c.OK} · NC ${M.c.NC} · PV ${M.c.PV} · NÃO OK ${M.c.NOK} · NV ${M.c.NV+M.c.vazio}`;
+  const cnt=`C ${M.c.OK} · NC ${M.c.NC} · PV ${M.c.PV} · NÃO OK ${M.c.NOK} · NV ${M.c.NV+M.c.vazio} · NA ${M.c.NA}`;
   const resumoCell=par(run("RESUMO DA VISTORIA",{b:1,color:"004D6D"}))+par(run(cnt,{b:1,sz:10}))+par(run(M.l.t,{b:1,color:M.l.k==="nao"?"BE1E2D":M.l.k==="ok"?"3F8F2A":"B06E00"}))+par(run(M.resumo,{sz:8}));
   body+=par(run("IDENTIFICAÇÃO",{b:1,color:"004D6D"}),{before:60,after:20})+tbl(identRows,iw)+par("",{after:20})+resumoCell;
   const cw=[1100,5200,2500,6904];
@@ -1431,7 +1434,7 @@ function vInicio(){
     lista = vs.map(v=>{ const l=liberacao(v), c=contagem(v);
       return `<button class="vcard${v.modelo?" is-modelo":""}" data-act="abrir" data-v="${v.id}"><span class="row between"><span class="code">${numDoc(v)}</span>${v.modelo?chipModelo:""}</span>
         <span class="t">${vistTitulo(v)}</span><span class="muted small">${fmtData(v.data)} · ${esc(v.contratada)} · ${v.fotos.length} foto(s)${(v.anexos||[]).length?` · ${v.anexos.length} anexo(s)`:""}</span>
-        <span class="row">${chipLib(l)}<span class="muted small">C ${c.OK} · NC ${c.NC} · PV ${c.PV} · Não OK ${c.NOK} · NV ${c.NV}</span></span></button>`; }).join("");
+        <span class="row">${chipLib(l)}<span class="muted small">C ${c.OK} · NC ${c.NC} · PV ${c.PV} · Não OK ${c.NOK} · NV ${c.NV} · NA ${c.NA}</span></span></button>`; }).join("");
   } else {
     const rs=S.rfs.filter(r=>UI.tab==="AV"? r.kind==="AV" : r.kind!=="AV").sort((a,b)=>(b.modelo?1:0)-(a.modelo?1:0));
     lista = rs.map(cardRF).join("");
@@ -1481,7 +1484,7 @@ function linhaItem(v,i){
   return `<article class="ck st-${s||"x"}" id="it-${i.cod}">
     <div class="ck-top"><span class="code">${i.cod}</span>${i.trava?'<span class="chip trava">TRAVA</span>':""}<span class="sp"></span>${(v.ck==="LV"||i.livre)&&!v.modelo?`<button class="link" data-act="lvrm" data-c="${i.cod}">remover</button>`:""}${i.como?`<button class="duv" data-act="duvida" data-c="${i.cod}" aria-label="Dúvida: certo ou errado do item ${i.cod}">? Dúvida</button>`:""}</div>
     <p class="ck-q">${esc(i.s)}</p>
-    <div class="ck-btns" role="group" aria-label="Resultado do item ${i.cod}">${b("OK","OK")}${b("NOK","NÃO OK")}${b("NV","NV")}</div>${extra}</article>`;
+    <div class="ck-btns" role="group" aria-label="Resultado do item ${i.cod}">${b("OK","OK")}${b("NOK","NÃO OK")}${b("NV","NV")}${b("NA","NA")}</div>${extra}</article>`;
 }
 function vVistoria(){
   const v=vAtual(); if(!v){ UI.view="inicio"; return vInicio(); }
@@ -1536,7 +1539,7 @@ function sheetFoto(id){
   const draw=()=>abrirSheet(`<div class="row between"><h2>Foto ${pad(k)}</h2><button class="link" data-x="1">Fechar</button></div>
     <img data-foto="${id}" alt="Foto ${k}" class="ph-big">${eng?"":`<button class="btn block" data-mark="1">✎ Marcar na foto (setas, círculos, mão livre, texto)</button>`}
     <p class="small"><b>Esta foto mostra qual item?</b> Sem marcação, entra como vista geral.</p>
-    <div class="pick">${itensDe(v).map(i=>{ const s=stEf(v.resp[i.cod]); return `<label class="pk"><input type="checkbox" data-pick="${i.cod}" ${sel.has(i.cod)?"checked":""} ${eng?"disabled":""}><span><b>${i.cod}</b> ${esc(i.s)}</span>${s?`<span class="chip ${s==="OK"?"c":s==="NV"?"nv":s==="NC"?"nc":"a"}">${s==="NOK"?"NÃO OK":s}</span>`:""}</label>`; }).join("")}</div>
+    <div class="pick">${itensDe(v).map(i=>{ const s=stEf(v.resp[i.cod]); return `<label class="pk"><input type="checkbox" data-pick="${i.cod}" ${sel.has(i.cod)?"checked":""} ${eng?"disabled":""}><span><b>${i.cod}</b> ${esc(i.s)}</span>${s?`<span class="chip ${s==="OK"?"c":(s==="NV"||s==="NA")?"nv":s==="NC"?"nc":"a"}">${s==="NOK"?"NÃO OK":s}</span>`:""}</label>`; }).join("")}</div>
     ${eng?"":`<div class="grid2"><button class="btn danger" data-del="1">Apagar foto</button><button class="btn primary" data-ok="1">Salvar</button></div>`}`,
     async e=>{ if(e.target.closest("[data-mark]")){ editarFoto(f); return; } const c=e.target.dataset.pick; if(c){ e.target.checked? sel.add(c) : sel.delete(c); return; }
       if(e.target.closest("[data-ok]")){ f.itens=[...sel]; save(); fechar(); render(); }
@@ -1610,7 +1613,7 @@ document.addEventListener("click", async e=>{
   if(act==="aprovar"){ aprovar(a.dataset.k,val); return; }
   if(act==="devolver"){ devolver(a.dataset.k,val); return; }
   if(act==="aprovarAqui"){ const k=UI.view==="vistoria"?"RNC":rfAtual().kind; aprovar(k,(UI.view==="vistoria"?vAtual():rfAtual()).id); return; }
-  if(act==="reenviar"){ const rec=UI.view==="vistoria"?vAtual():rfAtual(); rec.aprov={st:"pendente",em:Date.now()}; notificar(rec,"Registro corrigido e reenviado para aprovação"); save(); render(); toast("Reenviado ao coordenador (simulado)."); return; }
+  if(act==="reenviar"){ const rec=UI.view==="vistoria"?vAtual():rfAtual(); rec.aprov={st:"pendente",etapa:etapaInicial(rec)||"coord",em:Date.now()}; notificar(rec,"Registro corrigido e reenviado para aprovação"); save(); render(); toast("Reenviado ao coordenador (simulado)."); return; }
   if(act==="regcorr"){ sheetCorrecao(a.dataset.c); return; }
   if(act==="confcorr"){ const r=vAtual().resp[a.dataset.c]; r.enc.conf={por:S.userId,em:Date.now()}; save(); render(); toast("NC encerrada."); return; }
   if(act==="reprcorr"){ const r=vAtual().resp[a.dataset.c]; r.enc=null; save(); render(); toast("Correção reprovada. A NC continua aberta."); return; }
@@ -1659,7 +1662,7 @@ const isEngOuCoord = () => user().perfil!=="vist";
 const obraDe = id => S.obras.find(o=>o.id===id) || S.obras[0];
 const obraAtual = () => obraDe(UI.oid);
 const nomeUser = id => (S.usuarios.find(u=>u.id===id)||{}).nome || "—";
-const CHIP_APROV = a => !a? "" : a.st==="aprovado"? `<span class="chip solid-ok">Aprovado</span>` : a.st==="devolvido"? `<span class="chip solid-nc">Devolvido</span>` : `<span class="chip solid-pv">Aguardando aprovação</span>`;
+const CHIP_APROV = a => !a? "" : a.st==="aprovado"? `<span class="chip solid-ok">Aprovado</span>` : a.st==="devolvido"? `<span class="chip solid-nc">Devolvido</span>` : `<span class="chip solid-pv">Aguardando aprovação${a.etapa==="resp2"?" · Resp. 02":""}</span>`;
 function proxNumero(obra, tipo){ obra.seq=obra.seq||{}; obra.seq[tipo]=(obra.seq[tipo]||0)+1; return `${obra.codigo}-${tipo}-${pad(obra.seq[tipo],3)}`; }
 function descrRec(rec){ return rec.kind==="AV"? `relatório avulso ${rec.numero} – ${rec.titulo}` : rec.kind==="RF"? `relatório fotográfico ${rec.numero} – ${rec.periodo}` : `RNC ${rec.numero} – ${rec.amb} · ${rec.unid} (${rec.pav})`; }
 function notificar(rec, motivo){
@@ -1669,7 +1672,7 @@ function notificar(rec, motivo){
 }
 function novoRegistro(rec){ rec.criadoPor=S.userId; if(isCoord()){ rec.aprov={st:"aprovado",por:S.userId,em:Date.now(),auto:true}; return; } rec.aprov={st:"pendente",em:Date.now()}; notificar(rec,"Novo registro para aprovação"); }
 const todosRecs = () => [...S.vistorias.map(v=>({rec:v,kind:"RNC"})),...S.rfs.map(r=>({rec:r,kind:r.kind}))];
-const pendAprov = () => todosRecs().filter(x=>x.rec.aprov?.st==="pendente" && obraDe(x.rec.obraId).coordId===S.userId || (x.rec.aprov?.st==="pendente" && isCoord() && !obraDe(x.rec.obraId).coordId));
+const pendAprov = () => todosRecs().filter(x=>podeAprovar(x.rec));
 function abrirRec(kind,id){ if(kind==="RNC"){ UI.vid=id; UI.view="vistoria"; UI.oid=S.vistorias.find(v=>v.id===id)?.obraId; } else { UI.rid=id; UI.view="rf"; UI.oid=S.rfs.find(r=>r.id===id)?.obraId; } render(); scrollTo(0,0); }
 function sheetUsuario(){
   abrirSheet(`<div class="row between"><h2>Quem está usando</h2><button class="link" data-x="1">Fechar</button></div>
@@ -1701,7 +1704,7 @@ function vAprovacoes(){
   <h2>Aguardando aprovação (${lista.length})</h2>
   <div class="vlist">${lista.map(({rec,kind})=>`<div class="card"><div class="row between"><span class="code">${esc(rec.numero||"")}</span>${CHIP_APROV(rec.aprov)}</div>
       <b>${esc(descrRec(rec))}</b><span class="muted small">${esc(obraDe(rec.obraId).nome)} · criado por ${esc(nomeUser(rec.criadoPor))} em ${fmtDH(rec.aprov.em)}</span>
-      <div class="row"><button class="btn" data-act="abrirrec" data-k="${kind}" data-v="${rec.id}">Abrir</button>${isCoord()?`<button class="btn primary" data-act="aprovar" data-k="${kind}" data-v="${rec.id}">Aprovar</button><button class="btn danger" data-act="devolver" data-k="${kind}" data-v="${rec.id}">Devolver</button>`:""}</div></div>`).join("")||'<div class="card"><p class="muted">Nada aguardando aprovação.</p></div>'}</div>
+      <div class="row"><button class="btn" data-act="abrirrec" data-k="${kind}" data-v="${rec.id}">Abrir</button>${podeAprovar(rec)?`<button class="btn primary" data-act="aprovar" data-k="${kind}" data-v="${rec.id}">Aprovar</button><button class="btn danger" data-act="devolver" data-k="${kind}" data-v="${rec.id}">Devolver</button>`:""}</div></div>`).join("")||'<div class="card"><p class="muted">Nada aguardando aprovação.</p></div>'}</div>
   <h2>Mensagens enviadas a você</h2><p class="muted small">Simulação: no protótipo nada sai do aparelho. No app definitivo, o e-mail sai pelo Outlook corporativo e o WhatsApp por integração aprovada pela TI.</p>
   <div class="vlist">${minhas.map(n=>`<div class="card msg"><div class="row between"><b>${esc(n.assunto)}</b><span class="muted small">${fmtDH(n.em)}</span></div>
       <div class="row"><span class="chip c">E-mail → ${esc(n.email)}</span><span class="chip c">WhatsApp → ${esc(n.tel)}</span></div><pre class="msgtxt">${esc(n.texto)}</pre></div>`).join("")||'<div class="card"><p class="muted">Nenhuma mensagem.</p></div>'}</div>`;
@@ -1718,7 +1721,7 @@ function faixaAprov(rec){
   if(a.st==="devolvido") return `<div class="aprov nc"><b>Devolvido</b> por ${esc(nomeUser(a.por))}: ${esc(a.obs)}${rec.criadoPor===S.userId||isCoord()?` <button class="btn small-btn" data-act="reenviar">Reenviar para aprovação</button>`:""}</div>`;
   return `<div class="aprov pv"><b>Aguardando aprovação</b> do coordenador ${esc(nomeUser(obraDe(rec.obraId).coordId))}. Aviso enviado por e-mail e WhatsApp (simulado).${isCoord()?` <button class="btn small-btn primary" data-act="aprovarAqui">Aprovar</button>`:""}</div>`;
 }
-const situacaoDoc = rec => rec.modelo? "Exemplo modelo" : rec.aprov?.st==="aprovado"? `${rec.aprov.auto?"Validado pelo coordenador":"Aprovado por"} ${nomeUser(rec.aprov.por)} em ${fmtData(new Date(rec.aprov.em).toISOString().slice(0,10))}` : rec.aprov?.st==="devolvido"? "Devolvido para correção" : "Aguardando aprovação do coordenador";
+const situacaoDoc = rec => rec.modelo? "Exemplo modelo" : rec.aprov?.st==="aprovado"? `${rec.aprov.auto?"Validado pelo coordenador":"Aprovado por"} ${nomeUser(rec.aprov.por)} em ${fmtData(new Date(rec.aprov.em).toISOString().slice(0,10))}` : rec.aprov?.st==="devolvido"? "Devolvido para correção" : (rec.aprov?.etapa==="resp2"?"Aguardando aprovação do Responsável 02 e do coordenador":"Aguardando aprovação do coordenador");
 
 /* ================= OBRAS ================= */
 function vObras(){
@@ -1759,7 +1762,7 @@ function vObra(){
   else if(tab==="RNC") corpo=`<div class="vlist cards">${S.vistorias.filter(v=>v.obraId===o.id).map(v=>{ const l=liberacao(v), c=contagem(v);
       return `<button class="vcard${v.modelo?" is-modelo":""}" data-act="abrir" data-v="${v.id}"><span class="row between"><span class="code">${esc(numDoc(v))} · ${esc(nomeCk(v))}</span>${v.modelo?chipModelo:CHIP_APROV(v.aprov)}</span>
         <span class="t">${vistTitulo(v)}</span><span class="muted small">${fmtData(v.data)} · ${esc(v.vist)} · ${v.fotos.length} foto(s)</span>
-        <span class="row">${chipLib(l)}<span class="muted small">C ${c.OK} · NC ${c.NC} · encerradas ${c.NCE} · PV ${c.PV} · Não OK ${c.NOK} · NV ${c.NV}</span></span></button>`; }).join("")||'<div class="card"><p class="muted">Nenhuma RNC nesta obra.</p></div>'}</div>`;
+        <span class="row">${chipLib(l)}<span class="muted small">C ${c.OK} · NC ${c.NC} · encerradas ${c.NCE} · PV ${c.PV} · Não OK ${c.NOK} · NV ${c.NV} · NA ${c.NA}</span></span></button>`; }).join("")||'<div class="card"><p class="muted">Nenhuma RNC nesta obra.</p></div>'}</div>`;
   else corpo=`<div class="vlist cards">${S.rfs.filter(r=>r.obraId===o.id&&(tab==="AV"?r.kind==="AV":r.kind!=="AV")).map(cardRF).join("")||'<div class="card"><p class="muted">Nenhum relatório nesta aba.</p></div>'}</div>`;
   const n=k=>k==="RNC"?S.vistorias.filter(v=>v.obraId===o.id).length : S.rfs.filter(r=>r.obraId===o.id&&(k==="AV"?r.kind==="AV":r.kind!=="AV")).length;
   return `<div><div class="row between"><button class="link" data-act="go" data-v="inicio">‹ Obras</button>${isEngOuCoord()&&!o.modelo?`<button class="link" data-act="editobra">Editar obra</button>`:""}</div>
@@ -1784,7 +1787,7 @@ function indicadores(o){
       if(s==="PV") k.pv++; if(s==="NOK") k.nok++; if(s==="NCE") k.ncEnc++;
       if(s==="NC"){ const dias=diasDesde(v.data); const venc=r.val?.prazo && r.val.prazo<hoje(); if(r.enc) k.ncVerif++; else k.ncAbertas++;
         if(venc) k.vencidas++; if(dias>30) k.mais30++;
-        const ck=nomeCk(v); k.porCk[ck]=(k.porCk[ck]||0)+1; k.porPav[v.pav]=(k.porPav[v.pav]||0)+1;
+        const ck=v.livre?"RNC livre":nomeCk(v); k.porCk[ck]=(k.porCk[ck]||0)+1; k.porPav[v.pav]=(k.porPav[v.pav]||0)+1;
         k.lista.push({doc:numDoc(v),cod:i.cod,s:i.s,local:`${v.pav} · ${v.unid} · ${v.amb}`,dias,prazo:r.val?.prazo||"",venc,resp:r.val?.resp||"",verif:!!r.enc,vid:v.id}); } } }
   k.lista.sort((a,b)=>b.dias-a.dias); return k;
 }
@@ -2036,7 +2039,7 @@ async function modeloRF(r){
     rodape:"CTE Gerenciamento · Registro fotográfico de acompanhamento; não constitui aceite de serviços."};
 }
 function renderNav(){
-  const nRev=naoOkPendentes().length; const nAp=todosRecs().filter(x=>x.rec.aprov?.st==="pendente" && (obraDe(x.rec.obraId).coordId===S.userId)).length;
+  const nRev=naoOkPendentes().length; const nAp=todosRecs().filter(x=>podeAprovar(x.rec)).length;
   const cur = ["vistoria","nova","rf","novarf","novaav","obra","novaobra","usuarios"].includes(UI.view)?"inicio":UI.view;
   const b=(id,ic,t,badge)=>`<button data-act="go" data-v="${id}" ${cur===id?'aria-current="page"':""}>${ICON[ic]}<span>${t}</span>${badge?`<span class="badge">${badge}</span>`:""}</button>`;
   $("#nav").innerHTML = b("inicio","home","Obras")+b("guia","guia","Como vistoriar")+b("revisar","rev","Revisar",nRev||"")+b("aprov","bell","Aprovações",nAp||"");
@@ -2046,7 +2049,7 @@ function render(){
   const u=user(); S.role = u.perfil==="vist"?"vist":"eng";
   const ub=$("#b-user"); if(ub) ub.innerHTML=`<b>${esc(u.nome.split(" ")[0])}</b><small>${PERFIS[u.perfil]}</small>`;
   const V=UI.view;
-  const h = V==="obra"?vObra() : V==="novaobra"?vNovaObra() : V==="usuarios"?vUsuarios() : V==="aprov"?vAprovacoes() : V==="novaav"?vNovaAV() : V==="novarf"?vNovaRF() : V==="rf"?vRF() : V==="nova"?vNova() : V==="novalivre"?vNovaLivre() : V==="novasm"?vNovaSM() : V==="vistoria"?vVistoria() : V==="guia"?vGuia() : V==="revisar"?vRevisar() : V==="obras"?vObras() : vInicio();
+  const h = V==="obra"?vObra() : V==="novaobra"?vNovaObra() : V==="usuarios"?vUsuarios() : V==="aprov"?vAprovacoes() : V==="aprovdash"?vAprovDash() : V==="novaav"?vNovaAV() : V==="novarf"?vNovaRF() : V==="rf"?vRF() : V==="nova"?vNova() : V==="novalivre"?vNovaLivre() : V==="novasm"?vNovaSM() : V==="vistoria"?vVistoria() : V==="guia"?vGuia() : V==="revisar"?vRevisar() : V==="obras"?vObras() : vInicio();
   const app=$("#app"); app.innerHTML=h; renderNav();
   for(const img of app.querySelectorAll("img[data-foto]")) urlFoto(img.dataset.foto).then(u=>{ if(u) img.src=u; });
   const on=(id,ev,fn)=>{ const el=$("#"+id); if(el) el.addEventListener(ev,fn); };
@@ -2231,20 +2234,20 @@ function vVistoria(){
       <div class="lib ${liberacao(v).k}"><div><span class="t">${liberacao(v).t}</span><small>${esc(liberacao(v).d)}</small></div></div>
       ${blocoLivre(v)}${grupos||'<div class="rr-vazio">Nenhum item.</div>'}<button class="btn primary block" data-act="subck">Voltar à RNC</button>`; }
   const c=contagem(v); const l=liberacao(v); const tot=itensDe(v).length; const resp=tot-c.vazio;
-  const local=`${v.pav} | ${v.unid} | ${v.amb}`;
+  const local=v.livre?`${v.pav} | ${v.unid}`:`${v.pav} | ${v.unid} | ${v.amb}`;
   return `${appbar(o.codigo,["abrirobra",o.id],abBtn("menurel","list","Opções da RNC"))}
   <div class="crumb2"><div class="crumb">${IC.brief}<b>${esc(o.nome)}</b></div><div class="crumb sub">${IC.arrow}<b>${esc(tituloRec("RNC",v))}</b><button class="ab-ic" data-act="inforec" aria-label="Informações">${IC.info}</button></div></div>
   ${v.modelo?bannerModelo:faixaAprov(v)}
-  <div class="capa-card" data-act="inforec" role="button" tabindex="0"><span class="rr-ic">${IC.doc}</span><span class="rr-t"><span class="chip capa">Capa</span><b>${esc(o.nome)} - Relatório de não conformidade ${esc(nomeCk(v).toLowerCase())} · ${esc(v.amb)} ${esc(v.unid)}</b><span class="rr-sub">${esc(v.pav)} · Projeto ${esc(v.proj)} ${esc(v.rev)} · ${esc(v.contratada)}</span></span></div>
+  <div class="capa-card" data-act="inforec" role="button" tabindex="0"><span class="rr-ic">${IC.doc}</span><span class="rr-t"><span class="chip capa">Capa</span><b>${esc(o.nome)} - ${v.livre?`Relatório de não conformidade · ${esc(v.assunto)} · ${esc(v.unid)}`:`Relatório de não conformidade ${esc(nomeCk(v).toLowerCase())} · ${esc(v.amb)} ${esc(v.unid)}`}</b><span class="rr-sub">${esc(v.pav)} · Projeto ${esc(v.proj)} ${esc(v.rev)} · ${esc(v.contratada)}</span></span></div>
   <div class="capa-card ck-card" data-act="subck" data-v="ck" role="button" tabindex="0"><span class="rr-ic">${IC.clip}</span><span class="rr-t"><span class="chip capa">Checklist</span><b>${esc(nomeCk(v))} · ${resp}/${tot} respondidos</b>
-    <span class="row">${chipLib(l)}<span class="rr-sub">C ${c.OK} · NC ${c.NC} · enc. ${c.NCE} · PV ${c.PV} · Não OK ${c.NOK} · NV ${c.NV}</span></span></span><span class="go">${IC.arrow}</span></div>
+    <span class="row">${chipLib(l)}<span class="rr-sub">C ${c.OK} · NC ${c.NC} · enc. ${c.NCE} · PV ${c.PV} · Não OK ${c.NOK} · NV ${c.NV} · NA ${c.NA}</span></span></span><span class="go">${IC.arrow}</span></div>
   ${(v.anexos||[]).length?`<div class="capa-card" data-act="anexos" role="button" tabindex="0"><span class="rr-ic">${ICON.clip}</span><span class="rr-t"><span class="chip capa">Anexos</span><b>${v.anexos.map(a=>esc(a.titulo)).join(" · ")}</b></span></div>`:""}
   <div class="ph-head"><b>Fotos do ambiente</b><span class="chip ${v.fotos.length>=fotoMin(v)?"c":"a"}">${v.fotos.length}/${FOTO_MAX} · mín. ${fotoMin(v)}</span></div>
   <div class="ph-list">${v.fotos.map((f,k)=>{ let st=null; for(const cd of f.itens){ const s=stEf(v.resp[cd])||"NV"; if(!st||GRAV[s]>GRAV[st]) st=s; }
       const it=f.itens.map(cd=>itemDe(v,cd)).filter(Boolean);
       const desc=it.length? it.map(i=>`${i.cod} ${i.s}`).join(" / ") : "Vista geral do ambiente";
       const rq=it.map(i=>v.resp[i.cod]).find(rr=>rr.status==="NOK");
-      const extra=`${st?`<span class="chip ${st==="OK"?"c":st==="NV"?"nv":st==="NCE"?"c":st==="NC"?"solid-nc":"a"}">${LBL[st]}</span>`:""}${rq&&rq.obs?`<span class="ph-req">Aferido: ${esc(rq.obs)}</span>`:""}`;
+      const extra=`${st?`<span class="chip ${st==="OK"?"c":(st==="NV"||st==="NA")?"nv":st==="NCE"?"c":st==="NC"?"solid-nc":"a"}">${LBL[st]}</span>`:""}${rq&&rq.obs?`<span class="ph-req">Aferido: ${esc(rq.obs)}</span>`:""}`;
       return cardFoto({...f,em:f.em||Date.parse(v.data+"T12:00:00")},k+1,local.toUpperCase(),desc,extra,"fotoSheet"); }).join("")||'<div class="rr-vazio">Nenhuma foto. Toque na câmera (celular deitado).</div>'}</div>
   ${v.modelo||S.role==="eng"&&false? `<div class="rbar"><button class="rb-ic" data-act="menurel" aria-label="Menu">${IC.menu}</button><span class="sp"></span><button class="rb-share" data-act="compartilhar">COMPARTILHAR</button></div>` : barraInferior("foto")}`;
 }
@@ -2255,7 +2258,7 @@ function menuFotoRNC(id){ const v=vAtual(); const k=v.fotos.findIndex(x=>x.id===
     ["Apagar foto",()=>{ v.fotos=v.fotos.filter(x=>x!==f); save(); render(); toast("Foto apagada. Use Desfazer para recuperar."); },true]]); }
 function infoRec(){
   const isR=UI.view==="vistoria"; const rec=isR?vAtual():rfAtual(); const o=obraDe(rec.obraId);
-  const linhas = isR? [["Documento",rec.numero],["Checklist",nomeCk(rec)],["Local",`${rec.pav} · ${rec.unid} · ${rec.amb}`],["Projeto",`${rec.proj} ${rec.rev}`],["Contratada",rec.contratada],["Vistoriador",rec.vist],["Data",fmtData(rec.data)],["Situação",situacaoDoc(rec)]]
+  const linhas = isR? [["Documento",rec.numero],["Checklist",nomeCk(rec)],["Local",rec.livre?`${rec.pav} · ${rec.unid}`:`${rec.pav} · ${rec.unid} · ${rec.amb}`],["Projeto",`${rec.proj} ${rec.rev}`],["Contratada",rec.contratada],["Vistoriador",rec.vist],["Data",fmtData(rec.data)],["Situação",situacaoDoc(rec)]]
     : [["Documento",rec.numero],["Tipo",rec.kind==="AV"?"Relatório avulso":"Relatório fotográfico "+rec.tipo.toLowerCase()],[rec.kind==="AV"?"Título":"Período",rec.kind==="AV"?rec.titulo:rec.periodo],["Responsável",rec.resp],["Data",fmtData(rec.data)],["Fotos",String(rec.fotos.length)],["Situação",situacaoDoc(rec)]];
   abrirSheet(`<div class="row between"><h2>${esc(rec.numero)}</h2><button class="link" data-x="1">Fechar</button></div><p class="muted small">${esc(o.nome)}</p><dl class="how">${linhas.map(([k,v])=>`<dt>${esc(k)}</dt><dd>${esc(v||"—")}</dd>`).join("")}</dl>`); }
 function sheetAnexos(){
@@ -2364,7 +2367,7 @@ function vObra(){
   return `${appbar(o.codigo,["go","inicio"],abBtn("otab","chart","Painel da obra","PAINEL")+abBtn("infoobra","info","Dados da obra"))}
   <div class="crumb">${IC.brief}<b>${esc(o.nome.toUpperCase())}</b></div>
   ${(o.pendencias||[]).length?`<button class="pend-bar" data-act="infoobra">${o.pendencias.length} dado(s) da obra a validar · ver</button>`:""}
-  <div class="filtros">${fil.map(([k,t])=>`<button data-act="ofil" data-v="${k}" aria-pressed="${f===k}">${t}</button>`).join("")}</div>
+  ${respObraBar(o)}<div class="filtros">${fil.map(([k,t])=>`<button data-act="ofil" data-v="${k}" aria-pressed="${f===k}">${t}</button>`).join("")}</div>
   ${f==="SST"?sstBarra(o):""}<div class="rr-list">${lista}${hist.length?`<div class="rr-sep">RNC emitidas antes do app · ${hist.length}</div>${hist.map(h=>rrHist(o,h)).join("")}`:""}${!lista&&!hist.length?'<div class="rr-vazio">Nenhum relatório. Toque em + para criar.</div>':""}</div>
   <button class="fab" data-act="novorec" aria-label="Novo relatório">${IC.plus}</button>`;
 }
@@ -2407,7 +2410,7 @@ function baseDados(){
     let c={itens:0,C:0,NC:0,PV:0,NV:0,INFO:0};
     for(const it of itensDe(v)){ const r=v.resp[it.cod]; if(!r) continue; const s=stEf(r); const st= s==="NC"||s==="NCE"?"NC" : s==="PV"?"PV" : s==="NOK"?"NC" : r.status==="OK"?"C" : r.status==="NV"?"NV" : null; if(!st) continue;
       c.itens++; c[st]++; itens.push({oid:v.obraId,obra:obraDe(v.obraId).nome,rnc:n,key,n:it.cod,org:"app",local:`${v.pav} · ${v.unid} · ${v.amb}`,st,disc,txt:it.s+(r.obs?` — ${r.obs}`:""),data:v.data,app:v.id}); }
-    rncs.push({oid:v.obraId,obra:obraDe(v.obraId).nome,n,tema:`${nomeCk(v)} · ${v.amb} ${v.unid}`,data:v.data,disc,st:"app",cont:c,extraido:true,key,origem:"app",vid:v.id}); }
+    rncs.push({oid:v.obraId,obra:obraDe(v.obraId).nome,n,tema:`${nomeCk(v)} · ${v.livre?"":v.amb+" "}${v.unid}`,data:v.data,disc,st:"app",cont:c,extraido:true,key,origem:"app",vid:v.id}); }
   return {rncs,itens};
 }
 const OBRA_NOME2ID_INV = new Proxy({}, {get:(_,k)=>!!(S?.obras||[]).find(o=>o.id===k&&!o.modelo)});
@@ -2493,7 +2496,7 @@ function arvoreHTML(){
   const B=baseDados(); const pv=UI.pv;
   const obras=[...S.obras].sort((a,b)=>(a.modelo?1:0)-(b.modelo?1:0));
   const no=(nivel,txt,attrs,on,badge,ind=0,exp=null)=>`<div class="tn${on?" on":""}" style="--ind:${ind}">${exp!==null?`<button class="tn-x" data-act="tx" data-v="${attrs.x}" aria-expanded="${exp}" aria-label="Expandir">${exp?"▾":"▸"}</button>`:'<span class="tn-x"></span>'}<button class="tn-b" data-act="${attrs.act}" data-v="${esc(attrs.v||"")}">${txt}</button>${badge?`<span class="tn-n">${badge}</span>`:""}</div>`;
-  let h=`<nav class="arv" aria-label="Navegação por obra">`+no(0,"<b>Painel do portfólio</b>",{act:"pport"},pv.nivel==="port");
+  let h=`<nav class="arv" aria-label="Navegação por obra">`+no(0,"<b>Dashboard</b>",{act:"pport"},pv.nivel==="port");
   for(const o of obras){ const exp=!!UI.arv[o.id]; const F=filtrar(B,o.id); const nNC=F.itens.filter(i=>i.st==="NC").length;
     h+=no(1,esc(o.nome),{act:"pobra",v:o.id,x:o.id},pv.oid===o.id&&pv.nivel==="obra",o.modelo?"":(F.rncs.length||""),0,exp);
     if(exp){ h+=no(2,"Relatórios e RNC",{act:"abrirobra",v:o.id},false,"",1);
@@ -2508,7 +2511,7 @@ function arvoreHTML(){
   return h+`</nav>`;
 }
 function trilha(){
-  const pv=UI.pv; const p=[`<button data-act="pport">Portfólio</button>`];
+  const pv=UI.pv; const p=[`<button data-act="pport">Dashboard</button>`];
   if(pv.oid) p.push(`<button data-act="pobra" data-v="${pv.oid}">${esc(obraDe(pv.oid)?.nome||"")}</button>`);
   if(pv.disc) p.push(`<button data-act="pdisco" data-v="${esc(pv.oid+"|"+pv.disc)}">${esc(DISC_CURTO(pv.disc))}</button>`);
   if(pv.nivel==="rnc"){ const r=baseDados().rncs.find(x=>x.key===pv.key); if(r) p.push(`<span>RNC ${pad(r.n)}</span>`); }
@@ -2524,7 +2527,7 @@ function vPainel(){
   const oid=pv.nivel==="obra"?pv.oid:null; const B=filtrar(B0,oid);
   const oids=oid?[oid]:[...new Set(B0.rncs.map(r=>r.oid))];
   const o=oid?obraDe(oid):null;
-  const titulo = o? `<h1>${esc(o.nome)}</h1><p class="muted small">${esc(o.contratada||"")} · ${esc(o.situacao||"")}</p>` : `<h1>Painel do portfólio</h1><p class="muted small">${esc(PACOTE?.cliente||"Obras cadastradas")} · ${oids.length} obras com RNC · dados até ${fmtData(hoje())}</p>`;
+  const titulo = o? `<h1>${esc(o.nome)}</h1><p class="muted small">${esc(o.contratada||"")} · ${esc(o.situacao||"")}</p>` : `<h1>Dashboard</h1><p class="muted small">${esc(PACOTE?.cliente||"Obras cadastradas")} · ${oids.length} obras com RNC · dados até ${fmtData(hoje())}</p>`;
   if(o && !B.rncs.length) return topo+titulo+`<section class="card"><p>Sem RNC registradas nesta obra.</p><button class="btn" data-act="abrirobra" data-v="${o.id}">Abrir relatórios da obra</button></section>`;
   return topo+titulo+`
   ${kpis(B,oids)}
@@ -2564,7 +2567,7 @@ function abrirArvoreMovel(){ abrirSheet(`<div class="row between"><h2>Obras</h2>
 function vInicio(){ return vPainel(); }
 const _renderNavBase = renderNav;
 renderNav = function(){ _renderNavBase();
-  const nav=$("#nav"); const ini=nav.querySelector('[data-v="inicio"] span'); if(ini) ini.textContent="Painel";
+  const nav=$("#nav"); const ini=nav.querySelector('[data-v="inicio"] span'); if(ini) ini.textContent="Dashboard";
   let a=document.getElementById("arv-lat"); if(!a){ a=document.createElement("div"); a.id="arv-lat"; nav.appendChild(a); }
   a.innerHTML=arvoreHTML(); };
 document.addEventListener("click",e=>{
@@ -2635,7 +2638,7 @@ function sheetDados(){
 }
 document.addEventListener("click", e=>{ const a=e.target.closest("[data-act='dados']"); if(!a) return; e.stopImmediatePropagation(); sheetDados(); }, true);
 { const _vObras=vObras; vObras=function(){ return _vObras()+`<button class="btn block" data-act="dados" style="margin:12px 0">Dados deste aparelho · importar pacote, backup</button>`; }; }
-if(typeof vPainel==="function"){ const _vPainel=vPainel; vPainel=function(){ const h=_vPainel(); return PACOTE? h : `<section class="card"><h2>Painel sem histórico de obra</h2><p class="small">Este aparelho ainda não tem o pacote de dados das obras. Importe o arquivo recebido da coordenação para ver o painel completo. Os registros feitos no app aparecem aqui normalmente.</p><button class="btn primary block" data-act="dados">Importar pacote de dados</button></section>`+h; }; }
+if(typeof vPainel==="function"){ const _vPainel=vPainel; vPainel=function(){ const h=_vPainel(); return PACOTE? h : `<section class="card"><h2>Dashboard sem histórico de obra</h2><p class="small">Este aparelho ainda não tem o pacote de dados das obras. Importe o arquivo recebido da coordenação para ver o painel completo. Os registros feitos no app aparecem aqui normalmente.</p><button class="btn primary block" data-act="dados">Importar pacote de dados</button></section>`+h; }; }
 
 /* ================= ONDA 2 · ficha da obra, nova obra, PDF do painel, sem obra modelo, fotos do histórico ================= */
 const VIGENCIAS=["Contrato original","1º Aditamento","2º Aditamento","3º Aditamento","4º Aditamento","5º Aditamento"];
@@ -2648,9 +2651,9 @@ function fichaObra(o){
     ${o.terminoNota?`<p class="muted small fx-nota">${esc(o.terminoNota)}</p>`:""}
     <button class="link small" data-act="editficha" data-v="${o.id}">Editar dados da obra</button></section>`;
 }
-function barraPainel(){ const pv=UI.pv;
-  const semFotos=PACOTE&&!Object.keys(typeof FOTOS_HIST==="object"?FOTOS_HIST:{}).length;
-  return `${semFotos?`<div class="card" style="margin:8px 0;border-left:4px solid #b06e00"><b>Fotos do histórico ainda não importadas neste aparelho.</b><p class="small">Toque em “Dados e fotos” e depois em “Importar fotos do histórico”, selecionando todos os arquivos fotos-… de uma vez.</p></div>`:""}<div class="pacoes"><button class="btn pac-b" data-act="dados">Dados e fotos</button><button class="btn pac-b" data-act="pnovaobra">+ Nova obra</button>${pv.nivel==="obra"?`<button class="btn primary pac-b" data-act="pdfpainel" data-v="${pv.oid}">Gerar PDF</button>`:""}</div>`; }
+function barraPainel(){ const pv=UI.pv; const coord=isCoord();
+  const semFotos=coord&&PACOTE&&!Object.keys(typeof FOTOS_HIST==="object"?FOTOS_HIST:{}).length;
+  return `${semFotos?`<div class="card" style="margin:8px 0;border-left:4px solid #b06e00"><b>Fotos do histórico ainda não importadas neste aparelho.</b><p class="small">Toque em “Dados e fotos” e depois em “Importar fotos do histórico”, selecionando todos os arquivos fotos-… de uma vez.</p></div>`:""}<div class="pacoes">${coord?`<button class="btn pac-b" data-act="dados">Dados e fotos</button><button class="btn pac-b" data-act="pnovaobra">+ Nova obra</button><button class="btn pac-b" data-act="aprovdash">Aprovações</button>`:""}${pv.nivel==="obra"?`<button class="btn primary pac-b" data-act="pdfpainel" data-v="${pv.oid}">Gerar PDF</button>`:""}</div>`; }
 { const _vp=vPainel; vPainel=function(){ let h=_vp(); const pv=UI.pv;
     const i=h.indexOf('<div class="trilha">'); if(i>=0){ const e=h.indexOf('</div>',i)+6; h=h.slice(0,e)+barraPainel()+h.slice(e); }
     if(pv.nivel==="obra"){ const o=obraDe(pv.oid); const a=h.indexOf('</h1>');
@@ -2662,7 +2665,7 @@ vNovaObra=function(){
   const o = UI.editObra? obraDe(UI.editObra) : {gerenciadora:"CTE Gerenciamento",vigencia:"Contrato original",situacao:"Em obra"};
   const sel=(id,ops,v)=>`<select id="${id}">${ops.map(x=>`<option ${x===v?"selected":""}>${esc(x)}</option>`).join("")}</select>`;
   const coords=S.usuarios.filter(u=>u.perfil==="coord");
-  return `<div><button class="link" data-act="pport">‹ Painel</button><h1>${UI.editObra?"Editar dados da obra":"Nova obra"}</h1>
+  return `<div><button class="link" data-act="pport">‹ Dashboard</button><h1>${UI.editObra?"Editar dados da obra":"Nova obra"}</h1>
   <p class="muted small">Dados básicos que aparecem no painel e no PDF da obra.</p></div>
   <form id="f-obra" class="card" novalidate>
     <div class="grid2"><label class="f"><span class="req">Nome da obra</span><input id="o-nome" value="${esc(o.nome)}" placeholder="ex.: Ed. Aurora"></label>
@@ -2853,7 +2856,7 @@ CHECKLISTS.SM = {nome:"SST / Meio Ambiente", cartilha:null, itens:[]};
 for(const d of ["SST","Meio ambiente"]) if(!PD.disc.includes(d)) PD.disc.push(d);
 
 const fotoMin = v => v && v.snap && v.bloco!=="C" ? 1 : FOTO_MIN;
-function recDisc(v){ return v.disc || (v.snap ? AREA_DISC[v.area] : null) || CK_DISC[v.ck] || "Acabamentos"; }
+function recDisc(v){ const d=v.disc || (v.snap ? AREA_DISC[v.area] : null) || CK_DISC[v.ck] || "Acabamentos"; if(!PD.disc.includes(d)) PD.disc.push(d); return d; }
 
 /* ---------- matriz de aplicabilidade (por obra) ---------- */
 function modulosAtivos(o){ const s=SST(); const set=new Set(); if(!s) return set; (s.base||[]).forEach(x=>set.add(x));
@@ -2922,7 +2925,7 @@ function smPrev(){ const o=obraAtual(); if(!$("#sm-area")||!o) return; const are
   $("#sm-fr-w").hidden = bl!=="C"; $("#sm-desc").textContent=BLOCO_DESC[bl];
   const it=itensSM(o,area,bl,fr); const mods=[...new Set(it.map(i=>i.mod))];
   $("#sm-prev").innerHTML = it.length? `<b>${it.length} itens</b> nesta inspeção · ${mods.map(esc).join(", ")}` : `<span class="txt-nc">Nenhum item para esta combinação com a matriz atual.</span>`; }
-document.addEventListener("change", e=>{ if(e.target.id && e.target.id.startsWith("sm-")) smPrev(); });
+document.addEventListener("change", e=>{ if(e.target.id && e.target.id.startsWith("sm-")) smPrev(); if(e.target.id==="lv-di"){ $("#lv-di2-w").hidden=e.target.value!=="__outro"; if(e.target.value==="__outro") $("#lv-di2").focus(); } });
 function criarSM(e){ e.preventDefault(); const o=obraAtual(), s=SST(); const g=id=>$("#"+id).value.trim();
   const area=g("sm-area"), bl=g("sm-bl"), fr=bl==="C"?g("sm-fr"):"P"; const it=itensSM(o,area,bl,fr);
   if(!it.length){ const er=$("#sm-err"); er.textContent="Nenhum item para esta combinação. Verifique a matriz de aplicabilidade da obra."; er.hidden=false; return; }
@@ -2941,7 +2944,7 @@ function vNovaLivre(){
   <form id="f-lv" class="card" novalidate>
     <p class="muted small">Para um assunto que não está nos checklists prontos. Mesma métrica das demais RNC: cada ponto é C (conforme) ou NC (não conforme), e quem apontou precisa dizer o que está não conforme.</p>
     <label class="f"><span class="req">Assunto</span><input id="lv-as" placeholder="ex.: Proteção de periferia da laje de cobertura"></label>
-    <label class="f"><span class="req">Disciplina (para o painel)</span><select id="lv-di">${PD.disc.map(d=>`<option ${d==="Canteiro e organização"?"selected":""}>${esc(d)}</option>`).join("")}</select></label>
+    <label class="f"><span class="req">Disciplina (para o Dashboard)</span><select id="lv-di">${PD.disc.map(d=>`<option ${d==="Canteiro e organização"?"selected":""}>${esc(d)}</option>`).join("")}<option value="__outro">Outro (digitar)</option></select></label><label class="f" id="lv-di2-w" hidden><span class="req">Qual disciplina?</span><input id="lv-di2" placeholder="ex.: Paisagismo"></label>
     <div class="grid2"><label class="f"><span class="req">Pavimento</span><select id="lv-pav"><option>Geral</option>${(o.pavimentos||[]).map(p=>`<option>${esc(p)}</option>`).join("")}</select></label><label class="f"><span class="req">Local / elemento</span><input id="lv-lo" placeholder="ex.: Fachada leste"></label></div>
     <label class="f"><span class="req">Primeiro ponto: o que está sendo verificado / não conforme?</span><input id="lv-ap" placeholder="ex.: Guarda-corpo ausente no vão da escada"></label>
     <div class="grid2"><label class="f">Projeto ou norma de referência<input id="lv-pj" placeholder="se houver"></label><label class="f">Revisão<input id="lv-rv" placeholder="se houver"></label></div>
@@ -2949,8 +2952,9 @@ function vNovaLivre(){
     <p id="lv-err" class="warn" hidden></p><button class="btn primary block" type="submit">Iniciar RNC livre</button></form>`;
 }
 function criarLivre(e){ e.preventDefault(); const g=id=>$("#"+id).value.trim(); const o=obraAtual();
-  const d={assunto:g("lv-as"),disc:g("lv-di"),pav:g("lv-pav"),unid:g("lv-lo"),ap:g("lv-ap"),proj:g("lv-pj"),rev:g("lv-rv")};
-  const falta=Object.entries({assunto:"assunto",unid:"local",ap:"primeiro ponto"}).filter(([k])=>!d[k]).map(([,t])=>t);
+  let disc=g("lv-di"); if(disc==="__outro") disc=g("lv-di2");
+  const d={assunto:g("lv-as"),disc,pav:g("lv-pav"),unid:g("lv-lo"),ap:g("lv-ap"),proj:g("lv-pj"),rev:g("lv-rv")};
+  const falta=Object.entries({assunto:"assunto",disc:"disciplina",unid:"local",ap:"primeiro ponto"}).filter(([k])=>!d[k]).map(([,t])=>t);
   if(falta.length){ const er=$("#lv-err"); er.textContent="Preencha: "+falta.join(", ")+"."; er.hidden=false; return; }
   const v={id:uid("v"),obraId:o.id,numero:proxNumero(o,"RNC"),contratada:o.contratada,vist:user().nome,data:hoje(),ck:"LV",livre:true,disc:d.disc,assunto:d.assunto,
     pav:d.pav,unid:d.unid,amb:d.assunto,proj:d.proj||"sem referência",rev:d.rev||"—",resp:{},fotos:[],anexos:[],
@@ -2962,7 +2966,7 @@ function criarLivre(e){ e.preventDefault(); const g=id=>$("#"+id).value.trim(); 
 function blocoLivre(v){
   if((v.ck!=="LV"&&!v.snap)||v.modelo) return "";
   const livre = v.livre||v.snap;
-  return `<section class="card"><h2>${v.snap?"Itens livres desta inspeção":"Pontos da RNC livre"}</h2><p class="muted small">${livre?"Acrescente outro ponto na hora. Cada ponto vira uma linha com OK / NÃO OK / NV; no NÃO OK, descreva o que está não conforme e anexe a foto.":"Monte o checklist na hora. Cada item vira uma linha com OK / NÃO OK / NV."}</p>
+  return `<section class="card"><h2>${v.snap?"Itens livres desta inspeção":"Pontos da RNC livre"}</h2><p class="muted small">${livre?"Acrescente outro ponto na hora. Cada ponto vira uma linha com OK / NÃO OK / NV / NA; no NÃO OK, descreva o que está não conforme e anexe a foto.":"Monte o checklist na hora. Cada item vira uma linha com OK / NÃO OK / NV / NA."}</p>
     <label class="f"><span class="req">O que verificar</span><input id="lv-s" placeholder="ex.: Guarda-corpo da escada instalado conforme projeto"></label>
     <div class="grid2">${livre?"":`<label class="f">Momento<select id="lv-m">${["A","D","P"].map(k=>`<option value="${k}">${MOMENTOS_G[k]}</option>`).join("")}</select></label>`}<label class="f chk"><input type="checkbox" id="lv-t"> É TRAVA (impede liberar)</label></div>
     <button class="btn block" data-act="lvadd">+ Adicionar item</button></section>`;
@@ -2984,6 +2988,81 @@ document.addEventListener("click", e=>{
   if(e.target.closest("#sheet")) return; const a=e.target.closest("[data-act='novasm'],[data-act='novalivre'],[data-act='matriz']"); if(!a) return;
   e.stopImmediatePropagation(); const k=a.dataset.act;
   if(k==="matriz") sheetMatriz(); else { UI.view=k==="novasm"?"novasm":"novalivre"; render(); scrollTo(0,0); }
+}, true);
+
+/* ================= ONDA 4 · APROVAÇÃO EM ETAPAS, RESPONSÁVEIS POR OBRA, TELA DE APROVAÇÕES ================= */
+const TIPO_REC = (kind,rec) => kind==="RF"?"Fotográfico" : kind==="AV"?"Avulso" : rec.snap?"Inspeção SST/MA" : rec.livre?"RNC livre" : "RNC";
+const podeAprovar = rec => { if(!rec||rec.modelo||rec.aprov?.st!=="pendente") return false; if(isCoord()) return true; const o=obraDe(rec.obraId); return rec.aprov.etapa==="resp2" && !!o.resp2Id && S.userId===o.resp2Id; };
+function etapaInicial(rec){ const o=obraDe(rec.obraId); const au=S.usuarios.find(u=>u.id===rec.criadoPor); if(au?.perfil==="coord") return null; return (o.resp2Id && rec.criadoPor!==o.resp2Id) ? "resp2" : "coord"; }
+function notificar(rec, motivo){
+  const obra=obraDe(rec.obraId); const r2=rec.aprov?.etapa==="resp2"? S.usuarios.find(u=>u.id===obra.resp2Id) : null;
+  const c=r2 || S.usuarios.find(u=>u.id===obra.coordId) || S.usuarios.find(u=>u.perfil==="coord"); if(!c) return;
+  const texto=`CTE Gerenciamento · ${obra.nome}\n${motivo}: ${descrRec(rec)}.\nPor ${user().nome} em ${fmtDH(Date.now())}.\nAbra o app para aprovar ou devolver.`;
+  (S.notifs=S.notifs||[]).unshift({id:uid("n"),em:Date.now(),para:c.id,email:c.email,tel:c.tel,assunto:`[${obra.codigo}] ${motivo}: ${rec.numero}`,texto,ref:{kind:rec.kind||"RNC",id:rec.id}});
+}
+function novoRegistro(rec){
+  rec.criadoPor=S.userId;
+  if(isCoord()){ rec.aprov={st:"aprovado",por:S.userId,em:Date.now(),auto:true}; return; }
+  rec.aprov={st:"pendente",etapa:etapaInicial(rec)||"coord",em:Date.now()};
+  notificar(rec,"Novo registro para aprovação");
+}
+function aprovar(kind,id){ const rec=recPor(kind,id); if(!podeAprovar(rec)){ toast("Você não é o aprovador desta etapa."); return; }
+  if(rec.aprov.etapa==="resp2" && !isCoord()){
+    rec.aprov={st:"pendente",etapa:"coord",em:Date.now(),resp2:{por:S.userId,em:Date.now()}}; notificar(rec,"Aprovado pelo Responsável 02, aguarda o coordenador"); save(); render(); toast(`${rec.numero} aprovado. Enviado ao coordenador.`); return; }
+  rec.aprov={st:"aprovado",por:S.userId,em:Date.now(),resp2:rec.aprov.resp2}; save(); render(); toast(`${rec.numero} aprovado.`); }
+function faixaAprov(rec){
+  const a=rec.aprov; if(!a||rec.modelo) return "";
+  if(a.st==="aprovado") return `<div class="aprov ok">${a.auto?"<b>Validado</b> pelo coordenador":"<b>Aprovado</b> por"} ${esc(nomeUser(a.por))} em ${fmtDH(a.em)}${a.auto?" (criado por ele)":""}${a.resp2?` · antes, Resp. 02: ${esc(nomeUser(a.resp2.por))} em ${fmtDH(a.resp2.em)}`:""}</div>`;
+  if(a.st==="devolvido") return `<div class="aprov nc"><b>Devolvido</b> por ${esc(nomeUser(a.por))}: ${esc(a.obs)}${rec.criadoPor===S.userId||isCoord()?` <button class="btn small-btn" data-act="reenviar">Reenviar para aprovação</button>`:""}</div>`;
+  const o=obraDe(rec.obraId); const k=rec.kind||"RNC";
+  const txt = a.etapa==="resp2" ? `<b>Aguardando o Responsável 02</b> (${esc(nomeUser(o.resp2Id))}) e, depois, o coordenador ${esc(nomeUser(o.coordId))}.`
+    : `<b>Aguardando o coordenador</b> ${esc(nomeUser(o.coordId))}.${a.resp2?` Já aprovado pelo Resp. 02 (${esc(nomeUser(a.resp2.por))}).`:""}`;
+  return `<div class="aprov pv">${txt} Aviso enviado por e-mail e WhatsApp (simulado).${podeAprovar(rec)?` <button class="btn small-btn primary" data-act="aprovarAqui">${a.etapa==="resp2"&&!isCoord()?"Aprovar e enviar ao coordenador":"Aprovar"}</button> <button class="btn small-btn danger" data-act="devolver" data-k="${k}" data-v="${rec.id}">Devolver</button>`:""}</div>`;
+}
+
+/* ---------- responsáveis por obra ---------- */
+function respObraBar(o){ if(o.modelo) return ""; const n=id=>id?esc(nomeUser(id)):"—";
+  return `<div class="row between" style="margin:6px 0;flex-wrap:wrap;gap:6px"><span class="small muted">Resp. 01: <b>${n(o.resp1Id)}</b> · Resp. 02: <b>${n(o.resp2Id)}</b></span>${isCoord()?`<button class="link" data-act="respobra">Associar responsáveis</button>`:""}</div>`; }
+function sheetResp(){
+  const o=obraAtual(); if(!isCoord()) return;
+  const opt=sel=>`<option value="">— nenhum —</option>${S.usuarios.map(u=>`<option value="${u.id}" ${u.id===sel?"selected":""}>${esc(u.nome)} · ${PERFIS[u.perfil]}</option>`).join("")}`;
+  abrirSheet(`<div class="row between"><h2>Responsáveis da obra</h2><button class="link" data-x="1">Fechar</button></div><p class="muted small">${esc(o.nome)}</p>
+    <label class="f"><span>Responsável 01</span><select id="rs1">${opt(o.resp1Id)}</select></label>
+    <label class="f"><span>Responsável 02</span><select id="rs2">${opt(o.resp2Id)}</select></label>
+    <p class="small"><b>Como a aprovação caminha</b><br>Sem Responsável 02: o registro vai direto ao coordenador.<br>Com Responsável 02: o registro criado pelo Responsável 01 (ou por qualquer outra pessoa) passa primeiro pelo Responsável 02 e depois pelo coordenador. Se o Responsável 02 cria, vai direto ao coordenador. O que o coordenador cria já nasce validado.</p>
+    <p class="muted small">Para incluir pessoas, use “Quem está usando › Gerenciar usuários”.</p><p id="rs-err" class="warn" hidden></p><button class="btn primary block" data-ok="1">Salvar</button>`,
+    e=>{ if(!e.target.closest("[data-ok]")) return; const r1=$("#rs1").value, r2=$("#rs2").value;
+      if(r1&&r1===r2){ const er=$("#rs-err"); er.textContent="Responsável 01 e 02 devem ser pessoas diferentes."; er.hidden=false; return; }
+      if(r2&&!r1){ const er=$("#rs-err"); er.textContent="Defina o Responsável 01 antes do 02."; er.hidden=false; return; }
+      o.resp1Id=r1||undefined; o.resp2Id=r2||undefined; save(); fechar(); render(); toast("Responsáveis atualizados."); });
+}
+
+/* ---------- Dashboard: aprovações (somente coordenação) ---------- */
+function contAprov(oid){ const l=todosRecs().filter(x=>!x.rec.modelo&&x.rec.aprov&&(!oid||x.rec.obraId===oid)); return {pend:l.filter(x=>x.rec.aprov.st==="pendente").length,ok:l.filter(x=>x.rec.aprov.st==="aprovado").length,dev:l.filter(x=>x.rec.aprov.st==="devolvido").length}; }
+function cardAprov(){ const c=contAprov();
+  return `<section class="card"><div class="row between"><h2>Aprovações · coordenação</h2><button class="btn small-btn primary" data-act="aprovdash">Abrir Aprovações</button></div>
+    <div class="pks"><div class="pk ${c.pend?"pv":""}"><b>${c.pend}</b><span>RNC e relatórios pendentes de aprovar</span></div><div class="pk"><b>${c.ok}</b><span>Aprovados</span></div><div class="pk ${c.dev?"nc":""}"><b>${c.dev}</b><span>Devolvidos</span></div></div></section>`; }
+{ const _vp4=vPainel; vPainel=function(){ let h=_vp4(); if(isCoord()&&UI.pv.nivel==="port"&&!UI.pv.oid){ const k=h.indexOf('<div class="pks">'); if(k>=0) h=h.slice(0,k)+cardAprov()+h.slice(k); } return h; }; }
+function vAprovDash(){
+  const topo=`<div class="ptopo"><button class="btn small-btn" data-act="pport">‹ Dashboard</button></div><h1>Aprovações</h1>`;
+  if(!isCoord()) return topo+`<section class="card"><p>Esta tela é exclusiva da coordenação.</p></section>`;
+  const f=UI.apF||""; const obras=S.obras.filter(o=>!o.modelo);
+  const lst=todosRecs().filter(x=>!x.rec.modelo&&x.rec.aprov&&(!f||x.rec.obraId===f));
+  const pend=lst.filter(x=>x.rec.aprov.st==="pendente").sort((a,b)=>a.rec.aprov.em-b.rec.aprov.em);
+  const ok=lst.filter(x=>x.rec.aprov.st==="aprovado").sort((a,b)=>b.rec.aprov.em-a.rec.aprov.em);
+  const dev=lst.filter(x=>x.rec.aprov.st==="devolvido").sort((a,b)=>b.rec.aprov.em-a.rec.aprov.em);
+  const linha=({rec,kind})=>`<div class="card"><div class="row between"><span class="code">${esc(rec.numero||"")}</span>${CHIP_APROV(rec.aprov)}</div>
+    <b>${esc(descrRec(rec))}</b><span class="muted small">${esc(obraDe(rec.obraId).nome)} · ${TIPO_REC(kind,rec)} · criado por ${esc(nomeUser(rec.criadoPor))}${rec.aprov.st==="aprovado"?` · ${rec.aprov.auto?"validado por":"aprovado por"} ${esc(nomeUser(rec.aprov.por))} em ${fmtDH(rec.aprov.em)}`:rec.aprov.st==="pendente"?` · desde ${fmtDH(rec.aprov.em)}`:` · devolvido: ${esc(rec.aprov.obs||"")}`}</span>
+    <div class="row"><button class="btn small-btn" data-act="abrirrec" data-k="${kind}" data-v="${rec.id}">Abrir</button>${podeAprovar(rec)?`<button class="btn small-btn primary" data-act="aprovar" data-k="${kind}" data-v="${rec.id}">Aprovar</button><button class="btn small-btn danger" data-act="devolver" data-k="${kind}" data-v="${rec.id}">Devolver</button>`:""}</div></div>`;
+  const sec=(t,l,vazio,max)=>`<h2>${t} (${l.length})</h2><div class="vlist">${l.slice(0,max||200).map(linha).join("")||`<div class="card"><p class="muted">${vazio}</p></div>`}</div>${max&&l.length>max?`<p class="muted small">Mostrando as ${max} mais recentes.</p>`:""}`;
+  return topo+`<p class="muted">Tudo que a equipe cria passa por aqui. O que você mesmo cria já nasce validado e aparece só em “Aprovados”.</p>
+  <div class="filtros"><button data-act="apf" data-v="" aria-pressed="${!f}">Todas as obras</button>${obras.map(o=>`<button data-act="apf" data-v="${o.id}" aria-pressed="${f===o.id}">${esc(o.codigo)}</button>`).join("")}</div>
+  ${sec("Pendentes de aprovar",pend,"Nada aguardando aprovação.")}${sec("Devolvidos",dev,"Nenhum devolvido.")}${sec("Aprovados",ok,"Nenhum aprovado ainda.",60)}`;
+}
+document.addEventListener("click", e=>{
+  if(e.target.closest("#sheet")) return; const a=e.target.closest("[data-act='aprovdash'],[data-act='apf'],[data-act='respobra']"); if(!a) return;
+  e.stopImmediatePropagation(); const k=a.dataset.act;
+  if(k==="aprovdash"){ UI.view="aprovdash"; render(); scrollTo(0,0); } else if(k==="apf"){ UI.apF=a.dataset.v; render(); } else sheetResp();
 }, true);
 
 (async function iniciar(){ $("#logo").src=LOGO_DARK; rede(); await openDB(); S=(await kvGet("state2"))||estadoInicial(); if(!S.rfs){ S.rfs=[]; } S.seqAV=S.seqAV||1;
