@@ -1656,7 +1656,7 @@ function rede(){ const on=navigator.onLine; $("#net-dot").classList.toggle("off"
 addEventListener("online",rede); addEventListener("offline",rede); MQ.addEventListener?.("change",()=>{ if(S) render(); });
 /* ================= USUÁRIOS, PERFIS E APROVAÇÃO ================= */
 const PERFIS = {vist:"Vistoriador",eng:"Engenheiro",coord:"Coordenador"};
-const user = () => S.usuarios.find(u=>u.id===S.userId) || S.usuarios[0];
+const user = () => S.usuarios.find(u=>u.id===S.userId) || S.usuarios.find(u=>u.perfil==="vist") || S.usuarios[0];
 const isCoord = () => user().perfil==="coord";
 const isEngOuCoord = () => user().perfil!=="vist";
 const obraDe = id => S.obras.find(o=>o.id===id) || S.obras[0];
@@ -2594,47 +2594,86 @@ function bufDeB64(b){ const s=atob(b), u=new Uint8Array(s.length); for(let i=0;i
 async function chavesFotos(){ if(idb){ const k=await tx("fotos","readonly",s=>s.getAllKeys()); return k||[]; } return [...mem.fotos.keys()]; }
 function resumoPacote(){ if(!PACOTE) return "Nenhum pacote de obra importado neste aparelho.";
   const p=PACOTE; return `${esc(p.cliente||"")} · ${(p.obras||[]).length} obra(s) · ${(p.pd?.rncs||[]).length} RNC de histórico · gerado em ${fmtData(p.geradoEm)||"—"}`; }
+function hashStr(t){ let h=5381; for(let i=0;i<t.length;i++) h=((h<<5)+h+t.charCodeAt(i))|0; return String(h); }
+function carimbarMods(){ let H={}; try{ H=JSON.parse(localStorage.getItem("cte_hashes")||"{}"); }catch(e){}
+  for(const r of [...S.vistorias,...(S.rfs||[])]){ if(r.modelo) continue; const m=r.mod; delete r.mod; const k=hashStr(JSON.stringify(r)); if(H[r.id]!==k){ r.mod=Date.now(); H[r.id]=k; } else r.mod=m; }
+  try{ localStorage.setItem("cte_hashes",JSON.stringify(H)); }catch(e){} save(); }
+function entregarJSON(nome,blob,titulo,dica){
+  const file=new File([blob],nome,{type:"application/json"}); const u=URL.createObjectURL(blob);
+  const pode=!!(navigator.canShare&&navigator.canShare({files:[file]}));
+  abrirSheet(`<h2>${esc(titulo)}</h2><p><b>${esc(nome)}</b><br><span class="muted small">${(blob.size/1048576).toFixed(2)} MB · gerado neste aparelho</span></p>
+    ${pode?`<button class="btn primary block" data-sh="1">Compartilhar / salvar em Arquivos</button>`:""}
+    <a class="btn ${pode?"":"primary "}block" href="${u}" download="${esc(nome)}">Baixar arquivo</a>
+    <p class="muted small">${dica}</p><button class="btn block" data-x="1">Fechar</button>`,
+    async e=>{ if(e.target.closest("[data-sh]")){ try{ await navigator.share({files:[file],title:nome}); }catch(_){} } });
+}
 async function exportarBackup(){
-  toast("Preparando backup…");
+  toast("Preparando backup…"); carimbarMods();
   const fotos={}; let n=0;
   for(const id of await chavesFotos()){ const r=await fotoGet(id); if(!r||!r.blob) continue; const {blob,...meta}=r; fotos[id]={...meta,type:blob.type||"image/jpeg",b64:b64DeBuf(await blob.arrayBuffer())}; n++; }
   const {role,...estado}=JSON.parse(snapJSON());
-  const pacoteBkp={tipo:"cte-vistoria-backup",versao:1,geradoEm:new Date().toISOString(),autor:S.engNome||"",estado,fotos};
-  const nome=`backup-vistorias_${hoje()}_${(S.engNome||"aparelho").replace(/[^\wÀ-ú]+/g,"_")}.json`;
+  const autor=(typeof user==="function"&&user()?user().nome:"")||S.engNome||"";
+  const pacoteBkp={tipo:"cte-vistoria-backup",versao:2,geradoEm:new Date().toISOString(),autor,autorId:S.userId,estado,fotos};
+  const nome=`registros_${hoje()}_${(autor||"aparelho").replace(/[^\wÀ-ú]+/g,"_")}.json`;
   const blob=new Blob([JSON.stringify(pacoteBkp)],{type:"application/json"});
-  const r=await tentarSalvar(nome,blob);
-  if(r.ok) toast(`Backup salvo: ${S.vistorias.filter(v=>!v.modelo).length} RNC, ${S.rfs.filter(x=>!x.modelo).length} relatório(s), ${n} foto(s).`);
-  else if(r.cod!=="declined") sheetArquivo(nome,blob,r);
+  entregarJSON(nome,blob,"Backup dos seus registros",`${S.vistorias.filter(v=>!v.modelo).length} RNC, ${S.rfs.filter(x=>!x.modelo).length} relatório(s), ${n} foto(s). Salve na pasta “2 - Registros da equipe” do OneDrive/SharePoint da CTE.`);
 }
-async function importarBackup(){
-  const d=await escolherArquivoJSON(); if(!d) return;
-  if(d.tipo!=="cte-vistoria-backup"){ aviso("Arquivo não reconhecido","Este arquivo não é um backup do app de vistoria. Para dados de obra, use “Importar pacote de obra”."); return; }
-  const e=d.estado||{}; const cont={obras:0,vistorias:0,rfs:0,usuarios:0,fotos:0};
+function escolherArquivosJSON(){ return new Promise(res=>{ const i=document.createElement("input"); i.type="file"; i.multiple=true; i.style.display="none";
+  i.onchange=async()=>{ const fs=[...(i.files||[])]; i.remove(); const out=[]; let ruins=0; for(const f of fs){ try{ const d=JSON.parse(await f.text()); d._arq=f.name; out.push(d); }catch(e){ ruins++; } } if(ruins) toast(`${ruins} arquivo(s) ignorado(s): não são JSON do app.`); res(out); };
+  i.addEventListener("cancel",()=>{ i.remove(); res([]); }); document.body.appendChild(i); i.click(); }); }
+const EXEMPLO_RE=/@exemplo\.com\.br$/i;
+async function mesclarBackup(d,cont){
+  const e=d.estado||{};
   for(const k of ["obras","vistorias","rfs","usuarios"]){ if(!Array.isArray(e[k])) continue; S[k]=S[k]||[];
-    for(const x of e[k]){ if(!x||x.modelo||S[k].some(y=>y.id===x.id)) continue; S[k].push(x); cont[k]++; } }
+    for(const x of e[k]){ if(!x||x.modelo) continue; if(k==="usuarios"&&EXEMPLO_RE.test(x.email||"")) continue;
+      const i=S[k].findIndex(y=>y.id===x.id);
+      if(i<0){ S[k].push(x); cont[k]++; continue; }
+      if(k==="vistorias"||k==="rfs"){ const a=S[k][i]; const ta=Math.max(a.mod||0,a.aprov?.em||0), tx=Math.max(x.mod||0,x.aprov?.em||0);
+        if(a.aprov?.st==="aprovado" && x.aprov?.st!=="aprovado" && (x.aprov?.em||0)<=(a.aprov?.em||0)) continue;
+        if(tx>ta){ S[k][i]=x; cont.atualizados++; } } } }
   for(const [id,f] of Object.entries(d.fotos||{})){ if(await fotoGet(id)) continue; const {b64,type,...meta}=f; try{ await fotoSet(id,{...meta,blob:new Blob([bufDeB64(b64)],{type:type||"image/jpeg"})}); cont.fotos++; }catch(_){} }
-  save(); render();
-  aviso("Registros importados",`${cont.vistorias} RNC, ${cont.rfs} relatório(s), ${cont.obras} obra(s), ${cont.usuarios} usuário(s) e ${cont.fotos} foto(s) acrescentados${d.autor?` (origem: ${d.autor})`:""}. Registros que já existiam neste aparelho foram mantidos sem alteração.`);
 }
+function acertarNumeracao(){ const dup=[];
+  for(const o of S.obras){ o.seq=o.seq||{}; }
+  const vistos={};
+  for(const {rec,kind} of [...S.vistorias.map(r=>({rec:r,kind:"RNC"})),...(S.rfs||[]).map(r=>({rec:r,kind:r.kind||"RF"}))]){ if(rec.modelo||!rec.numero) continue;
+    const m=/-(RNC|RF|AV)-(\d+)$/.exec(rec.numero); const o=S.obras.find(x=>x.id===rec.obraId);
+    if(m&&o){ o.seq[m[1]]=Math.max(o.seq[m[1]]||0,+m[2]); }
+    if(vistos[rec.numero]&&vistos[rec.numero]!==rec.id) dup.push(rec.numero); vistos[rec.numero]=rec.id; }
+  return [...new Set(dup)]; }
+async function consolidarArquivos(ds,rotulo){
+  const cont={obras:0,vistorias:0,rfs:0,usuarios:0,fotos:0,atualizados:0}; let n=0; const origens=[];
+  for(const d of ds){ if(d.tipo!=="cte-vistoria-backup"){ continue; } n++; origens.push(d.autor||d._arq||"?"); await mesclarBackup(d,cont); }
+  if(!n){ aviso("Nenhum backup reconhecido","Os arquivos escolhidos não são backups de registros do app. Equipe e pacote de obra têm botões próprios."); return; }
+  const dup=acertarNumeracao(); save(); render();
+  const pend=(typeof contAprov==="function"&&isCoord())? contAprov().pend : null;
+  aviso(rotulo,`${n} arquivo(s) lidos (${origens.join(", ")}). Acrescentados: ${cont.vistorias} RNC, ${cont.rfs} relatório(s), ${cont.fotos} foto(s). Atualizados por versão mais recente: ${cont.atualizados}. Registros aprovados neste aparelho não são desfeitos por arquivos antigos.${dup.length?` ATENÇÃO – numeração repetida entre aparelhos: ${dup.join(", ")}. Confira antes de emitir o documento.`:""}${pend!==null?` Aguardando sua aprovação: ${pend}.`:""}`);
+}
+async function importarBackup(){ const ds=await escolherArquivosJSON(); if(!ds.length) return; await consolidarArquivos(ds,"Registros importados"); }
 async function importarPacote(){
   const d=await escolherArquivoJSON(); if(!d) return;
+  if(d.tipo==="cte-vistoria-equipe"){ aplicarEquipe(d); return; }
   if(d.tipo!=="cte-vistoria-pacote"||!Array.isArray(d.obras)){ aviso("Arquivo não reconhecido","Este arquivo não é um pacote de dados de obra do app."); return; }
   try{ localStorage.setItem("cte_pacote",JSON.stringify(d)); }catch(e){ aviso("Não foi possível guardar","O navegador recusou guardar o pacote neste aparelho (modo anônimo ou sem espaço)."); return; }
   S.obrasReaisVer=0; commit(); toast("Pacote importado. Recarregando…"); setTimeout(()=>location.reload(),600);
 }
 function removerPacote(){ try{ localStorage.removeItem("cte_pacote"); }catch(e){} toast("Pacote removido deste aparelho. Recarregando…"); setTimeout(()=>location.reload(),600); }
 function sheetDados(){
+  const eng=typeof isEngOuCoord==="function"&&isEngOuCoord();
   abrirSheet(`<div class="row between"><h2>Dados deste aparelho</h2><button class="link" data-x="1">Fechar</button></div>
-    <p class="muted small">Nesta versão piloto, tudo fica salvo só neste aparelho (nada vai para a internet). O link do app é público, mas abre vazio: os dados das obras entram apenas pelo pacote importado aqui.</p>
-    <h3>Pacote de dados da obra</h3><p class="small">${resumoPacote()}</p>
-    <button class="btn primary block" data-d="pac">Importar pacote de obra (.json)</button>
+    <p class="muted small">Tudo fica salvo só neste aparelho (nada vai para a internet). O link do app é público, mas abre vazio: dados de obra e equipe entram apenas pelos arquivos privados da CTE, guardados no OneDrive/SharePoint.</p>
+    <h3>1. Equipe</h3><p class="small">${S.equipeAtiva?`Equipe importada em ${fmtData((S.equipeEm||"").slice(0,10))||"—"} · ${S.usuarios.length} pessoa(s).`:"Equipe ainda não importada neste aparelho."}</p>
+    <button class="btn primary block" data-d="eq">Importar equipe (.json)</button>
+    <h3>2. Pacote de dados da obra</h3><p class="small">${resumoPacote()}</p>
+    <button class="btn block" data-d="pac">Importar pacote de obra (.json)</button>
     ${PACOTE?'<button class="btn block" data-d="rempac">Remover pacote deste aparelho</button>':""}
-    <h3>Backup e consolidação</h3>
-    <p class="muted small">Exporte ao fim de cada vistoria e guarde na pasta da obra. Para juntar o trabalho de outro vistoriador no seu painel, importe o backup dele.</p>
+    <h3>3. Seus registros</h3>
+    <p class="muted small">Ao fim de cada vistoria, exporte e salve na pasta “2 - Registros da equipe”. ${eng?"Para juntar o trabalho da equipe, escolha todos os arquivos da pasta de uma vez em “Consolidar registros da equipe”.":""}</p>
     <button class="btn block" data-d="exp">Exportar meus registros (backup .json)</button>
-    <button class="btn block" data-d="imp">Importar registros de backup</button>`,
+    ${eng?`<button class="btn block" data-d="imp">Consolidar registros da equipe (vários arquivos)</button>`:`<button class="btn block" data-d="imp">Importar registros de backup</button>`}
+    <button class="btn block" data-d="tut">Como incluir pessoas e consolidar (passo a passo)</button>`,
     async e=>{ const b=e.target.closest("[data-d]"); if(!b) return; const k=b.dataset.d; fechar();
-      if(k==="pac") importarPacote(); else if(k==="rempac") removerPacote(); else if(k==="exp") exportarBackup(); else if(k==="imp") importarBackup(); });
+      if(k==="pac") importarPacote(); else if(k==="rempac") removerPacote(); else if(k==="exp") exportarBackup(); else if(k==="imp") importarBackup(); else if(k==="eq") importarEquipe(); else if(k==="tut") sheetTutorial(); });
 }
 document.addEventListener("click", e=>{ const a=e.target.closest("[data-act='dados']"); if(!a) return; e.stopImmediatePropagation(); sheetDados(); }, true);
 { const _vObras=vObras; vObras=function(){ return _vObras()+`<button class="btn block" data-act="dados" style="margin:12px 0">Dados deste aparelho · importar pacote, backup</button>`; }; }
@@ -3064,6 +3103,89 @@ document.addEventListener("click", e=>{
   e.stopImmediatePropagation(); const k=a.dataset.act;
   if(k==="aprovdash"){ UI.view="aprovdash"; render(); scrollTo(0,0); } else if(k==="apf"){ UI.apF=a.dataset.v; render(); } else sheetResp();
 }, true);
+
+/* ================= ONDA 5: EQUIPE (e-mail + celular), identificação e tutorial ================= */
+function idsRemap(mapa){ const m=x=>mapa[x]||x;
+  for(const r of [...S.vistorias,...(S.rfs||[])]){ if(r.criadoPor) r.criadoPor=m(r.criadoPor); if(r.aprov){ if(r.aprov.por) r.aprov.por=m(r.aprov.por); if(r.aprov.resp2?.por) r.aprov.resp2.por=m(r.aprov.resp2.por); } }
+  for(const n of (S.notifs||[])) if(n.para) n.para=m(n.para);
+  for(const o of S.obras){ for(const k of ["coordId","resp1Id","resp2Id"]) if(o[k]) o[k]=m(o[k]); }
+  if(S.userId) S.userId=m(S.userId); }
+function equipeArquivo(){
+  return {tipo:"cte-vistoria-equipe",versao:1,geradoEm:new Date().toISOString(),geradoPor:user().nome,
+    usuarios:S.usuarios.filter(u=>!EXEMPLO_RE.test(u.email||"")).map(u=>({id:u.id,nome:u.nome,email:u.email,tel:u.tel,perfil:u.perfil})),
+    obras:S.obras.filter(o=>!o.modelo).map(o=>({id:o.id,nome:o.nome,coordId:o.coordId||null,resp1Id:o.resp1Id||null,resp2Id:o.resp2Id||null}))}; }
+function exportarEquipe(){
+  if(!isCoord()) return;
+  const d=equipeArquivo();
+  if(!d.usuarios.length){ aviso("Equipe vazia","Cadastre as pessoas em Gerenciar usuários antes de exportar."); return; }
+  const faltaCoord=d.obras.filter(o=>!o.coordId).length;
+  const nome=`equipe-cte_${hoje()}.json`; const blob=new Blob([JSON.stringify(d)],{type:"application/json"});
+  entregarJSON(nome,blob,"Arquivo da equipe",`${d.usuarios.length} pessoa(s) e ${d.obras.length} obra(s) com responsáveis. Contém e-mails e celulares: salve só na pasta “1 - Equipe e pacotes” do OneDrive/SharePoint da CTE e não envie por canal aberto.${faltaCoord?` Atenção: ${faltaCoord} obra(s) sem coordenador definido.`:""}`);
+}
+async function importarEquipe(){ const d=await escolherArquivoJSON(); if(!d) return; aplicarEquipe(d); }
+function aplicarEquipe(d){
+  if(d.tipo!=="cte-vistoria-equipe"||!Array.isArray(d.usuarios)){ aviso("Arquivo não reconhecido","Este arquivo não é um arquivo de equipe do app. Para dados de obra, use “Importar pacote de obra”."); return; }
+  if(S.equipeEm && d.geradoEm && d.geradoEm<S.equipeEm){ aviso("Arquivo mais antigo","A equipe já importada neste aparelho é mais recente que este arquivo. Nada foi alterado."); return; }
+  const coordLocal=isCoord(); const mapa={}; const lim=s=>(s||"").trim().toLowerCase();
+  const exemplos=S.usuarios.filter(u=>EXEMPLO_RE.test(u.email||""));
+  for(const v of exemplos){ const alvo=d.usuarios.find(n=>n.perfil===v.perfil); if(alvo) mapa[v.id]=alvo.id; }
+  let add=0, upd=0;
+  const base=S.usuarios.filter(u=>!EXEMPLO_RE.test(u.email||""));
+  for(const n of d.usuarios){ if(!n.nome||!n.email||!PERFIS[n.perfil]) continue;
+    let i=base.findIndex(u=>u.id===n.id); if(i<0) i=base.findIndex(u=>lim(u.email)===lim(n.email));
+    if(i<0){ base.push({id:n.id,nome:n.nome,email:n.email,tel:n.tel||"",perfil:n.perfil}); add++; }
+    else { if(base[i].id!==n.id) mapa[base[i].id]=n.id; base[i]={...base[i],id:n.id,nome:n.nome,email:n.email,tel:n.tel||"",perfil:n.perfil}; upd++; } }
+  S.usuarios = coordLocal ? base : base.filter(u=>d.usuarios.some(n=>n.id===u.id));
+  if(!S.usuarios.length){ aviso("Equipe inválida","O arquivo não trouxe pessoas válidas."); return; }
+  if(exemplos.some(v=>v.id===S.userId)) S.userId="";
+  idsRemap(mapa);
+  for(const x of (d.obras||[])){ const o=S.obras.find(y=>y.id===x.id); if(!o) continue; o.coordId=x.coordId||o.coordId; o.resp1Id=x.resp1Id||undefined; o.resp2Id=x.resp2Id||undefined; }
+  S.equipeAtiva=true; S.equipeEm=d.geradoEm||new Date().toISOString();
+  if(!S.usuarios.some(u=>u.id===S.userId)) S.userId="";
+  save(); render();
+  aviso("Equipe importada",`${add} pessoa(s) nova(s) e ${upd} atualizada(s). ${S.userId?"":"Agora identifique-se com seu e-mail corporativo."}`);
+  if(!S.userId) setTimeout(()=>sheetUsuario(),400);
+}
+function sheetUsuario(){
+  const eq=!!S.equipeAtiva, cd=isCoord(), u0=user();
+  const lista=(!eq||cd)? `<div class="pick">${S.usuarios.map(u=>`<button class="pk pk-btn ${u.id===S.userId?"on":""}" data-u="${u.id}"><span><b>${esc(u.nome)}</b><br><span class="muted small">${PERFIS[u.perfil]} · ${esc(u.email)} · ${esc(u.tel)}</span></span></button>`).join("")}</div>`:"";
+  abrirSheet(`<div class="row between"><h2>Quem está usando</h2><button class="link" data-x="1">Fechar</button></div>
+    <p class="small">${S.userId?`Identificado como <b>${esc(u0.nome)}</b> (${PERFIS[u0.perfil]}).`:"Você ainda não se identificou neste aparelho."}</p>
+    ${eq?`<label class="f"><span>Seu e-mail corporativo</span><input id="qe-mail" type="email" inputmode="email" autocapitalize="off" autocomplete="off" placeholder="nome@cte.com.br"></label><button class="btn primary block" data-em="1">Identificar-me com este e-mail</button><p id="qe-err" class="warn" hidden></p>`:`<p class="muted small">Para usar e-mail corporativo, importe o arquivo de equipe em Dados e fotos.</p>`}
+    ${lista}
+    ${cd?`<button class="btn block" data-gu="1">Gerenciar usuários e equipe</button>`:""}
+    <p class="muted small">A identificação é por e-mail e serve para registrar quem fez cada coisa e a quem cabe aprovar. Não é senha: não compartilhe o aparelho.</p>`,
+    e=>{ const b=e.target.closest("[data-u]"); if(b){ S.userId=b.dataset.u; save(); fechar(); render(); toast(`Agora: ${user().nome} (${PERFIS[user().perfil]})`); return; }
+      if(e.target.closest("[data-gu]")){ fechar(); UI.view="usuarios"; render(); return; }
+      if(e.target.closest("[data-em]")){ const v=($("#qe-mail").value||"").trim().toLowerCase(); const u=S.usuarios.find(x=>(x.email||"").trim().toLowerCase()===v);
+        if(!u){ const er=$("#qe-err"); er.textContent="E-mail não consta da equipe importada. Confira a digitação ou peça ao coordenador um arquivo de equipe atualizado."; er.hidden=false; return; }
+        S.userId=u.id; save(); fechar(); render(); toast(`Olá, ${u.nome} (${PERFIS[u.perfil]})`); } });
+}
+function sheetTutorial(){
+  abrirSheet(`<div class="row between"><h2>Incluir pessoas e consolidar</h2><button class="link" data-x="1">Fechar</button></div>
+    <h3>Coordenador (uma vez e a cada mudança)</h3>
+    <ol class="small"><li>Quem está usando › <b>Gerenciar usuários</b>: cadastre nome, e-mail corporativo, celular e perfil de cada pessoa.</li>
+    <li>Em cada obra, toque em <b>Associar responsáveis</b> e defina Resp. 01 e Resp. 02.</li>
+    <li>Em Gerenciar usuários, toque em <b>Exportar equipe (.json)</b> e salve na pasta “1 - Equipe e pacotes” do OneDrive/SharePoint.</li>
+    <li>Compartilhe essa pasta somente com a equipe e envie o link do app.</li></ol>
+    <h3>Colaborador (uma vez)</h3>
+    <ol class="small"><li>Abra o link do app no celular.</li>
+    <li>Dados e fotos › <b>Importar equipe (.json)</b> e escolha o arquivo da pasta “1”.</li>
+    <li>Dados e fotos › <b>Importar pacote de obra (.json)</b> (dados das obras), e as fotos de histórico se receber.</li>
+    <li>Quem está usando › digite seu <b>e-mail corporativo</b> e toque em Identificar-me.</li></ol>
+    <h3>Rotina de registros (colaborador → coordenador)</h3>
+    <ol class="small"><li>Ao fim da vistoria: Dados e fotos › <b>Exportar meus registros</b> › salve na pasta “2 - Registros da equipe”.</li>
+    <li>Coordenador: Dados e fotos › <b>Consolidar registros da equipe</b> e selecione todos os arquivos da pasta “2” de uma vez.</li>
+    <li>Aprove em Aprovações. Depois exporte o próprio backup para a pasta “3 - Retorno da coordenação”.</li>
+    <li>Colaborador: importa o arquivo da pasta “3” e vê a situação (aprovado ou devolvido).</li></ol>
+    <p class="muted small">Entrou ou saiu alguém, ou mudou responsável? O coordenador exporta a equipe de novo e os colaboradores importam o arquivo mais recente.</p>
+    <button class="btn primary block" data-x="1">Entendi</button>`);
+}
+{ const _vU=vUsuarios; vUsuarios=function(){ let h=_vU(); if(!isCoord()) return h;
+  return h+`<section class="card"><h2>Equipe e arquivos</h2><p class="small muted">Depois de cadastrar pessoas e definir responsáveis nas obras, exporte o arquivo da equipe e guarde na pasta privada do OneDrive/SharePoint. Cada colaborador importa esse arquivo uma vez.</p>
+    <button class="btn primary block" data-act="eqexp">Exportar equipe (.json)</button><button class="btn block" data-act="eqimp">Importar equipe (.json)</button><button class="btn block" data-act="eqtut">Passo a passo</button></section>`; }; }
+document.addEventListener("click", e=>{ if(e.target.closest("#sheet")) return; const a=e.target.closest("[data-act='eqexp'],[data-act='eqimp'],[data-act='eqtut']"); if(!a) return; e.stopImmediatePropagation();
+  const k=a.dataset.act; if(k==="eqexp") exportarEquipe(); else if(k==="eqimp") importarEquipe(); else sheetTutorial(); }, true);
 
 (async function iniciar(){ $("#logo").src=LOGO_DARK; rede(); await openDB(); S=(await kvGet("state2"))||estadoInicial(); if(!S.rfs){ S.rfs=[]; } S.seqAV=S.seqAV||1;
   migrar(); purgarModelo(); await carregarIndiceFotosHist(); lastJSON=snapJSON(); kvSet("state2",S); UI.oid=(S.obras[0]||{}).id||null; render(); })();
