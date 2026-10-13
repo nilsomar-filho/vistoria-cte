@@ -686,12 +686,12 @@ const CHECKLISTS = {
   I("SS.07","D",true,"Rotas de fuga e saídas desobstruídas; extintores acessíveis","Percorra a rota.","Visual","Rota livre.","Rota bloqueada."),
   I("SS.08","D",false,"EPI compatível com a atividade e em uso","Observe a equipe.","Visual","EPI em uso.","EPI ausente ou inadequado."),
   I("SS.09","P",false,"Áreas de vivência limpas, abastecidas e funcionando","Confira sanitários, bebedouro e refeitório.","Visual","Áreas em condição de uso.","Área sem condição de uso.")]},
- LV:{nome:"Inspeção livre",cartilha:null,itens:null}
+ LV:{nome:"Assunto livre",cartilha:null,itens:null}
 };
 const ITEM_ALL = {}; for(const k in CHECKLISTS) for(const i of (CHECKLISTS[k].itens||[])) ITEM_ALL[i.cod]=i;
-const itensDe = v => v.ck==="LV"? (v.itens||[]) : CHECKLISTS[v.ck||"AM"].itens;
+const itensDe = v => v.snap||v.ck==="LV"? (v.itens||[]) : CHECKLISTS[v.ck||"AM"].itens;
 const itemDe = (v,cod) => itensDe(v).find(i=>i.cod===cod) || ITEM_ALL[cod];
-const nomeCk = v => CHECKLISTS[v.ck||"AM"].nome;
+const nomeCk = v => v.snap&&v.nome? v.nome : CHECKLISTS[v.ck||"AM"].nome;
 
 const LASTROS = ["Projeto","Memorial descritivo","Especificação técnica","Norma ABNT","Norma Regulamentadora","Ficha técnica do fabricante","Procedimento executivo","Requisito de concessionária","Contrato"];
 const PREMISSA = "Este Relatório de Não Conformidade registra as condições observadas pela GERENCIADORA durante as inspeções realizadas nas áreas e elementos indicados, mediante comparação com os projetos, memoriais, especificações, requisitos normativos e demais documentos técnicos aplicáveis e disponibilizados para a inspeção. As verificações possuem caráter técnico e amostral, com abrangência definida conforme as áreas acessíveis, tipologias, etapas executivas, criticidade e condições observadas em campo, podendo ser ampliadas quando identificadas ocorrências recorrentes, sistêmicas ou relevantes. A inspeção e o registro de itens conformes não caracterizam aceite integral da obra nem desobrigam a CONTRATADA de suas responsabilidades quanto à qualidade, conformidade, desempenho, operacionalidade e correção dos serviços. Toda Não Conformidade deverá possuir lastro técnico identificável; na ausência de referência conclusiva, o item deverá ser registrado como Pendente de Validação.";
@@ -752,7 +752,7 @@ function fotosDoItem(v,cod){ return v.fotos.filter(f=>f.itens.includes(cod)); }
 function pendencias(v){
   const p=[]; if(v.modelo) return p;
   if(v.ck==="LV" && !itensDe(v).length) p.push("Adicione ao menos um item à inspeção livre.");
-  if(v.fotos.length<FOTO_MIN) p.push(`Tire pelo menos ${FOTO_MIN} fotos do ambiente (há ${v.fotos.length}).`);
+  if(v.fotos.length<fotoMin(v)) p.push(`Tire pelo menos ${fotoMin(v)} foto(s)${v.snap?"":" do ambiente"} (há ${v.fotos.length}).`);
   for(const i of itensDe(v)){ const r=v.resp[i.cod];
     if(!r.status) p.push(`${i.cod}: marque OK, NÃO OK ou NV.`);
     else if(r.status==="NOK"){ if(!r.obs.trim()) p.push(`${i.cod}: descreva o que está diferente do projeto.`); if(!fotosDoItem(v,i.cod).length) p.push(`${i.cod}: falta foto mostrando o problema.`); }
@@ -1452,34 +1452,34 @@ function vNova(){
     <button class="btn primary block" type="submit">Iniciar vistoria</button></form>`;
 }
 function fotosHTML(v){
-  const eng=S.role==="eng"||!!v.modelo; const n=v.fotos.length;
+  const eng=!!v.modelo; const n=v.fotos.length;
   const slots=v.fotos.map((f,k)=>{ let st=null; for(const c of f.itens){ const s=stEf(v.resp[c])||"NV"; if(!st||GRAV[s]>GRAV[st]) st=s; }
     return `<button class="ph" data-act="fotoSheet" data-v="${f.id}" aria-label="Foto ${k+1}"><img data-foto="${f.id}" alt="">${f.anot?'<span class="ph-mk">marcada</span>':""}<span class="ph-tag ${st?"st-"+st:""}">${pad(k+1)} · ${f.itens.length?f.itens.join(" "):"Geral"}</span></button>`; }).join("");
   const add = !eng && n<FOTO_MAX? `<label class="ph add">${ICON.cam}<b>Tirar foto</b><span>na horizontal</span><input type="file" accept="image/*" capture="environment" data-act="foto"></label>` : "";
-  const falta=Math.max(0,FOTO_MIN-n);
-  return `<section class="card"><div class="row between"><h2>Fotos do ambiente</h2><span class="chip ${n>=FOTO_MIN?"c":"a"}">${n}/${FOTO_MAX} · mín. ${FOTO_MIN}</span></div>
+  const falta=Math.max(0,fotoMin(v)-n);
+  return `<section class="card"><div class="row between"><h2>Fotos do ambiente</h2><span class="chip ${n>=fotoMin(v)?"c":"a"}">${n}/${FOTO_MAX} · mín. ${fotoMin(v)}</span></div>
     <div class="ph-grid">${slots}${add}</div>
     <p class="muted small">${falta?`Faltam ${falta} foto(s). `:""}Celular sempre deitado. Toque na foto para indicar o item do checklist.</p></section>`;
 }
 function linhaItem(v,i){
-  const r=v.resp[i.cod], s=stEf(r), eng=S.role==="eng"||!!v.modelo; const dis=eng||!!r.val;
+  const r=v.resp[i.cod], s=stEf(r), eng=S.role==="eng"||!!v.modelo, ro=!!v.modelo; const dis=ro||!!r.val;
   const b=(k,t)=>`<button data-act="st" data-c="${i.cod}" data-v="${k}" aria-pressed="${r.status===k}" ${dis?"disabled":""}>${t}</button>`;
   let extra="";
   if(r.status==="NOK"){
     const nf=fotosDoItem(v,i.cod).length;
     extra=`<div class="ck-extra">
-      <label class="f"><span class="req">O que está diferente do projeto?</span><textarea data-fld="obs" data-c="${i.cod}" ${dis?"disabled":""} placeholder="ex.: ralo ligado no ramal da bacia; projeto prevê caixa sifonada">${esc(r.obs)}</textarea></label>
+      <label class="f"><span class="req">${v.snap||v.livre?"O que está não conforme?":"O que está diferente do projeto?"}</span><textarea data-fld="obs" data-c="${i.cod}" ${dis?"disabled":""} placeholder="ex.: ralo ligado no ramal da bacia; projeto prevê caixa sifonada">${esc(r.obs)}</textarea></label>
       <div class="row between"><span class="small ${nf?"":"txt-nc"}">${nf?`${nf} foto(s) deste item`:"Falta foto deste item"}</span>
-      ${!eng&&v.fotos.length<FOTO_MAX?`<label class="btn small-btn">${ICON.cam} Foto deste item<input type="file" accept="image/*" capture="environment" data-act="foto" data-c="${i.cod}" hidden></label>`:""}</div>
+      ${!ro&&v.fotos.length<FOTO_MAX?`<label class="btn small-btn">${ICON.cam} Foto deste item<input type="file" accept="image/*" capture="environment" data-act="foto" data-c="${i.cod}" hidden></label>`:""}</div>
       ${r.val? `<div class="note small"><b>${r.val.classe==="C"?"Não procede":r.val.classe}</b> · ${r.val.classe==="NC"?`${esc(r.val.lastroTipo)}: ${esc(r.val.lastroRef)}`:r.val.classe==="PV"?`Falta: ${esc(r.val.motivo)}`:esc(r.val.just)} · ${esc(r.val.eng)}${eng?` · <button class="link" data-act="desval" data-c="${i.cod}">refazer</button>`:""}</div>`
         : eng&&!v.modelo? `<button class="btn primary" data-act="revisar" data-vid="${v.id}" data-c="${i.cod}">Revisar este item</button>` : `<p class="muted small">O engenheiro vai classificar como NC ou PV, com lastro.</p>`}
       ${blocoEncerramento(v,i,r)}
     </div>`;
   } else if(r.status==="NV"){
-    extra=`<div class="ck-extra"><label class="f"><span class="req">Por que não verificou?</span><select data-fld="nvMotivo" data-c="${i.cod}" ${dis?"disabled":""}>${["","Sem acesso","Etapa não executada","Sem projeto na frente","Outro"].map(o=>`<option ${r.nvMotivo===o?"selected":""} value="${o}">${o||"Selecione"}</option>`).join("")}</select></label></div>`;
+    extra=`<div class="ck-extra"><label class="f"><span class="req">Por que não verificou?</span><select data-fld="nvMotivo" data-c="${i.cod}" ${dis?"disabled":""}>${["","Sem acesso","Etapa não executada","Sem projeto na frente",...(v.snap?["Evidência ainda não apresentada","Gatilho inexistente nesta obra"]:[]),"Outro"].map(o=>`<option ${r.nvMotivo===o?"selected":""} value="${o}">${o||"Selecione"}</option>`).join("")}</select></label></div>`;
   }
   return `<article class="ck st-${s||"x"}" id="it-${i.cod}">
-    <div class="ck-top"><span class="code">${i.cod}</span>${i.trava?'<span class="chip trava">TRAVA</span>':""}<span class="sp"></span>${v.ck==="LV"&&!v.modelo?`<button class="link" data-act="lvrm" data-c="${i.cod}">remover</button>`:""}${i.como?`<button class="duv" data-act="duvida" data-c="${i.cod}" aria-label="Dúvida: certo ou errado do item ${i.cod}">? Dúvida</button>`:""}</div>
+    <div class="ck-top"><span class="code">${i.cod}</span>${i.trava?'<span class="chip trava">TRAVA</span>':""}<span class="sp"></span>${(v.ck==="LV"||i.livre)&&!v.modelo?`<button class="link" data-act="lvrm" data-c="${i.cod}">remover</button>`:""}${i.como?`<button class="duv" data-act="duvida" data-c="${i.cod}" aria-label="Dúvida: certo ou errado do item ${i.cod}">? Dúvida</button>`:""}</div>
     <p class="ck-q">${esc(i.s)}</p>
     <div class="ck-btns" role="group" aria-label="Resultado do item ${i.cod}">${b("OK","OK")}${b("NOK","NÃO OK")}${b("NV","NV")}</div>${extra}</article>`;
 }
@@ -1526,12 +1526,12 @@ function abrirSheet(html, onClick){ const sh=$("#sheet"); sh.innerHTML=`<div cla
 const fechar=()=>{ const sh=$("#sheet"); sh.hidden=true; sh.innerHTML=""; };
 function aviso(t,m){ abrirSheet(`<h2>${esc(t)}</h2><p>${esc(m)}</p><button class="btn primary block" data-x="1">Entendi</button>`); }
 function sheetPend(p){ abrirSheet(`<h2>Complete antes de gerar</h2><ul class="pend">${p.map(x=>`<li>${esc(x)}</li>`).join("")}</ul><button class="btn primary block" data-x="1">Voltar à vistoria</button>`); }
-function sheetDuvida(cod){ const v=vAtual(); const i=itemDe(v,cod);
+function sheetDuvida0(cod){ const v=vAtual(); const i=itemDe(v,cod);
   abrirSheet(`<div class="row between"><h2>${i.cod} · certo ou errado?</h2><button class="link" data-x="1">Fechar</button></div><p>${esc(i.como)} <span class="muted">Ferramenta: ${esc(i.fer)}.</span></p>
     <div class="cx"><figure class="ok"><figcaption>✓ Certo</figcaption>${i.svg?desenho(i.svg,true):""}<p>${esc(i.certo)}</p></figure><figure class="bad"><figcaption>✕ Errado</figcaption>${i.svg?desenho(i.svg,false):""}<p>${esc(i.errado)}</p></figure></div>
     <p class="muted small">O critério é sempre o projeto vigente. Na dúvida que persistir, marque NÃO OK e descreva: o engenheiro decide.</p>`); }
 function sheetFoto(id){
-  const v=vAtual(); const f=v.fotos.find(x=>x.id===id); if(!f) return; const eng=S.role==="eng"||!!v.modelo; const k=v.fotos.indexOf(f)+1;
+  const v=vAtual(); const f=v.fotos.find(x=>x.id===id); if(!f) return; const eng=!!v.modelo; const k=v.fotos.indexOf(f)+1;
   const sel=new Set(f.itens);
   const draw=()=>abrirSheet(`<div class="row between"><h2>Foto ${pad(k)}</h2><button class="link" data-x="1">Fechar</button></div>
     <img data-foto="${id}" alt="Foto ${k}" class="ph-big">${eng?"":`<button class="btn block" data-mark="1">✎ Marcar na foto (setas, círculos, mão livre, texto)</button>`}
@@ -1615,7 +1615,7 @@ document.addEventListener("click", async e=>{
   if(act==="confcorr"){ const r=vAtual().resp[a.dataset.c]; r.enc.conf={por:S.userId,em:Date.now()}; save(); render(); toast("NC encerrada."); return; }
   if(act==="reprcorr"){ const r=vAtual().resp[a.dataset.c]; r.enc=null; save(); render(); toast("Correção reprovada. A NC continua aberta."); return; }
   if(act==="lvadd"){ const v=vAtual(); const t=$("#lv-s").value.trim(); if(!t){ toast("Escreva o que verificar."); return; }
-    const n=Math.max(0,...v.itens.map(i=>+i.cod.split(".")[1]))+1; const cod=`LV.${pad(n)}`; v.itens.push({cod,m:$("#lv-m").value,trava:$("#lv-t").checked,s:t,como:"",fer:"",certo:"",errado:""}); v.resp[cod]=novaResp(); save(); render(); toast(`${cod} incluído.`); return; }
+    const n=Math.max(0,...v.itens.filter(i=>/^LV\./.test(i.cod)).map(i=>+i.cod.split(".")[1]))+1; const cod=`LV.${pad(n)}`; v.itens.push({cod,livre:true,m:(v.snap||v.livre)?"LIVRE":$("#lv-m").value,trava:$("#lv-t").checked,s:t,como:"",fer:"",certo:"",errado:""}); v.resp[cod]=novaResp(); save(); render(); toast(`${cod} incluído.`); return; }
   if(act==="lvrm"){ const v=vAtual(); v.itens=v.itens.filter(i=>i.cod!==a.dataset.c); delete v.resp[a.dataset.c]; v.fotos.forEach(f=>f.itens=f.itens.filter(c=>c!==a.dataset.c)); save(); render(); return; }
   if(act==="rmuser"){ if(!isCoord()) return; S.usuarios=S.usuarios.filter(u=>u.id!==val); save(); render(); toast("Usuário removido."); return; }
   if((act==="excluir"||act==="excluirrf"||act==="limpar") && !isCoord()){ toast("Somente o coordenador pode excluir."); return; }
@@ -1667,7 +1667,7 @@ function notificar(rec, motivo){
   const texto=`CTE Gerenciamento · ${obra.nome}\n${motivo}: ${descrRec(rec)}.\nPor ${user().nome} em ${fmtDH(Date.now())}.\nAbra o app para aprovar ou devolver.`;
   (S.notifs=S.notifs||[]).unshift({id:uid("n"),em:Date.now(),para:c.id,email:c.email,tel:c.tel,assunto:`[${obra.codigo}] ${motivo}: ${rec.numero}`,texto,ref:{kind:rec.kind||"RNC",id:rec.id}});
 }
-function novoRegistro(rec){ rec.criadoPor=S.userId; rec.aprov={st:"pendente",em:Date.now()}; notificar(rec,"Novo registro para aprovação"); }
+function novoRegistro(rec){ rec.criadoPor=S.userId; if(isCoord()){ rec.aprov={st:"aprovado",por:S.userId,em:Date.now(),auto:true}; return; } rec.aprov={st:"pendente",em:Date.now()}; notificar(rec,"Novo registro para aprovação"); }
 const todosRecs = () => [...S.vistorias.map(v=>({rec:v,kind:"RNC"})),...S.rfs.map(r=>({rec:r,kind:r.kind}))];
 const pendAprov = () => todosRecs().filter(x=>x.rec.aprov?.st==="pendente" && obraDe(x.rec.obraId).coordId===S.userId || (x.rec.aprov?.st==="pendente" && isCoord() && !obraDe(x.rec.obraId).coordId));
 function abrirRec(kind,id){ if(kind==="RNC"){ UI.vid=id; UI.view="vistoria"; UI.oid=S.vistorias.find(v=>v.id===id)?.obraId; } else { UI.rid=id; UI.view="rf"; UI.oid=S.rfs.find(r=>r.id===id)?.obraId; } render(); scrollTo(0,0); }
@@ -1714,11 +1714,11 @@ function devolver(kind,id){ const rec=recPor(kind,id);
     rec.aprov={st:"devolvido",por:S.userId,em:Date.now(),obs:o}; save(); fechar(); render(); toast(`${rec.numero} devolvido ao autor.`); }); }
 function faixaAprov(rec){
   const a=rec.aprov; if(!a||rec.modelo) return "";
-  if(a.st==="aprovado") return `<div class="aprov ok"><b>Aprovado</b> por ${esc(nomeUser(a.por))} em ${fmtDH(a.em)}</div>`;
+  if(a.st==="aprovado") return `<div class="aprov ok">${a.auto?"<b>Validado</b> pelo coordenador":"<b>Aprovado</b> por"} ${esc(nomeUser(a.por))} em ${fmtDH(a.em)}${a.auto?" (criado por ele)":""}</div>`;
   if(a.st==="devolvido") return `<div class="aprov nc"><b>Devolvido</b> por ${esc(nomeUser(a.por))}: ${esc(a.obs)}${rec.criadoPor===S.userId||isCoord()?` <button class="btn small-btn" data-act="reenviar">Reenviar para aprovação</button>`:""}</div>`;
   return `<div class="aprov pv"><b>Aguardando aprovação</b> do coordenador ${esc(nomeUser(obraDe(rec.obraId).coordId))}. Aviso enviado por e-mail e WhatsApp (simulado).${isCoord()?` <button class="btn small-btn primary" data-act="aprovarAqui">Aprovar</button>`:""}</div>`;
 }
-const situacaoDoc = rec => rec.modelo? "Exemplo modelo" : rec.aprov?.st==="aprovado"? `Aprovado por ${nomeUser(rec.aprov.por)} em ${fmtData(new Date(rec.aprov.em).toISOString().slice(0,10))}` : rec.aprov?.st==="devolvido"? "Devolvido para correção" : "Aguardando aprovação do coordenador";
+const situacaoDoc = rec => rec.modelo? "Exemplo modelo" : rec.aprov?.st==="aprovado"? `${rec.aprov.auto?"Validado pelo coordenador":"Aprovado por"} ${nomeUser(rec.aprov.por)} em ${fmtData(new Date(rec.aprov.em).toISOString().slice(0,10))}` : rec.aprov?.st==="devolvido"? "Devolvido para correção" : "Aguardando aprovação do coordenador";
 
 /* ================= OBRAS ================= */
 function vObras(){
@@ -1911,7 +1911,7 @@ function sheetCorrecao(cod){
 
 /* ================= INSPEÇÃO LIVRE ================= */
 function blocoLivre(v){
-  if(v.ck!=="LV"||v.modelo) return "";
+  if((v.ck!=="LV"&&!v.snap)||v.modelo) return "";
   return `<section class="card"><h2>Itens da inspeção livre</h2><p class="muted small">Monte o checklist na hora. Cada item vira uma linha com OK / NÃO OK / NV.</p>
     <label class="f"><span class="req">O que verificar</span><input id="lv-s" placeholder="ex.: Guarda-corpo da escada instalado conforme projeto"></label>
     <div class="grid2"><label class="f">Momento<select id="lv-m">${["A","D","P"].map(k=>`<option value="${k}">${MOMENTOS_G[k]}</option>`).join("")}</select></label><label class="f chk"><input type="checkbox" id="lv-t"> É TRAVA (impede liberar)</label></div>
@@ -1923,11 +1923,11 @@ function vNova(){
   const o=obraAtual();
   return `<div>${voltarBtn()}<h1>Nova RNC</h1><p class="muted">${esc(o.nome)} · Contratada: ${esc(o.contratada||"—")}</p></div>
   <form id="f-nova" class="card" novalidate>
-    <label class="f"><span class="req">Checklist</span><select id="n-ck">${Object.entries(CHECKLISTS).map(([k,c])=>`<option value="${k}">${esc(c.nome)}${k==="LV"?" (monte os itens na hora)":""}</option>`).join("")}</select></label>
+    <label class="f"><span class="req">Checklist</span><select id="n-ck">${Object.entries(CHECKLISTS).filter(([k])=>k!=="LV"&&k!=="SM").map(([k,c])=>`<option value="${k}">${esc(c.nome)}${k==="LV"?" (monte os itens na hora)":""}</option>`).join("")}</select></label>
     <div class="grid2"><label class="f"><span class="req">Pavimento</span><select id="n-pav">${(o.pavimentos||[]).map(p=>`<option>${esc(p)}</option>`).join("")}</select></label><label class="f"><span class="req">Unidade / área</span><input id="n-unid" placeholder="ex.: Apto 52"></label></div>
     <label class="f"><span class="req">Ambiente / elemento</span><input id="n-amb" placeholder="ex.: Banheiro social"></label>
     <div class="grid2"><label class="f"><span class="req">Projeto consultado</span><input id="n-proj" placeholder="código do projeto"></label><label class="f"><span class="req">Revisão</span><input id="n-rev" placeholder="ex.: R02"></label></div>
-    <p class="muted small">Vistoriador: ${esc(user().nome)}. Ao criar, o coordenador recebe o aviso para aprovação.</p>
+    <p class="muted small">Vistoriador: ${esc(user().nome)}. ${isCoord()?"Criada por você, a RNC já nasce validada.":"Ao criar, o coordenador recebe o aviso para validar."}</p>
     <p id="n-err" class="warn" hidden></p><button class="btn primary block" type="submit">Iniciar RNC</button></form>`;
 }
 function criarVistoria(e){ e.preventDefault(); const g=id=>$("#"+id).value.trim(); const o=obraAtual();
@@ -1936,7 +1936,7 @@ function criarVistoria(e){ e.preventDefault(); const g=id=>$("#"+id).value.trim(
   if(falta.length){ const er=$("#n-err"); er.textContent="Preencha: "+falta.join(", ")+"."; er.hidden=false; return; }
   const v={id:uid("v"),obraId:o.id,numero:proxNumero(o,"RNC"),contratada:o.contratada,vist:user().nome,data:hoje(),...d,resp:{},fotos:[],anexos:[],itens:[]};
   for(const i of itensDe(v)) v.resp[i.cod]=novaResp();
-  novoRegistro(v); S.vistorias.unshift(v); save(); UI.vid=v.id; UI.view="vistoria"; render(); scrollTo(0,0); toast("RNC criada. Aviso enviado ao coordenador (simulado)."); }
+  novoRegistro(v); S.vistorias.unshift(v); save(); UI.vid=v.id; UI.view="vistoria"; render(); scrollTo(0,0); toast(isCoord()?"RNC criada e já validada por você.":"RNC criada. Aviso enviado ao coordenador (simulado)."); }
 function vNovaRF(){
   const o=obraAtual();
   return `<div>${voltarBtn()}<h1>Novo relatório fotográfico</h1><p class="muted">${esc(o.nome)}</p></div>
@@ -1949,7 +1949,7 @@ function vNovaRF(){
 function criarRF(e){ e.preventDefault(); const o=obraAtual(); const per=$("#r-per").value.trim();
   if(!per){ const er=$("#r-err"); er.textContent="Preencha o período."; er.hidden=false; return; }
   const r={id:uid("r"),kind:"RF",obraId:o.id,numero:proxNumero(o,"RF"),tipo:$("#r-tipo").value,periodo:per,inicio:o.inicio,termino:o.termino,resp:user().nome,data:hoje(),pavAtual:(o.pavimentos||[])[0]||"",localAtual:"",stAtual:"",fotos:[],anexos:[]};
-  novoRegistro(r); S.rfs.unshift(r); save(); UI.rid=r.id; UI.view="rf"; render(); scrollTo(0,0); toast("Relatório criado. Aviso enviado ao coordenador (simulado)."); }
+  novoRegistro(r); S.rfs.unshift(r); save(); UI.rid=r.id; UI.view="rf"; render(); scrollTo(0,0); toast(isCoord()?"Relatório criado e já validado por você.":"Relatório criado. Aviso enviado ao coordenador (simulado)."); }
 function vNovaAV(){
   const o=obraAtual();
   return `<div>${voltarBtn()}<h1>Relatório avulso</h1><p class="muted">${esc(o.nome)} · relatório de fotos com título e informações livres.</p></div>
@@ -1964,7 +1964,7 @@ function criarAV(e){ e.preventDefault(); const o=obraAtual(); const g=id=>$("#"+
   const d={titulo:g("a-tit"),local:g("a-local"),data:g("a-data")||hoje(),info:$("#a-info").value.trim()};
   if(!d.titulo){ const er=$("#a-err"); er.textContent="Preencha o título."; er.hidden=false; return; }
   const r={id:uid("r"),kind:"AV",obraId:o.id,obraNome:o.nome,numero:proxNumero(o,"AV"),resp:user().nome,...d,pavAtual:(o.pavimentos||[])[0]||"",localAtual:"",stAtual:"",fotos:[],anexos:[]};
-  novoRegistro(r); S.rfs.unshift(r); save(); UI.rid=r.id; UI.view="rf"; render(); scrollTo(0,0); toast("Relatório criado. Aviso enviado ao coordenador (simulado)."); }
+  novoRegistro(r); S.rfs.unshift(r); save(); UI.rid=r.id; UI.view="rf"; render(); scrollTo(0,0); toast(isCoord()?"Relatório criado e já validado por você.":"Relatório criado. Aviso enviado ao coordenador (simulado)."); }
 
 const ST_FOTO = {C:["✔","Conforme","c"],NC:["✖","Não conforme","nc"],AV:["?","A verificar","a"]};
 const stBtns = (atual, attr) => `<div class="stf" role="group" aria-label="Status da foto">${[["","—","Sem status"],["C","✔","Conforme"],["NC","✖","Não conforme"],["AV","?","A verificar"]].map(([k,ic,t])=>`<button type="button" ${attr}="${k}" aria-pressed="${(atual||"")===k}" class="stf-${k||"x"}"><b>${ic}</b><span>${t}</span></button>`).join("")}</div>`;
@@ -2046,11 +2046,11 @@ function render(){
   const u=user(); S.role = u.perfil==="vist"?"vist":"eng";
   const ub=$("#b-user"); if(ub) ub.innerHTML=`<b>${esc(u.nome.split(" ")[0])}</b><small>${PERFIS[u.perfil]}</small>`;
   const V=UI.view;
-  const h = V==="obra"?vObra() : V==="novaobra"?vNovaObra() : V==="usuarios"?vUsuarios() : V==="aprov"?vAprovacoes() : V==="novaav"?vNovaAV() : V==="novarf"?vNovaRF() : V==="rf"?vRF() : V==="nova"?vNova() : V==="vistoria"?vVistoria() : V==="guia"?vGuia() : V==="revisar"?vRevisar() : V==="obras"?vObras() : vInicio();
+  const h = V==="obra"?vObra() : V==="novaobra"?vNovaObra() : V==="usuarios"?vUsuarios() : V==="aprov"?vAprovacoes() : V==="novaav"?vNovaAV() : V==="novarf"?vNovaRF() : V==="rf"?vRF() : V==="nova"?vNova() : V==="novalivre"?vNovaLivre() : V==="novasm"?vNovaSM() : V==="vistoria"?vVistoria() : V==="guia"?vGuia() : V==="revisar"?vRevisar() : V==="obras"?vObras() : vInicio();
   const app=$("#app"); app.innerHTML=h; renderNav();
   for(const img of app.querySelectorAll("img[data-foto]")) urlFoto(img.dataset.foto).then(u=>{ if(u) img.src=u; });
   const on=(id,ev,fn)=>{ const el=$("#"+id); if(el) el.addEventListener(ev,fn); };
-  on("f-nova","submit",criarVistoria); on("f-rf","submit",criarRF); on("f-av","submit",criarAV); on("f-obra","submit",salvarObra); on("f-user","submit",criarUsuario);
+  on("f-nova","submit",criarVistoria); on("f-lv","submit",criarLivre); on("f-sm","submit",criarSM); if(V==="novasm") setTimeout(smPrev,0); on("f-rf","submit",criarRF); on("f-av","submit",criarAV); on("f-obra","submit",salvarObra); on("f-user","submit",criarUsuario);
   on("av-info","input",()=>{ if(rfAtual().modelo) return; rfAtual().info=$("#av-info").value; save(); });
   on("rf-local","input",()=>{ rfAtual().localAtual=$("#rf-local").value; save(); });
   on("rf-pav","change",()=>{ rfAtual().pavAtual=$("#rf-pav").value; save(); });
@@ -2239,7 +2239,7 @@ function vVistoria(){
   <div class="capa-card ck-card" data-act="subck" data-v="ck" role="button" tabindex="0"><span class="rr-ic">${IC.clip}</span><span class="rr-t"><span class="chip capa">Checklist</span><b>${esc(nomeCk(v))} · ${resp}/${tot} respondidos</b>
     <span class="row">${chipLib(l)}<span class="rr-sub">C ${c.OK} · NC ${c.NC} · enc. ${c.NCE} · PV ${c.PV} · Não OK ${c.NOK} · NV ${c.NV}</span></span></span><span class="go">${IC.arrow}</span></div>
   ${(v.anexos||[]).length?`<div class="capa-card" data-act="anexos" role="button" tabindex="0"><span class="rr-ic">${ICON.clip}</span><span class="rr-t"><span class="chip capa">Anexos</span><b>${v.anexos.map(a=>esc(a.titulo)).join(" · ")}</b></span></div>`:""}
-  <div class="ph-head"><b>Fotos do ambiente</b><span class="chip ${v.fotos.length>=FOTO_MIN?"c":"a"}">${v.fotos.length}/${FOTO_MAX} · mín. ${FOTO_MIN}</span></div>
+  <div class="ph-head"><b>Fotos do ambiente</b><span class="chip ${v.fotos.length>=fotoMin(v)?"c":"a"}">${v.fotos.length}/${FOTO_MAX} · mín. ${fotoMin(v)}</span></div>
   <div class="ph-list">${v.fotos.map((f,k)=>{ let st=null; for(const cd of f.itens){ const s=stEf(v.resp[cd])||"NV"; if(!st||GRAV[s]>GRAV[st]) st=s; }
       const it=f.itens.map(cd=>itemDe(v,cd)).filter(Boolean);
       const desc=it.length? it.map(i=>`${i.cod} ${i.s}`).join(" / ") : "Vista geral do ambiente";
@@ -2357,15 +2357,15 @@ function vObra(){
   const temHist=(o.hist||[]).length>0;
   let f=UI.ofil||"TODOS"; if(f==="HIST"&&!temHist) f="TODOS";
   const recs=[...S.vistorias.filter(v=>v.obraId===o.id).map(v=>["RNC",v]),...S.rfs.filter(r=>r.obraId===o.id).map(r=>[r.kind==="AV"?"AV":"RF",r])]
-    .filter(([k])=>f==="TODOS"||f===k).sort((a,b)=>(b[1].modelo?1:0)-(a[1].modelo?1:0) || (b[1].aprov?.em||0)-(a[1].aprov?.em||0));
+    .filter(([k,r])=>f==="TODOS"||(f==="SST"? !!r.snap : f==="RNC"? (k==="RNC"&&!r.snap) : f===k)).sort((a,b)=>(b[1].modelo?1:0)-(a[1].modelo?1:0) || (b[1].aprov?.em||0)-(a[1].aprov?.em||0));
   const hist = (f==="HIST"||f==="TODOS"||f==="RNC")&&temHist ? [...o.hist].sort((a,b)=>b.n-a.n) : [];
-  const fil=[["TODOS","Todos"],["RNC","RNC"],["RF","Fotográfico"],["AV","Avulso"],...(temHist?[["HIST","Anteriores"]]:[])];
+  const fil=[["TODOS","Todos"],["RNC","RNC"],["RF","Fotográfico"],["AV","Avulso"],["SST","SST / Meio amb."],...(temHist?[["HIST","Anteriores"]]:[])];
   const lista = f==="HIST"? "" : recs.map(([k,r])=>rrRec(k,r)).join("");
   return `${appbar(o.codigo,["go","inicio"],abBtn("otab","chart","Painel da obra","PAINEL")+abBtn("infoobra","info","Dados da obra"))}
   <div class="crumb">${IC.brief}<b>${esc(o.nome.toUpperCase())}</b></div>
   ${(o.pendencias||[]).length?`<button class="pend-bar" data-act="infoobra">${o.pendencias.length} dado(s) da obra a validar · ver</button>`:""}
   <div class="filtros">${fil.map(([k,t])=>`<button data-act="ofil" data-v="${k}" aria-pressed="${f===k}">${t}</button>`).join("")}</div>
-  <div class="rr-list">${lista}${hist.length?`<div class="rr-sep">RNC emitidas antes do app · ${hist.length}</div>${hist.map(h=>rrHist(o,h)).join("")}`:""}${!lista&&!hist.length?'<div class="rr-vazio">Nenhum relatório. Toque em + para criar.</div>':""}</div>
+  ${f==="SST"?sstBarra(o):""}<div class="rr-list">${lista}${hist.length?`<div class="rr-sep">RNC emitidas antes do app · ${hist.length}</div>${hist.map(h=>rrHist(o,h)).join("")}`:""}${!lista&&!hist.length?'<div class="rr-vazio">Nenhum relatório. Toque em + para criar.</div>':""}</div>
   <button class="fab" data-act="novorec" aria-label="Novo relatório">${IC.plus}</button>`;
 }
 function infoObra(){ const o=obraAtual();
@@ -2403,7 +2403,7 @@ function baseDados(){
   for(const r of PD.rncs){ const oid=OBRA_NOME2ID[r.obra]; rncs.push({...r,oid,key:oid+"#"+r.n,origem:"hist"}); }
   for(const i of PD.itens){ const oid=OBRA_NOME2ID[i.obra]; itens.push({...i,oid,key:oid+"#"+i.rnc,data:(PD.rncs.find(r=>r.obra===i.obra&&r.n===i.rnc)||{}).data}); }
   for(const v of S.vistorias){ if(v.modelo||!OBRA_NOME2ID_INV[v.obraId]) continue;
-    const n=Number(String(v.numero||"").split("-").pop())||0; const key=v.obraId+"#app"+v.id; const disc=CK_DISC[v.ck]||"Acabamentos";
+    const n=Number(String(v.numero||"").split("-").pop())||0; const key=v.obraId+"#app"+v.id; const disc=recDisc(v);
     let c={itens:0,C:0,NC:0,PV:0,NV:0,INFO:0};
     for(const it of itensDe(v)){ const r=v.resp[it.cod]; if(!r) continue; const s=stEf(r); const st= s==="NC"||s==="NCE"?"NC" : s==="PV"?"PV" : s==="NOK"?"NC" : r.status==="OK"?"C" : r.status==="NV"?"NV" : null; if(!st) continue;
       c.itens++; c[st]++; itens.push({oid:v.obraId,obra:obraDe(v.obraId).nome,rnc:n,key,n:it.cod,org:"app",local:`${v.pav} · ${v.unid} · ${v.amb}`,st,disc,txt:it.s+(r.obs?` — ${r.obs}`:""),data:v.data,app:v.id}); }
@@ -2635,7 +2635,7 @@ function sheetDados(){
 }
 document.addEventListener("click", e=>{ const a=e.target.closest("[data-act='dados']"); if(!a) return; e.stopImmediatePropagation(); sheetDados(); }, true);
 { const _vObras=vObras; vObras=function(){ return _vObras()+`<button class="btn block" data-act="dados" style="margin:12px 0">Dados deste aparelho · importar pacote, backup</button>`; }; }
-if(typeof vPainel==="function"){ const _vPainel=vPainel; vPainel=function(){ const h=_vPainel(); return PACOTE? h : `<section class="card"><h2>Painel sem histórico de obra</h2><p class="small">Este aparelho ainda não tem o pacote de dados das obras. Importe o arquivo recebido da coordenação para ver o painel completo. Os registros feitos no app aparecem aqui normalmente.</p><button class="btn primary block" data-act="dados">Importar pacote de obra</button></section>`+h; }; }
+if(typeof vPainel==="function"){ const _vPainel=vPainel; vPainel=function(){ const h=_vPainel(); return PACOTE? h : `<section class="card"><h2>Painel sem histórico de obra</h2><p class="small">Este aparelho ainda não tem o pacote de dados das obras. Importe o arquivo recebido da coordenação para ver o painel completo. Os registros feitos no app aparecem aqui normalmente.</p><button class="btn primary block" data-act="dados">Importar pacote de dados</button></section>`+h; }; }
 
 /* ================= ONDA 2 · ficha da obra, nova obra, PDF do painel, sem obra modelo, fotos do histórico ================= */
 const VIGENCIAS=["Contrato original","1º Aditamento","2º Aditamento","3º Aditamento","4º Aditamento","5º Aditamento"];
@@ -2832,6 +2832,159 @@ document.addEventListener("click", e=>{ const b=e.target.closest("#sheet [data-d
     const h2=document.querySelector("#sheet h2"); const alvo=h2&&h2.closest(".row"); if(alvo) alvo.insertAdjacentHTML("afterend",`<button class="btn primary block" data-act="verhist" data-v="${esc(k)}" style="margin:8px 0">Ver itens e fotos</button>`); }; }
 document.addEventListener("click", e=>{ const a=e.target.closest("[data-act='verhist']"); if(!a) return; e.stopImmediatePropagation();
   const k=a.dataset.v; fechar(); UI.view="inicio"; UI.pv={nivel:"rnc",oid:k.split("#")[0],key:k}; UI.pfit="todos"; render(); scrollTo(0,0); }, true);
+
+/* ================= ONDA 3 · RNC LIVRE + SST / MEIO AMBIENTE + MATRIZ DE APLICABILIDADE ================= */
+/* O conteúdo do checklist (itens, critérios, base técnica, matriz) NÃO fica no código: vem do pacote privado (chave "sst"). */
+const SST = () => PACOTE?.sst || null;
+const BLOCO_NOME = {A:"A · Pré-obra e mobilização", B:"B · Documental contínuo", C:"C · Inspeção de campo"};
+const BLOCO_CURTO = {A:"Pré-obra", B:"Documental", C:"Campo"};
+const BLOCO_DESC = {A:"Documentos e condições a conferir antes de iniciar ou ao mobilizar uma empresa (inclui Empresa e Obra).",
+  B:"Documentos e registros que precisam ser mantidos e conferidos ao longo da obra.",
+  C:"Verificação física no canteiro: rotina diária ou semanal."};
+const FREQ_NOME = {D:"Diária", S:"Semanal", P:"Pontual"};
+const AREA_NOME = {SST:"SST", MA:"Meio Ambiente"};
+const AREA_DISC = {SST:"SST", MA:"Meio ambiente"};
+Object.assign(MOMENTOS_G, {LIVRE:"Itens livres", EMPRESA:"Empresa", OBRA:"Obra", "MEIO AMBIENTE":"Meio Ambiente",
+  "NR-01":"NR-01 · Gerenciamento de riscos","NR-04":"NR-04 · SESMT","NR-05":"NR-05 · CIPA","NR-06":"NR-06 · EPI","NR-07":"NR-07 · PCMSO",
+  "NR-09":"NR-09 · Exposições ocupacionais","NR-10":"NR-10 · Eletricidade","NR-11":"NR-11 · Movimentação de materiais","NR-12":"NR-12 · Máquinas e equipamentos",
+  "NR-18":"NR-18 · Construção","NR-20":"NR-20 · Inflamáveis e combustíveis","NR-23":"NR-23 · Proteção contra incêndios","NR-26":"NR-26 · Sinalização e produtos químicos",
+  "NR-33":"NR-33 · Espaços confinados","NR-35":"NR-35 · Trabalho em altura"});
+CHECKLISTS.SM = {nome:"SST / Meio Ambiente", cartilha:null, itens:[]};
+for(const d of ["SST","Meio ambiente"]) if(!PD.disc.includes(d)) PD.disc.push(d);
+
+const fotoMin = v => v && v.snap && v.bloco!=="C" ? 1 : FOTO_MIN;
+function recDisc(v){ return v.disc || (v.snap ? AREA_DISC[v.area] : null) || CK_DISC[v.ck] || "Acabamentos"; }
+
+/* ---------- matriz de aplicabilidade (por obra) ---------- */
+function modulosAtivos(o){ const s=SST(); const set=new Set(); if(!s) return set; (s.base||[]).forEach(x=>set.add(x));
+  const m=o.sstMatriz||{}; for(const q of s.matriz) if(m["q"+q.n]==="SIM") q.mods.forEach(x=>set.add(x)); return set; }
+function matrizRespondidas(o){ const s=SST(); if(!s) return 0; const m=o.sstMatriz||{}; return s.matriz.filter(q=>m["q"+q.n]).length; }
+function itensSM(o,area,bl,freq){ const s=SST(); if(!s) return []; const at=modulosAtivos(o);
+  return s.itens.filter(i=>i.area===area && i.bl===bl && at.has(i.mod) && (bl!=="C" || freq!=="D" || i.ap==="SEMPRE")); }
+const recsSM = o => S.vistorias.filter(v=>v.obraId===o.id && v.snap && !v.modelo);
+
+function sheetMatriz(){
+  const o=obraAtual(), s=SST();
+  if(!s){ aviso("Checklist SST/MA não está neste aparelho","Importe o pacote de dados (versão 3) em “Dados e fotos” para usar a matriz e os checklists de SST e Meio Ambiente."); return; }
+  const ed=isEngOuCoord(); o.sstMatriz=o.sstMatriz||{};
+  const resumo=()=>{ const at=modulosAtivos(o), extra=[...at].filter(x=>!s.base.includes(x));
+    return `<b>${matrizRespondidas(o)}/${s.matriz.length}</b> perguntas respondidas · Módulos sempre abertos: ${s.base.map(esc).join(", ")}.<br>Abertos pela matriz: ${extra.length?extra.map(esc).join(", "):"nenhum até agora"}.`; };
+  abrirSheet(`<div class="row between"><h2>Matriz de aplicabilidade</h2><button class="link" data-x="1">Fechar</button></div>
+    <p class="muted small">Responda uma vez por obra e atualize quando a obra mudar de fase. SIM abre os módulos indicados; pergunta sem resposta não abre nada, por isso responda todas.${ed?"":" Somente engenheiro ou coordenador altera a matriz."}</p>
+    <p class="small" id="mx-res">${resumo()}</p>
+    <div class="pick">${s.matriz.map(q=>{ const r=o.sstMatriz["q"+q.n]||"";
+      return `<div class="pk" style="display:block"><span><b>${q.n}.</b> ${esc(q.q)}</span><span class="muted small" style="display:block">${q.mods.length?"Abre: "+q.mods.map(esc).join(" + "):"Análise específica da NR (fora da base atual)"}${q.obs?` · ${esc(q.obs)}`:""}</span>
+        <div class="ck-btns" style="margin-top:6px" role="group" aria-label="Pergunta ${q.n}">${["SIM","NÃO"].map(k=>`<button data-q="${q.n}" data-r="${k}" aria-pressed="${r===k}" ${ed?"":"disabled"}>${k}</button>`).join("")}</div></div>`; }).join("")}</div>`,
+    e=>{ const b=e.target.closest("[data-q]"); if(!b||!ed) return; const k="q"+b.dataset.q; const novo=o.sstMatriz[k]===b.dataset.r?"":b.dataset.r;
+      if(novo) o.sstMatriz[k]=novo; else delete o.sstMatriz[k];
+      b.parentElement.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x.dataset.r===novo))); $("#mx-res").innerHTML=resumo(); save(); });
+}
+
+/* ---------- barra da aba SST / Meio Ambiente (dentro da obra) ---------- */
+function rotinaChip(o,area){
+  const rs=recsSM(o).filter(v=>v.area===area&&v.bloco==="C");
+  const dHoje=rs.some(v=>v.freq==="D"&&v.data===hoje());
+  const sem=rs.filter(v=>v.freq==="S").map(v=>v.data).sort().pop();
+  const dias=sem?diasDesde(sem):null;
+  return `<div class="row" style="flex-wrap:wrap;gap:6px"><b class="small">${AREA_NOME[area]}</b>
+    <span class="chip ${dHoje?"c":"a"}">Diária hoje: ${dHoje?"feita":"pendente"}</span>
+    <span class="chip ${dias==null?"nv":dias<=7?"c":"a"}">Semanal: ${dias==null?"nunca feita":dias===0?"hoje":"há "+dias+" dia(s)"}</span></div>`;
+}
+function sstBarra(o){
+  const s=SST();
+  if(!s) return `<section class="card"><h3>SST e Meio Ambiente</h3><p class="small">O checklist de SST e Meio Ambiente ainda não está neste aparelho. Importe o pacote de dados (versão 3) em “Dados e fotos”. Enquanto isso, você já pode criar uma RNC livre.</p>
+    <button class="btn block" data-act="dados">Dados e fotos · importar pacote</button><button class="btn block" data-act="novalivre" style="margin-top:8px">+ RNC livre (assunto novo)</button></section>`;
+  const n=matrizRespondidas(o), tot=s.matriz.length;
+  return `<section class="card"><h3>SST e Meio Ambiente · ${esc(s.rev)}</h3>
+    <div class="row" style="flex-wrap:wrap;gap:6px"><span class="chip ${n===tot?"c":"a"}">Matriz: ${n}/${tot}</span><span class="chip c">${modulosAtivos(o).size} módulos abertos</span></div>
+    ${n<tot?`<p class="small txt-nc" style="margin:6px 0 0">Matriz incompleta: módulos como NR-35, NR-10 e NR-12 só entram depois que as perguntas forem respondidas.</p>`:""}
+    <div style="margin:10px 0;display:grid;gap:8px">${rotinaChip(o,"SST")}${rotinaChip(o,"MA")}</div>
+    <button class="btn primary block" data-act="novasm">+ Inspeção SST/MA</button><button class="btn block" data-act="matriz" style="margin-top:8px">Matriz de aplicabilidade</button></section>`;
+}
+
+/* ---------- nova inspeção SST / MA ---------- */
+function vNovaSM(){
+  const o=obraAtual(); const s=SST();
+  if(!s) return `<div>${voltarBtn()}<h1>Inspeção SST / Meio Ambiente</h1></div><section class="card"><p>O checklist de SST e Meio Ambiente não está neste aparelho. Importe o pacote de dados (versão 3).</p><button class="btn primary block" data-act="dados">Dados e fotos</button></section>`;
+  return `<div>${voltarBtn()}<h1>Inspeção SST / Meio Ambiente</h1><p class="muted">${esc(o.nome)} · Contratada: ${esc(o.contratada||"—")}</p></div>
+  <form id="f-sm" class="card" novalidate>
+    <label class="f"><span class="req">Área</span><select id="sm-area"><option value="SST">SST · Segurança e saúde do trabalho</option><option value="MA">Meio Ambiente</option></select></label>
+    <label class="f"><span class="req">Bloco</span><select id="sm-bl">${Object.entries(BLOCO_NOME).map(([k,t])=>`<option value="${k}" ${k==="C"?"selected":""}>${t}</option>`).join("")}</select></label>
+    <p class="muted small" id="sm-desc"></p>
+    <label class="f" id="sm-fr-w"><span class="req">Rotina</span><select id="sm-fr"><option value="D">Diária · só itens de aplicação permanente</option><option value="S" selected>Semanal · todos os itens de campo aplicáveis</option><option value="P">Pontual · todos os itens de campo aplicáveis</option></select></label>
+    <div class="grid2"><label class="f"><span class="req">Pavimento / setor</span><select id="sm-pav"><option>Obra toda</option>${(o.pavimentos||[]).map(p=>`<option>${esc(p)}</option>`).join("")}</select></label>
+      <label class="f">Frente / local (opcional)<input id="sm-lo" placeholder="ex.: fachada leste, subsolo"></label></div>
+    <p class="small" id="sm-prev"></p>
+    <p class="muted small">Entram apenas os módulos abertos pela matriz de aplicabilidade desta obra. Você pode acrescentar itens livres depois. Responsável: ${esc(user().nome)}. ${isCoord()?"Criada por você, a inspeção já nasce validada.":"Ao criar, o coordenador recebe o aviso para validar."}</p>
+    <p id="sm-err" class="warn" hidden></p><button class="btn primary block" type="submit">Iniciar inspeção</button></form>`;
+}
+function smPrev(){ const o=obraAtual(); if(!$("#sm-area")||!o) return; const area=$("#sm-area").value, bl=$("#sm-bl").value, fr=$("#sm-fr").value;
+  $("#sm-fr-w").hidden = bl!=="C"; $("#sm-desc").textContent=BLOCO_DESC[bl];
+  const it=itensSM(o,area,bl,fr); const mods=[...new Set(it.map(i=>i.mod))];
+  $("#sm-prev").innerHTML = it.length? `<b>${it.length} itens</b> nesta inspeção · ${mods.map(esc).join(", ")}` : `<span class="txt-nc">Nenhum item para esta combinação com a matriz atual.</span>`; }
+document.addEventListener("change", e=>{ if(e.target.id && e.target.id.startsWith("sm-")) smPrev(); });
+function criarSM(e){ e.preventDefault(); const o=obraAtual(), s=SST(); const g=id=>$("#"+id).value.trim();
+  const area=g("sm-area"), bl=g("sm-bl"), fr=bl==="C"?g("sm-fr"):"P"; const it=itensSM(o,area,bl,fr);
+  if(!it.length){ const er=$("#sm-err"); er.textContent="Nenhum item para esta combinação. Verifique a matriz de aplicabilidade da obra."; er.hidden=false; return; }
+  const nome=`${AREA_NOME[area]} · ${BLOCO_CURTO[bl]}`;
+  const v={id:uid("v"),obraId:o.id,numero:proxNumero(o,"RNC"),contratada:o.contratada,vist:user().nome,data:hoje(),ck:"SM",snap:true,area,bloco:bl,freq:fr,nome,ckRev:s.rev,
+    pav:g("sm-pav"),unid:g("sm-lo")||"Todas as frentes",amb:bl==="C"?`Inspeção de campo (${FREQ_NOME[fr].toLowerCase()})`:BLOCO_NOME[bl].split(" · ")[1],proj:"Checklist SST/MA",rev:s.rev,resp:{},fotos:[],anexos:[],
+    itens:it.map(i=>({cod:i.cod,m:i.mod,trava:false,s:i.s,como:i.como||i.s,fer:"",certo:"",errado:"",ap:i.ap,q:i.q}))};
+  for(const i of v.itens) v.resp[i.cod]=novaResp();
+  novoRegistro(v); S.vistorias.unshift(v); save(); UI.vid=v.id; UI.view="vistoria"; UI.sub="ck"; render(); scrollTo(0,0);
+  toast(isCoord()?"Inspeção criada e já validada por você.":"Inspeção criada. Aviso enviado ao coordenador (simulado)."); }
+
+/* ---------- RNC livre (assunto novo, fora dos itens predefinidos) ---------- */
+function vNovaLivre(){
+  const o=obraAtual();
+  return `<div>${voltarBtn()}<h1>RNC livre</h1><p class="muted">${esc(o.nome)} · Contratada: ${esc(o.contratada||"—")}</p></div>
+  <form id="f-lv" class="card" novalidate>
+    <p class="muted small">Para um assunto que não está nos checklists prontos. Mesma métrica das demais RNC: cada ponto é C (conforme) ou NC (não conforme), e quem apontou precisa dizer o que está não conforme.</p>
+    <label class="f"><span class="req">Assunto</span><input id="lv-as" placeholder="ex.: Proteção de periferia da laje de cobertura"></label>
+    <label class="f"><span class="req">Disciplina (para o painel)</span><select id="lv-di">${PD.disc.map(d=>`<option ${d==="Canteiro e organização"?"selected":""}>${esc(d)}</option>`).join("")}</select></label>
+    <div class="grid2"><label class="f"><span class="req">Pavimento</span><select id="lv-pav"><option>Geral</option>${(o.pavimentos||[]).map(p=>`<option>${esc(p)}</option>`).join("")}</select></label><label class="f"><span class="req">Local / elemento</span><input id="lv-lo" placeholder="ex.: Fachada leste"></label></div>
+    <label class="f"><span class="req">Primeiro ponto: o que está sendo verificado / não conforme?</span><input id="lv-ap" placeholder="ex.: Guarda-corpo ausente no vão da escada"></label>
+    <div class="grid2"><label class="f">Projeto ou norma de referência<input id="lv-pj" placeholder="se houver"></label><label class="f">Revisão<input id="lv-rv" placeholder="se houver"></label></div>
+    <p class="muted small">${isCoord()?"Criada por você, a RNC já nasce validada.":"Ao criar, o coordenador recebe o aviso para validar."} Os demais pontos são acrescentados dentro da RNC.</p>
+    <p id="lv-err" class="warn" hidden></p><button class="btn primary block" type="submit">Iniciar RNC livre</button></form>`;
+}
+function criarLivre(e){ e.preventDefault(); const g=id=>$("#"+id).value.trim(); const o=obraAtual();
+  const d={assunto:g("lv-as"),disc:g("lv-di"),pav:g("lv-pav"),unid:g("lv-lo"),ap:g("lv-ap"),proj:g("lv-pj"),rev:g("lv-rv")};
+  const falta=Object.entries({assunto:"assunto",unid:"local",ap:"primeiro ponto"}).filter(([k])=>!d[k]).map(([,t])=>t);
+  if(falta.length){ const er=$("#lv-err"); er.textContent="Preencha: "+falta.join(", ")+"."; er.hidden=false; return; }
+  const v={id:uid("v"),obraId:o.id,numero:proxNumero(o,"RNC"),contratada:o.contratada,vist:user().nome,data:hoje(),ck:"LV",livre:true,disc:d.disc,assunto:d.assunto,
+    pav:d.pav,unid:d.unid,amb:d.assunto,proj:d.proj||"sem referência",rev:d.rev||"—",resp:{},fotos:[],anexos:[],
+    itens:[{cod:"LV.01",m:"LIVRE",trava:false,s:d.ap,como:"",fer:"",certo:"",errado:""}]};
+  v.resp["LV.01"]=novaResp();
+  novoRegistro(v); S.vistorias.unshift(v); save(); UI.vid=v.id; UI.view="vistoria"; UI.sub="ck"; render(); scrollTo(0,0);
+  toast(isCoord()?"RNC livre criada e já validada por você.":"RNC livre criada. Aviso enviado ao coordenador (simulado)."); }
+
+function blocoLivre(v){
+  if((v.ck!=="LV"&&!v.snap)||v.modelo) return "";
+  const livre = v.livre||v.snap;
+  return `<section class="card"><h2>${v.snap?"Itens livres desta inspeção":"Pontos da RNC livre"}</h2><p class="muted small">${livre?"Acrescente outro ponto na hora. Cada ponto vira uma linha com OK / NÃO OK / NV; no NÃO OK, descreva o que está não conforme e anexe a foto.":"Monte o checklist na hora. Cada item vira uma linha com OK / NÃO OK / NV."}</p>
+    <label class="f"><span class="req">O que verificar</span><input id="lv-s" placeholder="ex.: Guarda-corpo da escada instalado conforme projeto"></label>
+    <div class="grid2">${livre?"":`<label class="f">Momento<select id="lv-m">${["A","D","P"].map(k=>`<option value="${k}">${MOMENTOS_G[k]}</option>`).join("")}</select></label>`}<label class="f chk"><input type="checkbox" id="lv-t"> É TRAVA (impede liberar)</label></div>
+    <button class="btn block" data-act="lvadd">+ Adicionar item</button></section>`;
+}
+
+/* ---------- dúvida / lastro dos itens de SST e MA ---------- */
+function sheetDuvida(cod){ const v=vAtual(); const i=itemDe(v,cod); if(!v.snap) return sheetDuvida0(cod);
+  const b=SST()?.bt?.[cod]||null; const L=(t,x)=>x?`<dt>${t}</dt><dd>${esc(x)}</dd>`:"";
+  const fonte=b?.fonte? (/^https?:\/\//.test(b.fonte)? `<a href="${esc(b.fonte.split(/\s/)[0])}" target="_blank" rel="noopener">${esc(b.fonte.split(/\s/)[0])}</a>` : esc(b.fonte)) : "";
+  abrirSheet(`<div class="row between"><h2>${esc(i.cod)} · como verificar</h2><button class="link" data-x="1">Fechar</button></div><p>${esc(i.s)}</p>
+    <dl class="how">${L("Aplicabilidade",i.ap==="SEMPRE"?"Sempre":"Se houver (depende da atividade, risco ou equipamento)")}${L("Quando verificar",i.q)}${L("O que olhar",i.como)}
+    ${b?`${L("Base legal / referência",b.ref)}${L("Por que está no checklist",b.crit)}<dt>Fonte oficial</dt><dd class="small">${fonte||"—"}</dd>${L("Consulta da fonte",b.data)}`:`<dt>Base técnica</dt><dd class="small">Não encontrada neste aparelho (importe o pacote v3).</dd>`}</dl>
+    <p class="muted small">Declaração verbal da contratada não é evidência: confira o documento, o registro ou a condição física. Sem evidência ainda, use NV e informe o motivo; NÃO OK exige descrição e foto.</p>`); }
+
+/* ---------- menu de novo relatório e ações ---------- */
+function novoRecMenu(){ menuSheet("Novo relatório",[["RNC – vistoria com checklist",()=>{ UI.view="nova"; render(); }],["RNC livre – assunto novo",()=>{ UI.view="novalivre"; render(); }],
+  ["Inspeção SST / Meio Ambiente",()=>{ UI.view="novasm"; render(); }],["Relatório fotográfico",()=>{ UI.view="novarf"; render(); }],["Relatório avulso",()=>{ UI.view="novaav"; render(); }]]); }
+document.addEventListener("click", e=>{
+  if(e.target.closest("#sheet")) return; const a=e.target.closest("[data-act='novasm'],[data-act='novalivre'],[data-act='matriz']"); if(!a) return;
+  e.stopImmediatePropagation(); const k=a.dataset.act;
+  if(k==="matriz") sheetMatriz(); else { UI.view=k==="novasm"?"novasm":"novalivre"; render(); scrollTo(0,0); }
+}, true);
 
 (async function iniciar(){ $("#logo").src=LOGO_DARK; rede(); await openDB(); S=(await kvGet("state2"))||estadoInicial(); if(!S.rfs){ S.rfs=[]; } S.seqAV=S.seqAV||1;
   migrar(); purgarModelo(); await carregarIndiceFotosHist(); lastJSON=snapJSON(); kvSet("state2",S); UI.oid=(S.obras[0]||{}).id||null; render(); })();
