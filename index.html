@@ -739,6 +739,23 @@ body.rep .fab-mais{bottom:calc(156px + env(safe-area-inset-bottom,0px))!importan
 .ed-dica{font-size:.74rem;color:#cfd8dd;line-height:1.2;flex:1 1 140px}
 .ed-bar button:disabled{opacity:.4}
 .pk.none{background:#eef3f6;border-color:#9db4c0}
+#sheet .sheet{max-height:94vh;overflow-y:auto;overscroll-behavior:contain}
+.pf11{display:flex;flex-direction:column;gap:10px}
+.pf-foto{position:sticky;top:-18px;z-index:3;background:var(--bg);padding:2px 0 4px;margin:0 -2px}
+.pf-foto .ph-big{max-height:34vh;width:100%;cursor:pointer}
+.pf-foto p{margin:4px 0 0}
+.pf-det{border:1px solid var(--line);border-radius:12px;background:var(--surface,#fff);overflow:hidden}
+.pf-det>summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:8px;padding:13px 14px;min-height:48px;font-size:.95rem}
+.pf-det>summary::-webkit-details-marker{display:none}
+.pf-det>summary:after{content:"▾";font-size:1.1rem;margin-left:6px;transition:transform .15s}
+.pf-det[open]>summary:after{transform:rotate(180deg)}
+.pf-n{margin-left:auto;font-size:.78rem;color:#4a5a64;font-weight:500}
+.pf-det .pk-busca{display:block;width:calc(100% - 20px);margin:0 10px 8px}
+.pf-list{padding:0 10px 10px;max-height:34vh}
+.pki{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--bg);font-size:.9rem;line-height:1.3}
+.pki input{width:22px;height:22px;flex:none;margin-top:1px}
+.pki-t{flex:1}.pki-t b{font-size:1rem;color:#004d6d;margin-right:4px}
+.ed-tx{display:flex;gap:6px;flex:1 1 220px}.ed-tx input{flex:1}
 </style>
 
 <header class="top">
@@ -4685,7 +4702,7 @@ editarFoto=async function(ref){
   const sh=$("#sheet"); sh.innerHTML=`<div class="editor" role="dialog" aria-modal="true" aria-label="Marcar na foto">
     <div class="ed-bar">${[["sel","✥ Mover"],["seta","Seta"],["circ","Círculo"],["ret","Retângulo"],["livre","Mão livre"],["txt","Texto"]].map(([k,t])=>`<button data-tool="${k}">${t}</button>`).join("")}</div>
     <div class="ed-bar">${Object.keys(COR_ED).map(k=>`<button data-cor="${k}" class="sw" style="--sw:${COR_ED[k]}" aria-label="${k}"></button>`).join("")}
-      <input id="ed-txt" placeholder="texto, depois toque na foto" maxlength="40" hidden><span class="sp"></span><button data-ed="undo">↶ Desfazer</button><button data-ed="redo">↷ Refazer</button></div>
+      <span class="ed-tx" id="ed-tx" hidden><input id="ed-txt" placeholder="escreva o texto" maxlength="40"><button data-ed="txtok" class="btn primary" aria-label="Inserir ou atualizar o texto">✓</button></span><span class="sp"></span><button data-ed="undo">↶ Desfazer</button><button data-ed="redo">↷ Refazer</button></div>
     <div class="ed-bar"><span class="ed-dica" id="ed-dica"></span><span class="sp"></span><button data-ed="del">Apagar selecionada</button><button data-ed="clear">Limpar tudo</button></div>
     <div class="ed-wrap"><canvas id="ed-c" style="touch-action:none"></canvas></div>
     <div class="ed-bar"><button data-ed="cancel" class="btn">Cancelar</button><span class="sp"></span><button data-ed="save" class="btn primary">Salvar marcação</button></div></div>`;
@@ -4711,17 +4728,18 @@ editarFoto=async function(ref){
   const fit=()=>{ if(!document.body.contains(cv)) return; const ed=sh.querySelector(".editor"); const bars=[...ed.querySelectorAll(".ed-bar")].reduce((t,b)=>t+b.offsetHeight,0);
     const mw=Math.max(160,(ed.clientWidth||window.innerWidth)-16), mh=Math.max(160,(ed.clientHeight||window.innerHeight)-bars-48);
     const k=Math.min(mw/img.naturalWidth, mh/img.naturalHeight); cv.width=Math.round(img.naturalWidth*k); cv.height=Math.round(img.naturalHeight*k); cv.style.width=cv.width+"px"; cv.style.height=cv.height+"px"; draw(); };
-  const DICA={sel:"Toque numa figura e arraste para mover.",seta:"Arraste na foto para desenhar a seta.",circ:"Arraste na foto para desenhar o círculo.",ret:"Arraste na foto para desenhar o retângulo.",livre:"Desenhe com o dedo.",txt:"Escreva o texto e toque na foto onde ele deve ficar."};
+  const DICA={sel:"Toque numa figura ou texto e arraste para mover.",seta:"Arraste para desenhar. Toque numa figura já feita para movê-la.",circ:"Arraste para desenhar. Toque numa figura já feita para movê-la.",ret:"Arraste para desenhar. Toque numa figura já feita para movê-la.",livre:"Desenhe com o dedo. Toque numa figura já feita para movê-la.",txt:"Escreva e toque em ✓: o texto entra no centro da foto. Toque nele para editar ou arrastar."};
   const draw=()=>{ if(!document.body.contains(cv)) return; const g=cv.getContext("2d"); g.drawImage(img,0,0,cv.width,cv.height); desenharFormas(g,cv.width,cv.height,atual?[...formas,atual]:formas);
     if(sel>=0&&formas[sel]){ const [a,b,c,d]=caixa(formas[sel]); g.save(); g.setLineDash([8,6]); g.lineWidth=2; g.strokeStyle="#00c2ff"; g.strokeRect(a-6,b-6,c-a+12,d-b+12); g.restore(); }
     sh.querySelectorAll("[data-tool]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.tool===ferr)); sh.querySelectorAll("[data-cor]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.cor===cor));
-    $("#ed-txt").hidden = ferr!=="txt"; $("#ed-dica").textContent=DICA[ferr]||"";
+    $("#ed-tx").hidden = !(ferr==="txt"||(sel>=0&&formas[sel]&&formas[sel].t==="txt")); $("#ed-dica").textContent=DICA[ferr]||"";
     sh.querySelector('[data-ed="undo"]').disabled=hi<=0; sh.querySelector('[data-ed="redo"]').disabled=hi>=hist.length-1; sh.querySelector('[data-ed="del"]').disabled=sel<0; sh.querySelector('[data-ed="clear"]').disabled=!formas.length; };
   const pos=e=>{ const r=cv.getBoundingClientRect(); return [Math.min(1,Math.max(0,(e.clientX-r.left)/r.width)),Math.min(1,Math.max(0,(e.clientY-r.top)/r.height))]; };
-  cv.addEventListener("pointerdown",e=>{ e.preventDefault(); cv.setPointerCapture(e.pointerId); const [x,y]=pos(e);
-    if(ferr==="sel"){ sel=pega([x*cv.width,y*cv.height]); arr=sel>=0?{x,y,mov:false}:null; draw(); return; }
-    sel=-1;
-    if(ferr==="txt"){ const s=$("#ed-txt").value.trim(); if(!s){ toast("Escreva o texto antes de tocar na foto."); return; } formas.push({t:"txt",x1:x,y1:y,s,c:cor}); sel=formas.length-1; snap(); draw(); return; }
+  const syncTxt=()=>{ if(sel>=0&&formas[sel]&&formas[sel].t==="txt") $("#ed-txt").value=formas[sel].s; };
+  cv.addEventListener("pointerdown",e=>{ e.preventDefault(); cv.setPointerCapture(e.pointerId); const [x,y]=pos(e); const p=[x*cv.width,y*cv.height];
+    let hit=-1; if(ferr==="sel") hit=pega(p); else for(let k=formas.length-1;k>=0;k--) if(acerta(formas[k],p,true)){ hit=k; break; }
+    if(hit>=0){ sel=hit; arr={x,y,mov:false}; syncTxt(); draw(); return; }
+    sel=-1; arr=null; if(ferr==="sel"||ferr==="txt"){ draw(); return; }
     atual = ferr==="livre"? {t:"livre",p:[[x,y]],c:cor} : {t:ferr,x1:x,y1:y,x2:x,y2:y,c:cor}; draw(); });
   cv.addEventListener("pointermove",e=>{ const [x,y]=pos(e);
     if(arr&&sel>=0){ const dx=x-arr.x, dy=y-arr.y; if(Math.abs(dx)+Math.abs(dy)>0){ mover(formas[sel],dx,dy); arr.x=x; arr.y=y; arr.mov=true; draw(); } return; }
@@ -4729,18 +4747,22 @@ editarFoto=async function(ref){
   const fim=()=>{ if(arr){ if(arr.mov) snap(); arr=null; draw(); return; } if(!atual) return; const ok = atual.t==="livre"? atual.p.length>2 : Math.hypot(atual.x2-atual.x1,atual.y2-atual.y1)>0.01; if(ok){ formas.push(atual); sel=formas.length-1; snap(); } atual=null; draw(); };
   cv.addEventListener("pointerup",fim); cv.addEventListener("pointercancel",fim);
   sh.querySelector(".editor").addEventListener("click",async e=>{ const b=e.target.closest("button"); if(!b) return;
-    if(b.dataset.tool){ ferr=b.dataset.tool; if(ferr!=="sel") sel=-1; draw(); if(ferr==="txt") $("#ed-txt").focus(); return; }
+    if(b.dataset.tool){ ferr=b.dataset.tool; if(ferr!=="sel"&&!(sel>=0&&formas[sel]&&formas[sel].t==="txt"&&ferr==="txt")) sel=-1; draw(); if(ferr==="txt") $("#ed-txt").focus(); return; }
     if(b.dataset.cor){ cor=b.dataset.cor; if(sel>=0&&formas[sel]){ formas[sel].c=cor; snap(); } draw(); return; }
     const a=b.dataset.ed;
-    if(a==="undo"){ volta(-1); draw(); }
+    if(a==="txtok"){ const t=$("#ed-txt").value.trim(); if(!t){ toast("Escreva o texto primeiro."); return; }
+      if(sel>=0&&formas[sel]&&formas[sel].t==="txt") formas[sel].s=t; else { formas.push({t:"txt",x1:0.35,y1:0.5,s:t,c:cor}); sel=formas.length-1; }
+      snap(); draw(); }
+    else if(a==="undo"){ volta(-1); draw(); }
     else if(a==="redo"){ volta(1); draw(); }
     else if(a==="del"&&sel>=0){ formas.splice(sel,1); sel=-1; snap(); draw(); }
     else if(a==="clear"&&formas.length){ formas=[]; sel=-1; snap(); draw(); }
-    else if(a==="cancel"){ fechar(); }
+    else if(a==="cancel"){ fechar(); const fn=UI.afterEd; UI.afterEd=null; if(fn) fn(); }
     else if(a==="save"){ b.disabled=true;
       const c=document.createElement("canvas"); c.width=img.naturalWidth; c.height=img.naturalHeight; const g=c.getContext("2d"); g.drawImage(img,0,0); desenharFormas(g,c.width,c.height,formas);
       const blob=await new Promise(ok=>c.toBlob(ok,"image/jpeg",0.85)); const nid=uid("f"); await fotoSet(nid,{blob,w:c.width,h:c.height,em:rec.em||Date.now()});
-      ref.id=nid; ref.anot= formas.length? {orig:origId,formas} : null; if(!formas.length) ref.id=origId; save(); fechar(); render(); toast("Marcação salva. Toque na foto de novo para mover, apagar ou refazer."); } });
+      ref.id=nid; ref.anot= formas.length? {orig:origId,formas} : null; if(!formas.length) ref.id=origId; save(); fechar(); render(); toast("Marcação salva. Toque na foto de novo para mover, apagar ou refazer."); const fn=UI.afterEd; UI.afterEd=null; if(fn) fn(); } });
+  $("#ed-txt").addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); sh.querySelector('[data-ed="txtok"]').click(); } });
   requestAnimationFrame(fit); setTimeout(fit,120); setTimeout(fit,400);
   const onRes=()=>{ if(!document.body.contains(cv)){ window.removeEventListener("resize",onRes); return; } fit(); }; window.addEventListener("resize",onRes);
 };
@@ -4761,6 +4783,27 @@ document.addEventListener("focusin",e=>{ const t=e.target; if(!t||t.tagName!=="T
   r.exDone=true; r.obs=ex[0]; t.value=ex[0]; save();
   document.querySelectorAll(`.exs[data-c="${t.dataset.c}"] .exs-b`).forEach(b=>b.setAttribute("aria-pressed",String(exUsado(r.obs,ex[+b.dataset.n]))));
   try{ t.setSelectionRange(0,t.value.length); }catch(_){ } });
+
+/* ================= ONDA 14: janela da foto com a foto sempre visível e itens numa lista recolhível ================= */
+sheetFoto=function(id){
+  const v=vAtual(); const f=v.fotos.find(x=>x.id===id); if(!f) return; const eng=!!v.modelo, k=v.fotos.indexOf(f)+1, sel=new Set(f.itens); UI.sheetBack=null;
+  const lista=itensDe(v);
+  const res=()=>sel.size?`${sel.size} item(ns) nesta foto: ${[...sel].slice(0,8).join(", ")}${sel.size>8?"…":""}`:"Nenhum item marcado: entra como vista geral.";
+  abrirSheet(`<div class="pf11"><div class="row between"><h2>Foto ${pad(k)}</h2><button class="link" data-x="1">Fechar</button></div>
+    <div class="pf-foto"><img data-foto="${id}" alt="Foto ${k}" class="ph-big ph-tap"><p class="muted small" id="pf-res">${esc(res())}</p></div>
+    ${eng?"":`<div class="grid2"><button class="btn" data-mark="1">✎ Marcar na foto</button><button class="btn" data-novo="1">+ Novo item</button></div>`}
+    <details class="pf-det" ${UI.pfOpen?"open":""}><summary><b>Itens padrão a incluir nesta foto</b><span class="pf-n" id="pf-n">${sel.size?sel.size+" marcado(s)":"nenhum"}</span></summary>
+      ${lista.length>12?`<input class="pk-busca" type="search" placeholder="Filtrar itens (código ou palavra)" aria-label="Filtrar itens">`:""}
+      <div class="pick pf-list">${lista.map(i=>{ const s=stEf(v.resp[i.cod]); return `<label class="pki" data-t="${esc((i.cod+" "+i.s).toLowerCase())}"><input type="checkbox" data-pick="${i.cod}" ${sel.has(i.cod)?"checked":""} ${eng?"disabled":""}><span class="pki-t"><b>${i.cod}</b> ${esc(i.s)}</span>${s?`<span class="chip ${s==="OK"?"c":(s==="NV"||s==="NA")?"nv":s==="NC"?"nc":"a"}">${s==="NOK"?"NÃO OK":s}</span>`:""}</label>`; }).join("")}</div></details>
+    ${eng?"":`<div class="grid2"><button class="btn danger" data-del="1">Apagar foto</button><button class="btn primary" data-ok="1">Salvar</button></div>`}</div>`,
+    e=>{ if(e.target.closest("[data-mark]")||e.target.closest(".ph-tap")){ if(!eng){ UI.afterEd=()=>sheetFoto(f.id); editarFoto(f); } return; }
+      if(e.target.closest("[data-novo]")){ sheetItemNovoFoto(id,sel); return; }
+      const c=e.target.dataset.pick; if(c){ e.target.checked? sel.add(c) : sel.delete(c); document.getElementById("pf-res").textContent=res(); document.getElementById("pf-n").textContent=sel.size?sel.size+" marcado(s)":"nenhum"; return; }
+      if(e.target.closest("[data-ok]")){ f.itens=[...sel]; save(); fechar(); render(); }
+      if(e.target.closest("[data-del]")){ v.fotos=v.fotos.filter(x=>x!==f); save(); fechar(); render(); toast("Foto apagada."); } });
+  const dt=document.querySelector("#sheet .pf-det"); if(dt) dt.addEventListener("toggle",()=>{ UI.pfOpen=dt.open; });
+  const bq=document.querySelector("#sheet .pk-busca"); if(bq) bq.addEventListener("input",()=>{ const q=bq.value.trim().toLowerCase(); document.querySelectorAll("#sheet .pki").forEach(l=>{ l.hidden=!!q&&!l.dataset.t.includes(q); }); });
+};
 
 (async function iniciar(){ $("#logo").src=LOGO_DARK; rede(); await openDB(); S=(await kvGet("state2"))||estadoInicial(); if(!S.rfs){ S.rfs=[]; } S.seqAV=S.seqAV||1;
   migrar(); purgarModelo(); await carregarIndiceFotosHist(); lastJSON=snapJSON(); kvSet("state2",S); UI.oid=(S.obras[0]||{}).id||null; render(); })();
