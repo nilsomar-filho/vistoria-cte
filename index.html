@@ -634,6 +634,49 @@ a.btn{text-decoration:none;display:flex;align-items:center;justify-content:cente
 .rt-tabs{margin-top:4px}
 .pend-rnc{margin-top:8px}.pend-rnc ul{margin:8px 0 0;padding-left:18px}
 @media (min-width:900px){.fab-mais{right:40px;bottom:96px}}
+/* ===== onda 9 · menu/voltar fixos + checklist ===== */
+#fx9{position:fixed;right:12px;bottom:calc(76px + env(safe-area-inset-bottom,0px));z-index:26;display:flex;gap:8px}
+body.rep #fx9{bottom:calc(92px + env(safe-area-inset-bottom,0px))}
+#fx9 button{display:flex;align-items:center;gap:6px;height:44px;padding:0 14px 0 10px;border:0;border-radius:999px;background:var(--brand-bar);color:#fff;font-size:13px;font-weight:700;box-shadow:0 3px 12px rgba(0,16,26,.35);cursor:pointer}
+#fx9 button svg{width:20px;height:20px}
+#fx9.sem-volta button[data-act="fxback"]{display:none}
+body.rep .nav{display:none}
+.fab,.fab-mais{bottom:calc(140px + env(safe-area-inset-bottom,0px))!important}
+body.rep .fab-mais{bottom:calc(156px + env(safe-area-inset-bottom,0px))!important}
+@media (min-width:900px){
+  #fx9{right:20px;bottom:20px}#fx9 button[data-act="menu"]{display:none}
+  body.rep .nav{display:flex}
+  .fab,.fab-mais{bottom:96px!important}
+  .rbar{z-index:25}
+}
+.aviso-pac{border-left:4px solid var(--amber);margin:10px 0}
+.cl-lista{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.cl-card{display:flex;flex-direction:column;gap:4px;border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--surface,#fff);cursor:pointer}
+.cl-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:2px}
+.cl-form{display:flex;flex-direction:column;gap:10px}
+.cl-ind{margin:10px 0}
+.cl-kp{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.cl-kp div{background:var(--surface2);border-radius:10px;padding:8px;text-align:center}
+.cl-kp b{display:block;font-size:22px;color:var(--petroleo)}
+.cl-kp span{font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--fg2)}
+.cl-kp .ok b{color:#2f6b43}.cl-kp .nc b{color:#b3202c}
+.cl-bar{height:8px;border-radius:99px;background:var(--surface2);margin:10px 0 6px;overflow:hidden}.cl-bar i{display:block;height:100%;background:var(--petroleo)}
+@media (min-width:700px){.cl-kp{grid-template-columns:repeat(6,1fr)}}
+.cli{border:1px solid var(--line);border-radius:12px;padding:12px;margin:10px 0;background:var(--surface,#fff)}
+.cli.st-OK{border-left:4px solid #3f8f2a}.cli.st-NOK{border-left:4px solid #be1e2d}.cli.st-NV{border-left:4px solid #b06e00}
+.cli-h{display:flex;gap:10px;align-items:flex-start}
+.cli-n{flex:none;width:26px;height:26px;border-radius:50%;background:var(--surface2);display:grid;place-items:center;font-size:12px;font-weight:700;color:var(--petroleo)}
+.cli-t{flex:1;display:flex;flex-direction:column}.cli-t small{color:var(--fg2)}
+.cli .ck-btns{margin:10px 0}
+.cl-fotos{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}
+.cl-f{position:relative;border:1px dashed var(--line);border-radius:10px;min-height:92px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;overflow:hidden;background:var(--surface2);color:var(--petroleo);cursor:pointer}
+.cl-f svg{width:26px;height:26px}.cl-f small{font-size:12px;font-weight:600}
+.cl-f.tem{border-style:solid;cursor:default;padding:0}.cl-f.tem img{width:100%;height:100%;max-height:140px;object-fit:cover;display:block}
+.cl-fl{position:absolute;left:6px;top:5px;font-size:10px;font-weight:800;letter-spacing:.08em;background:rgba(0,38,57,.78);color:#fff;border-radius:4px;padding:1px 6px;z-index:1}
+.cl-fx{position:absolute;right:4px;top:4px;width:28px;height:28px;border-radius:50%;border:0;background:rgba(0,0,0,.6);color:#fff;font-size:18px;line-height:1;cursor:pointer;z-index:1}
+.cl-nok{border-top:1px solid var(--line);margin-top:8px;padding-top:8px}
+.cl-acoes{display:flex;gap:8px;margin:14px 0 4px;flex-wrap:wrap}.cl-acoes .btn{flex:1}
+.btn.perigo{color:#b3202c;border-color:#b3202c}
 </style>
 
 <header class="top">
@@ -3603,6 +3646,359 @@ document.addEventListener("click",e=>{
 /* ao criar a RNC, abre direto na aba Itens */
 { const _cv=criarVistoria; criarVistoria=function(e){ UI.rt="itens"; return _cv.call(this,e); }; }
 { const _ab=abrirRec; abrirRec=function(k,id){ if(k==="RNC") UI.rt="itens"; return _ab.apply(this,arguments); }; }
+
+/* ===== onda 9 · navegação fixa (menu + voltar), aviso de dados no Dashboard e CHECKLIST (antes/depois) ===== */
+
+/* ---------- A) Menu sempre visível, gaveta que recolhe e botão Voltar ---------- */
+const HS9=[]; let ULT9=null, REST9=false;
+const CH9=["view","vid","rid","oid","pv","clid","cmid","clf"];
+function snap9(){ const o={}; for(const k of CH9){ if(UI[k]!==undefined&&UI[k]!==null) o[k]=JSON.parse(JSON.stringify(UI[k])); } return o; }
+function voltar9(){
+  if(document.getElementById("drawer-bg")){ fecharGaveta(); return; }
+  let s=HS9.pop(); const atual=JSON.stringify(snap9());
+  while(s&&JSON.stringify(s)===atual) s=HS9.pop();
+  REST9=true; try{
+    for(const k of CH9) delete UI[k];
+    if(s) Object.assign(UI,s); else { UI.view="inicio"; UI.pv={nivel:"port"}; }
+    UI.oid=UI.oid||(S.obras[0]&&S.obras[0].id);
+    fechar(); render(); scrollTo(0,0);
+  } finally { REST9=false; ULT9=JSON.stringify(snap9()); }
+}
+{ const _r9=render;
+  render=function(){ _r9.apply(this,arguments);
+    const k=JSON.stringify(snap9());
+    if(k!==ULT9){ if(ULT9!==null&&!REST9){ try{ HS9.push(JSON.parse(ULT9)); if(HS9.length>40) HS9.shift(); history.pushState({c:1},""); }catch(_){} } ULT9=k; }
+    const fx=document.getElementById("fx9"); if(fx) fx.classList.toggle("sem-volta",!HS9.length&&UI.view==="inicio"&&(!UI.pv||UI.pv.nivel==="port")&&!UI.pv?.analise);
+  };
+}
+(function(){
+  if(document.getElementById("fx9")) return;
+  const d=document.createElement("div"); d.id="fx9";
+  d.innerHTML=`<button type="button" data-act="fxback" aria-label="Voltar à tela anterior"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg><span>Voltar</span></button><button type="button" data-act="menu" aria-label="Abrir menu">${ICON_MENU}<span>Menu</span></button>`;
+  document.body.appendChild(d);
+  try{ history.replaceState({c:1},""); }catch(_){}
+})();
+document.addEventListener("click",e=>{ const a=e.target.closest("[data-act='fxback']"); if(!a) return; e.stopImmediatePropagation(); voltar9(); },true);
+window.addEventListener("popstate",()=>{ if(document.getElementById("drawer-bg")){ fecharGaveta(); try{ history.pushState({c:1},""); }catch(_){} return; } if(HS9.length) voltar9(); else { try{ history.pushState({c:1},""); }catch(_){} } });
+/* a gaveta recolhe ao escolher qualquer destino (não ao abrir/fechar ramos da árvore de obras) */
+window.addEventListener("click",e=>{ const b=e.target.closest("#drawer button, #drawer a"); if(!b||b.classList.contains("dr-x")) return; const act=b.dataset.act||""; if(act==="tx"||act==="menux") return; fecharGaveta(); },true);
+
+/* ---------- B) Dashboard: aviso quando o pacote do aparelho não traz prazo/financeiro ---------- */
+{ const _vD9=vDash;
+  vDash=function(){ const h=_vD9(); const obras=S.obras.filter(o=>!o.modelo); if(!obras.length) return h;
+    const sem=obras.filter(o=>!IND()[o.id]);
+    let av="";
+    if(sem.length){ av=`<section class="card aviso-pac"><h2>Dados de prazo e físico-financeiro não carregados neste aparelho</h2>
+      <p class="small">${sem.length===obras.length?"O pacote importado aqui não traz os indicadores das obras.":"Faltam indicadores de: "+esc(sem.map(o=>o.nome).join(", "))+"."} Importe o pacote atualizado (<b>pacote-dados-planta_…_indicadores.json</b>, da pasta privada no OneDrive) em <b>Dados e fotos</b>. Os dados reais não ficam no código público do app.</p>
+      <button class="btn primary block" data-act="dados">Importar pacote de dados</button></section>`; }
+    else if(!isCoord()){ av=`<section class="card aviso-pac"><p class="small">Você está com o perfil <b>${esc(PERFIS[user().perfil]||"")}</b>. O bloco de <b>físico-financeiro</b> aparece apenas para o perfil Coordenador.</p></section>`; }
+    return h.replace('<nav class="ob-ancora"',av+'<nav class="ob-ancora"'); };
+}
+
+/* ---------- C) CHECKLIST ---------- */
+const CL_TIPOS=["Recebimento","Liberação de serviço","Inspeção de área","Entrega / terminalidade","Outro (descrever)"];
+const clL=()=>(S.cls=S.cls||[]);
+const clMods=()=>(S.clModelos=S.clModelos||[]);
+const clAtual=()=>clL().find(x=>x.id===UI.clid);
+const clTipoTxt=c=>c.tipo==="Outro (descrever)"?("Outro: "+(c.tipoOutro||"—")):c.tipo;
+function clInd(c){ const it=c.itens||[], t=it.length, ok=it.filter(i=>i.st==="OK").length, nk=it.filter(i=>i.st==="NOK"), nv=it.filter(i=>i.st==="NV").length;
+  const corr=nk.filter(i=>i.rev==="OK").length, semPos=nk.filter(i=>!(i.depois||(i.pos||"").trim())).length, ver=ok+nk.length+nv;
+  return {t,ok,nok:nk.length,nv,corr,aberto:nk.length-corr,semPos,ver,pend:t-ver}; }
+const CL_ST={OK:["OK","c"],NOK:["NÃO OK","nc"],NV:["NV","nv"]};
+function clChips(k){ return `<span class="chip">${k.ver}/${k.t} verificados</span><span class="chip c">OK ${k.ok}</span><span class="chip ${k.nok?"solid-nc":""}">NÃO OK ${k.nok}</span>${k.aberto?`<span class="chip a">${k.aberto} em aberto</span>`:""}`; }
+const clTxt=(s,n)=>String(s??"").slice(0,n);
+
+function vCls(){
+  const obras=S.obras.filter(o=>!o.modelo); const f=UI.clf||"";
+  const L=clL().filter(c=>!f||c.obraId===f).sort((a,b)=>(b.criado||0)-(a.criado||0));
+  return `<div class="row between"><div><p class="eyebrow">CTE Gerenciamento · Inspeção de campo</p><h1>Checklists</h1></div></div>
+  <div class="row" style="gap:8px;flex-wrap:wrap;margin:8px 0 12px"><button class="btn primary" data-act="clnovo">+ Novo checklist</button><button class="btn" data-act="clmods">Modelos (pilotos)</button></div>
+  <label class="f"><span>Obra</span><select id="cl-f"><option value="">Todas</option>${obras.map(o=>`<option value="${esc(o.id)}" ${f===o.id?"selected":""}>${esc(o.nome)}</option>`).join("")}</select></label>
+  <div class="cl-lista">${L.map(c=>{ const k=clInd(c), o=obraDe(c.obraId)||{};
+    return `<div class="cl-card" data-act="clabrir" data-v="${esc(c.id)}" role="button" tabindex="0"><b>${esc(c.numero)} · ${esc(c.titulo)}</b>
+      <span class="muted small">${esc(o.nome||"")} · ${esc(clTipoTxt(c))}${c.local?" · "+esc(c.local):""} · ${fmtData(c.data)}</span><span class="cl-chips">${clChips(k)}</span></div>`; }).join("")||'<div class="rr-vazio">Nenhum checklist ainda. Toque em “+ Novo checklist”.</div>'}</div>`;
+}
+document.addEventListener("change",e=>{ if(e.target.id==="cl-f"){ UI.clf=e.target.value; render(); } });
+
+function vClNovo(){
+  const obras=S.obras.filter(o=>!o.modelo); const sel=UI.cln||{}; const oid=sel.oid||UI.oid||(obras[0]&&obras[0].id);
+  const o=obraDe(oid)||{}; const mods=clMods();
+  return `<div class="row between"><h1>Novo checklist</h1></div>
+  <section class="card cl-form">
+    <label class="f"><span class="req">Obra</span><select id="cn-o">${obras.map(x=>`<option value="${esc(x.id)}" ${x.id===oid?"selected":""}>${esc(x.nome)}</option>`).join("")}</select></label>
+    <label class="f"><span class="req">Tipo de checklist</span><select id="cn-t">${CL_TIPOS.map(t=>`<option ${sel.tipo===t?"selected":""}>${esc(t)}</option>`).join("")}</select></label>
+    <label class="f" id="cn-ow" ${sel.tipo==="Outro (descrever)"?"":"hidden"}><span class="req">Descreva qual é o checklist</span><input id="cn-ot" maxlength="80" value="${esc(sel.ot||"")}" placeholder="ex.: Conferência de shaft elétrico"></label>
+    <label class="f"><span>Modelo (piloto)</span><select id="cn-m"><option value="">Em branco · adicionar itens em campo</option>${mods.map(m=>`<option value="${esc(m.id)}" ${sel.mid===m.id?"selected":""}>${esc(m.nome)} (${m.itens.length} itens)</option>`).join("")}</select></label>
+    <label class="f"><span class="req">Nome do checklist</span><input id="cn-n" maxlength="100" value="${esc(sel.nome||"")}" placeholder="ex.: Recebimento Apto 31"></label>
+    <label class="f"><span>Local / pavimento</span><input id="cn-l" maxlength="80" list="cn-pv" value="${esc(sel.local||"")}" placeholder="ex.: 5º pavimento | Apto 52"><datalist id="cn-pv">${(o.pavimentos||[]).map(p=>`<option value="${esc(p)}">`).join("")}</datalist></label>
+    <p id="cn-e" class="warn" hidden></p>
+    <button class="btn primary block" data-act="clcriar">Criar checklist</button>
+    <button class="btn block" data-act="clvolta">Cancelar</button>
+  </section>`;
+}
+function clLerNovo(){ const g=id=>(document.getElementById(id)||{}).value||""; UI.cln={oid:g("cn-o"),tipo:g("cn-t"),ot:g("cn-ot"),mid:g("cn-m"),nome:g("cn-n"),local:g("cn-l")}; return UI.cln; }
+document.addEventListener("change",e=>{ if(!UI.view||UI.view!=="clnovo"||!e.target.id||!e.target.id.startsWith("cn-")) return; const d=clLerNovo();
+  if(e.target.id==="cn-m"){ const m=clMods().find(x=>x.id===d.mid); if(m&&!d.nome) UI.cln.nome=m.nome; render(); }
+  else if(e.target.id==="cn-t"||e.target.id==="cn-o") render(); });
+function clCriar(){
+  const d=clLerNovo(); const err=m=>{ const x=document.getElementById("cn-e"); x.textContent=m; x.hidden=false; };
+  if(!d.oid) return err("Selecione a obra."); if(d.tipo==="Outro (descrever)"&&!d.ot.trim()) return err("Descreva qual é o checklist (tipo “Outro”).");
+  if(!d.nome.trim()) return err("Dê um nome ao checklist.");
+  const o=obraDe(d.oid); const m=clMods().find(x=>x.id===d.mid);
+  const c={id:uid("c"),kind:"CL",obraId:o.id,numero:proxNumero(o,"CL"),tipo:d.tipo,tipoOutro:d.tipo==="Outro (descrever)"?d.ot.trim():"",titulo:d.nome.trim(),modeloId:m?m.id:"",modeloNome:m?m.nome:"",local:d.local.trim(),data:hoje(),resp:user().nome,criado:Date.now(),
+    itens:(m?m.itens:[]).map((x,i)=>({id:"i"+(i+1),g:x.g||"",desc:x.desc,local:"",st:"",obs:"",antes:null,depois:null,pos:"",rev:""}))};
+  clL().unshift(c); UI.oid=o.id; UI.cln=null; UI.clid=c.id; UI.view="cl"; save(); render(); scrollTo(0,0);
+}
+
+function clFotoSlot(i,k,rot){
+  if(i[k]) return `<div class="cl-f tem"><span class="cl-fl">${rot}</span><img data-foto="${esc(i[k])}" alt="Foto ${rot.toLowerCase()}"><button type="button" class="cl-fx" data-act="clfx" data-i="${esc(i.id)}" data-k="${k}" aria-label="Remover foto ${rot.toLowerCase()}">×</button></div>`;
+  return `<label class="cl-f vazio"><span class="cl-fl">${rot}</span>${ICON.cam}<small>Tirar foto</small><input type="file" accept="image/*" capture="environment" data-clf="${k}" data-i="${esc(i.id)}" hidden></label>`;
+}
+function clItem(c,i,n){
+  const nk=i.st==="NOK", nvv=i.st==="NV"; const posOk=!!(i.depois||(i.pos||"").trim());
+  return `<article class="cli st-${i.st||"x"}" id="cli-${esc(i.id)}">
+    <div class="cli-h"><span class="cli-n">${n}</span><span class="cli-t"><b>${esc(i.desc)}</b>${i.local?`<small>${esc(i.local)}</small>`:""}</span><button type="button" class="ph-more" data-act="clitem" data-i="${esc(i.id)}" aria-label="Editar item ${n}">${IC.vdots}</button></div>
+    <div class="ck-btns" role="group" aria-label="Resultado do item ${n}">${[["OK","OK"],["NOK","NÃO OK"],["NV","NV"]].map(([k,t])=>`<button type="button" data-act="clst" data-i="${esc(i.id)}" data-v="${k}" aria-pressed="${i.st===k}">${t}</button>`).join("")}</div>
+    <div class="cl-fotos">${clFotoSlot(i,"antes","ANTES")}${nk?clFotoSlot(i,"depois","DEPOIS"):""}</div>
+    ${(nk||nvv)?`<label class="f"><span>${nk?"O que não está OK":"Por que não foi verificado"}</span><textarea rows="2" data-clt="obs" data-i="${esc(i.id)}" placeholder="${nk?"descreva a não conformidade":"ex.: sem acesso, etapa não executada"}">${esc(i.obs||"")}</textarea></label>`:""}
+    ${nk?`<div class="cl-nok"><label class="f"><span class="req">Depois / providência</span><textarea rows="2" data-clt="pos" data-i="${esc(i.id)}" placeholder="ex.: Pendência concluída, vistoriado in loco">${esc(i.pos||"")}</textarea></label>
+      <p class="small ${posOk?"muted":"warn"}">${posOk?"Registro do depois informado.":"Obrigatório: foto do depois ou texto da providência (ao menos um)."}</p>
+      <div class="ck-btns" role="group" aria-label="Reverificação">${[["OK","Corrigido · OK"],["NOK","Ainda NÃO OK"]].map(([k,t])=>`<button type="button" data-act="clre" data-i="${esc(i.id)}" data-v="${k}" aria-pressed="${i.rev===k}">${t}</button>`).join("")}</div></div>`:""}
+  </article>`;
+}
+function vCl(){
+  const c=clAtual(); if(!c){ UI.view="cls"; return vCls(); }
+  const o=obraDe(c.obraId)||{nome:"—"}; const k=clInd(c); const pct=k.t?Math.round(k.ver/k.t*100):0;
+  let g=null, n=0; const itens=c.itens.map(i=>{ n++; const cab=(i.g&&i.g!==g)?`<h3 class="grp">${esc(i.g)}</h3>`:""; if(i.g) g=i.g; return cab+clItem(c,i,n); }).join("");
+  return `<div class="row between"><div><p class="eyebrow">${esc(c.numero)} · Checklist · ${esc(clTipoTxt(c))}</p><h1>${esc(c.titulo)}</h1>
+    <p class="muted small">${esc(o.nome)}${c.local?" · "+esc(c.local):""} · ${fmtData(c.data)} · ${esc(c.resp)}${c.modeloNome?" · modelo “"+esc(c.modeloNome)+"”":""}</p></div></div>
+  <section class="card cl-ind" aria-label="Indicadores do checklist">
+    <div class="cl-kp"><div><b>${k.t}</b><span>itens</span></div><div><b>${k.ver}</b><span>verificados</span></div><div class="ok"><b>${k.ok}</b><span>OK</span></div><div class="nc"><b>${k.nok}</b><span>NÃO OK</span></div><div class="ok"><b>${k.corr}</b><span>corrigidos</span></div><div class="nc"><b>${k.aberto}</b><span>em aberto</span></div></div>
+    <div class="cl-bar" role="img" aria-label="${pct}% verificado"><i style="width:${pct}%"></i></div>
+    <p class="muted small">${pct}% verificado${k.pend?` · ${k.pend} sem verificação`:""}${k.nv?` · ${k.nv} NV`:""}${k.semPos?` · <b class="txt-nc">${k.semPos} NÃO OK sem foto/texto do depois</b>`:""}</p>
+  </section>
+  ${itens||'<div class="rr-vazio">Checklist em branco. Toque em “+ Adicionar item”.</div>'}
+  <button class="btn block mais-item" data-act="clmais">+ Adicionar item</button>
+  <div class="cl-acoes"><button class="btn" data-act="clmenu">Opções</button><button class="btn primary" data-act="clshare">Gerar PDF / Word</button></div>`;
+}
+function clItemPor(id){ const c=clAtual(); return c&&c.itens.find(x=>x.id===id); }
+function sheetClItem(novo,id){
+  const c=clAtual(); if(!c) return; const it=novo?null:clItemPor(id);
+  abrirSheet(`<div class="row between"><h2>${novo?"Adicionar item":"Editar item"}</h2><button class="link" data-x="1">Fechar</button></div>
+    <label class="f"><span class="req">Item a verificar</span><input id="ci-d" maxlength="200" value="${esc(it?it.desc:"")}" placeholder="ex.: Piso sem trincas e com caimento para o ralo"></label>
+    <label class="f"><span>Local (opcional)</span><input id="ci-l" maxlength="80" value="${esc(it?it.local:"")}" placeholder="ex.: Banheiro social"></label>
+    <p id="ci-e" class="warn" hidden></p>
+    <button class="btn primary block" data-ok="1">${novo?"Adicionar":"Salvar"}</button>${novo?"":`<button class="btn block perigo" data-rm="1">Remover item</button>`}`,
+    e=>{ if(e.target.closest("[data-rm]")){ c.itens=c.itens.filter(x=>x!==it); save(); fechar(); render(); toast("Item removido."); return; }
+      if(!e.target.closest("[data-ok]")) return; const d=$("#ci-d").value.trim(); if(!d){ const x=$("#ci-e"); x.textContent="Descreva o item."; x.hidden=false; return; }
+      if(novo){ const nid="i"+(Math.max(0,...c.itens.map(x=>+String(x.id).slice(1)||0))+1); c.itens.push({id:nid,g:c.itens.some(x=>x.g)?"Itens adicionados em campo":"",desc:d,local:$("#ci-l").value.trim(),st:"",obs:"",antes:null,depois:null,pos:"",rev:"",extra:true}); save(); fechar(); render(); setTimeout(()=>document.getElementById("cli-"+nid)?.scrollIntoView({behavior:"smooth",block:"center"}),120); }
+      else { it.desc=d; it.local=$("#ci-l").value.trim(); save(); fechar(); render(); } });
+}
+function sheetClDados(){
+  const c=clAtual(); if(!c) return;
+  abrirSheet(`<div class="row between"><h2>Dados do checklist</h2><button class="link" data-x="1">Fechar</button></div>
+    <label class="f"><span class="req">Nome</span><input id="cd-n" maxlength="100" value="${esc(c.titulo)}"></label>
+    <label class="f"><span class="req">Tipo</span><select id="cd-t">${CL_TIPOS.map(t=>`<option ${c.tipo===t?"selected":""}>${esc(t)}</option>`).join("")}</select></label>
+    <label class="f"><span>Se “Outro”, descreva</span><input id="cd-o" maxlength="80" value="${esc(c.tipoOutro||"")}"></label>
+    <label class="f"><span>Local / pavimento</span><input id="cd-l" maxlength="80" value="${esc(c.local||"")}"></label>
+    <p id="cd-e" class="warn" hidden></p><button class="btn primary block" data-ok="1">Salvar</button>`,
+    e=>{ if(!e.target.closest("[data-ok]")) return; const n=$("#cd-n").value.trim(), t=$("#cd-t").value, ot=$("#cd-o").value.trim(); const err=m=>{ const x=$("#cd-e"); x.textContent=m; x.hidden=false; };
+      if(!n) return err("Informe o nome."); if(t==="Outro (descrever)"&&!ot) return err("Descreva o tipo “Outro”.");
+      c.titulo=n; c.tipo=t; c.tipoOutro=t==="Outro (descrever)"?ot:""; c.local=$("#cd-l").value.trim(); save(); fechar(); render(); });
+}
+function clComoModelo(){
+  const c=clAtual(); if(!c||!c.itens.length){ toast("Sem itens para salvar como modelo."); return; }
+  clMods().unshift({id:uid("m"),nome:c.titulo+" (modelo)",tipo:c.tipo,itens:c.itens.map(i=>({g:i.g||"",desc:i.desc})),mod:Date.now()}); save(); toast("Salvo em Modelos (pilotos)."); }
+function clMenu(){
+  const c=clAtual(); if(!c) return; const it=[["Adicionar item",()=>sheetClItem(true)],["Editar dados do checklist",sheetClDados],["Gerar PDF",()=>gerarCLDoc("pdf")],["Gerar Word (.docx)",()=>gerarCLDoc("docx")],["Salvar itens como modelo (piloto)",clComoModelo]];
+  if(isEngOuCoord()) it.push(["Excluir checklist",()=>menuSheet("Excluir este checklist?",[["Sim, excluir",()=>{ S.cls=clL().filter(x=>x.id!==c.id); save(); UI.view="cls"; UI.clid=null; render(); toast("Checklist excluído."); },true]]),true]);
+  menuSheet("Checklist",it);
+}
+
+/* modelos (pilotos) */
+function vClMods(){
+  return `<div class="row between"><div><p class="eyebrow">Checklists</p><h1>Modelos (pilotos)</h1></div></div>
+  <p class="muted small">Modelo é a lista de itens que pré-preenche um checklist novo. Crie um piloto aqui ou, dentro de um checklist, use “Salvar itens como modelo”.</p>
+  <div class="row" style="gap:8px;flex-wrap:wrap;margin:8px 0 12px"><button class="btn primary" data-act="clmodnovo">+ Novo modelo</button><button class="btn" data-act="cls">Voltar aos checklists</button></div>
+  <div class="cl-lista">${clMods().map(m=>`<div class="cl-card" data-act="clmodabrir" data-v="${esc(m.id)}" role="button" tabindex="0"><b>${esc(m.nome)}</b><span class="muted small">${esc(m.tipo||"")} · ${m.itens.length} itens</span></div>`).join("")||'<div class="rr-vazio">Nenhum modelo ainda. Os checklists enviados para o piloto serão cadastrados aqui.</div>'}</div>`;
+}
+function vClMod(){
+  const m=clMods().find(x=>x.id===UI.cmid)||{id:"",nome:"",tipo:CL_TIPOS[0],itens:[]};
+  const txt=(()=>{ let g=null, out=[]; for(const i of m.itens){ if(i.g&&i.g!==g){ out.push("# "+i.g); g=i.g; } out.push(i.desc); } return out.join("\n"); })();
+  return `<div class="row between"><h1>${m.id?"Editar modelo":"Novo modelo"}</h1></div>
+  <section class="card cl-form">
+    <label class="f"><span class="req">Nome do modelo</span><input id="cm-n" maxlength="100" value="${esc(m.nome)}"></label>
+    <label class="f"><span>Tipo</span><select id="cm-t">${CL_TIPOS.map(t=>`<option ${m.tipo===t?"selected":""}>${esc(t)}</option>`).join("")}</select></label>
+    <label class="f"><span class="req">Itens (um por linha)</span><textarea id="cm-i" rows="14" placeholder="# Grupo (opcional)&#10;Item a verificar 1&#10;Item a verificar 2">${esc(txt)}</textarea></label>
+    <p class="muted small">Linha iniciada por <b>#</b> define um grupo para os itens seguintes. Dá para colar uma coluna do Excel.</p>
+    <p id="cm-e" class="warn" hidden></p>
+    <button class="btn primary block" data-act="clmodsalvar">Salvar modelo</button>
+    ${m.id?`<button class="btn block perigo" data-act="clmodexcluir">Excluir modelo</button>`:""}
+    <button class="btn block" data-act="clmods">Cancelar</button>
+  </section>`;
+}
+function clModSalvar(){
+  const n=$("#cm-n").value.trim(), t=$("#cm-t").value; const err=m=>{ const x=$("#cm-e"); x.textContent=m; x.hidden=false; };
+  let g="", itens=[]; for(const l of $("#cm-i").value.split(/\r?\n/)){ const s=l.trim(); if(!s) continue; if(s.startsWith("#")){ g=s.replace(/^#+\s*/,""); continue; } itens.push({g,desc:s.slice(0,200)}); }
+  if(!n) return err("Informe o nome do modelo."); if(!itens.length) return err("Inclua ao menos um item.");
+  let m=clMods().find(x=>x.id===UI.cmid); if(!m){ m={id:uid("m")}; clMods().unshift(m); }
+  Object.assign(m,{nome:n,tipo:t,itens,mod:Date.now()}); save(); UI.cmid=null; UI.view="clmods"; render(); toast("Modelo salvo.");
+}
+
+/* roteamento das telas novas */
+{ const _vI9=vInicio;
+  vInicio=function(){ const v=UI.view; return v==="cls"?vCls() : v==="clnovo"?vClNovo() : v==="cl"?vCl() : v==="clmods"?vClMods() : v==="clmod"?vClMod() : _vI9(); }; }
+document.addEventListener("click",e=>{
+  if(e.target.closest("#sheet")) return; const a=e.target.closest("[data-act]"); if(!a) return; const act=a.dataset.act, v=a.dataset.v;
+  const ir=(vw,fn)=>{ e.stopImmediatePropagation(); if(fn) fn(); UI.view=vw; render(); scrollTo(0,0); };
+  if(act==="cls") ir("cls");
+  else if(act==="clnovo") ir("clnovo",()=>{ UI.cln=a.dataset.o?{oid:a.dataset.o}:null; });
+  else if(act==="clvolta") { e.stopImmediatePropagation(); voltar9(); }
+  else if(act==="clabrir") ir("cl",()=>{ UI.clid=v; });
+  else if(act==="clcriar"){ e.stopImmediatePropagation(); clCriar(); }
+  else if(act==="clmods") ir("clmods");
+  else if(act==="clmodnovo") ir("clmod",()=>{ UI.cmid=null; });
+  else if(act==="clmodabrir") ir("clmod",()=>{ UI.cmid=v; });
+  else if(act==="clmodsalvar"){ e.stopImmediatePropagation(); clModSalvar(); }
+  else if(act==="clmodexcluir"){ e.stopImmediatePropagation(); const id=UI.cmid; menuSheet("Excluir este modelo?",[["Sim, excluir modelo",()=>{ S.clModelos=clMods().filter(x=>x.id!==id); save(); UI.cmid=null; UI.view="clmods"; render(); },true]]); }
+  else if(act==="clmais"){ e.stopImmediatePropagation(); sheetClItem(true); }
+  else if(act==="clitem"){ e.stopImmediatePropagation(); sheetClItem(false,a.dataset.i); }
+  else if(act==="clmenu"){ e.stopImmediatePropagation(); clMenu(); }
+  else if(act==="clshare"){ e.stopImmediatePropagation(); menuSheet("Gerar checklist",[["PDF",()=>gerarCLDoc("pdf")],["Word (.docx)",()=>gerarCLDoc("docx")]]); }
+  else if(act==="clst"){ e.stopImmediatePropagation(); const i=clItemPor(a.dataset.i); if(!i) return; i.st=(i.st===v)?"":v; if(i.st!=="NOK") i.rev=i.st==="OK"?"":i.rev; save(); render(); }
+  else if(act==="clre"){ e.stopImmediatePropagation(); const i=clItemPor(a.dataset.i); if(!i) return;
+    if(!(i.depois||(i.pos||"").trim())){ toast("Informe a foto do depois ou o texto da providência antes de reverificar."); return; }
+    i.rev=(i.rev===v)?"":v; save(); render(); }
+  else if(act==="clfx"){ e.stopImmediatePropagation(); const i=clItemPor(a.dataset.i); if(!i) return; i[a.dataset.k]=null; save(); render(); }
+},true);
+document.addEventListener("change",async e=>{
+  const t=e.target; if(t.dataset&&t.dataset.clt){ const i=clItemPor(t.dataset.i); if(i){ i[t.dataset.clt]=t.value; save(); if(t.dataset.clt==="pos") render(); } return; }
+  if(!(t.dataset&&t.dataset.clf)) return; const i=clItemPor(t.dataset.i); const file=t.files&&t.files[0]; if(!i||!file) return;
+  try{ const red=await reduzir(file); const id=uid("f"); await fotoSet(id,{blob:red.blob,w:red.w,h:red.h,em:Date.now()}); i[t.dataset.clf]=id; i[t.dataset.clf+"Em"]=Date.now(); save(); render(); toast("Foto salva no aparelho."); }
+  catch(err){ toast("Não foi possível ler esta imagem."); }
+},true);
+
+/* nav: Checklists */
+{ const _rn9=renderNav;
+  renderNav=function(){ _rn9(); const n=document.getElementById("nav"); if(!n||n.querySelector('[data-act="cls"]')) return;
+    const on=["cls","clnovo","cl","clmods","clmod"].includes(UI.view);
+    const b=document.createElement("button"); b.dataset.act="cls"; b.className="so-lat"; if(on) b.setAttribute("aria-current","page");
+    b.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 11l1.6 1.6L14 9M9 17h6"/></svg><span>Checklists</span>`;
+    const fil=[...n.children]; const ref=fil.find(x=>x.dataset&&x.dataset.v==="aprov")||fil.find(x=>x.dataset&&x.dataset.act==="menu")||fil.find(x=>x.id==="arv-lat")||null; n.insertBefore(b,ref);
+    if(on) n.querySelectorAll('[aria-current="page"]:not([data-act="cls"])').forEach(x=>x.removeAttribute("aria-current"));
+    if(document.getElementById("drawer")) montarGaveta(); }; }
+/* botão no bloco da obra do Dashboard */
+{ const _bo9=blocoObra;
+  blocoObra=function(o){ const h=_bo9(o); const i=h.lastIndexOf("</footer>"); if(i<0) return h;
+    return h.slice(0,i)+`<button class="btn small-btn" data-act="clnovo" data-o="${esc(o.id)}">+ Checklist</button>`+h.slice(i); }; }
+/* backup / consolidação / marca de alteração */
+{ const _mb9=mesclarBackup;
+  mesclarBackup=async function(d,cont){ await _mb9(d,cont); const e=d.estado||{};
+    for(const k of ["cls","clModelos"]){ if(!Array.isArray(e[k])) continue; S[k]=S[k]||[];
+      for(const x of e[k]){ if(!x||!x.id) continue; const i=S[k].findIndex(y=>y.id===x.id); if(i<0){ S[k].push(x); cont[k]=(cont[k]||0)+1; } else if((x.mod||0)>(S[k][i].mod||0)){ S[k][i]=x; cont.atualizados=(cont.atualizados||0)+1; } } } }; }
+{ const _cm9=carimbarMods;
+  carimbarMods=function(){ _cm9(); let H={}; try{ H=JSON.parse(localStorage.getItem("cte_hashes")||"{}"); }catch(_){}
+    for(const r of (S.cls||[])){ const m=r.mod; delete r.mod; const k=hashStr(JSON.stringify(r)); if(H[r.id]!==k){ r.mod=Date.now(); H[r.id]=k; } else r.mod=m; }
+    try{ localStorage.setItem("cte_hashes",JSON.stringify(H)); }catch(_){} save(); }; }
+
+/* ---------- exportação do checklist (PDF e Word) ---------- */
+async function modeloCL(c){
+  const obra=obraDe(c.obraId)||{nome:"—"}; const k=clInd(c); const itens=[]; let n=1;
+  const foto=async id=>{ if(!id) return null; const rec=await fotoGet(id); if(!rec) return null; const red=await reduzirOuNull(rec.blob,1200,0.82); if(!red) return null; return {bytes:new Uint8Array(await red.blob.arrayBuffer()),w:red.w,h:red.h,dh:fmtDH(rec.em)}; };
+  for(const i of c.itens){ itens.push({n:n++,g:i.g||"",desc:i.desc,local:i.local||"",st:i.st||"",obs:i.obs||"",pos:i.pos||"",rev:i.rev||"",antes:await foto(i.antes),depois:await foto(i.depois)}); }
+  return {c,r:c,obra,k,itens,num:c.numero,titulo:"CHECKLIST",sub:`${clTipoTxt(c).toUpperCase()} | ${c.titulo.toUpperCase()}`,
+    rodape:"CTE Gerenciamento · Registro de checklist de acompanhamento; não constitui aceite de serviços."};
+}
+const CL_COR={OK:[63,143,42],NOK:RED,NV:[176,110,0]};
+function gerarCL_PDF(M){
+  const d=new PDF(); const W=297,H=210,m=10,LOGO=logoBytes(), c=M.c, K=M.k;
+  d.addPage(); const cw0=112; d.rect(0,0,cw0,H,NAVY); d.image(LOGO,LOGO_JPG_W,LOGO_JPG_H,18,H/2-14,70,70*LOGO_JPG_H/LOGO_JPG_W); d.rect(cw0,0,W-cw0,6,PET);
+  const cx0=cw0+16, tw0=W-cx0-16;
+  d.text(M.titulo,cx0,52,12,true,PET); for(const [j,t] of d.wrap(M.sub,tw0,9,true).slice(0,2).entries()) d.text(t,cx0,59+j*4.5,9,true,GR);
+  let yc=84; for(const t of d.wrap(M.obra.nome||"-",tw0,26,true)){ d.text(t,cx0,yc,26,true,NAVY); yc+=11; }
+  yc+=4; d.rect(cx0,yc,40,1.2,PET); yc+=14;
+  const campo=(k,v,sz=15)=>{ d.text(k,cx0,yc,8,true,GR); d.text(v,cx0,yc+7,sz,true,[20,35,45]); yc+=20; };
+  campo("Nº",`${M.num} | R00`); campo("DATA",fmtData(c.data));
+  if(c.local){ d.text(`Local: ${c.local}`,cx0,yc,9,false,[20,35,45]); yc+=8; }
+  d.text(`${K.ver}/${K.t} itens verificados · Responsável: ${c.resp}`,cx0,yc,9,false,GR);
+  d.rect(cx0,H-24,tw0,6,RED); d.text("PROTÓTIPO · DADOS DE TESTE · SEM VALIDADE COMO REGISTRO DE OBRA",cx0+tw0/2,H-19.8,7.5,true,[255,255,255],"c");
+  d.text("CTE Gerenciamento",cx0,H-8,8,true,GR);
+  const cab=()=>{ d.rect(0,0,W,16,NAVY); d.image(LOGO,LOGO_JPG_W,LOGO_JPG_H,m,3,10*LOGO_JPG_W/LOGO_JPG_H,10);
+    d.text(`${M.titulo} · ${clTipoTxt(c).toUpperCase()}`,W/2,8.3,9.5,true,[255,255,255],"c"); d.text(M.obra.nome||"",W/2,12.6,7.5,false,[200,214,222],"c"); d.text(M.num,W-m,10,8.5,true,[255,255,255],"r"); };
+  // indicadores
+  d.addPage(); cab(); d.text("INDICADORES DO CHECKLIST",m,28,12,true,NAVY); d.rect(m,31,30,1,PET);
+  const OKc=[63,143,42], caixas=[["ITENS",K.t,NAVY],["VERIFICADOS",`${K.ver}/${K.t}`,PET],["OK",K.ok,OKc],["NÃO OK",K.nok,RED],["NÃO OK CORRIGIDOS",K.corr,OKc],["NÃO OK EM ABERTO",K.aberto,RED]];
+  const bw=(W-2*m-5*5)/6; caixas.forEach(([t,v,col],j)=>{ const x=m+j*(bw+5); d.rect(x,38,bw,28,[244,246,248],LINE); d.rect(x,38,bw,1.6,col); d.text(String(v),x+bw/2,54,20,true,col,"c"); d.text(t,x+bw/2,62,6.8,true,GR,"c"); });
+  const T=Math.max(1,K.t), seg=[[K.ok,OKc,"OK"],[K.corr,[140,190,120],"NÃO OK corrigido"],[K.aberto,RED,"NÃO OK em aberto"],[K.nv,[176,110,0],"NV"],[K.pend,[200,206,212],"Sem verificação"]];
+  let xs=m; const BW=W-2*m; for(const [q,col] of seg){ const w=BW*q/T; if(w>0){ d.rect(xs,74,w,7,col); xs+=w; } }
+  let xl=m; for(const [q,col,t] of seg){ d.rect(xl,85,3,3,col); d.text(`${t}: ${q}`,xl+4.5,87.6,7.5,false,[20,35,45]); xl+=52; }
+  if(K.semPos) { d.rect(m,94,W-2*m,7,[253,236,236]); d.text(`Atenção: ${K.semPos} item(ns) NÃO OK sem foto ou texto do depois.`,m+3,99,8.5,true,RED); }
+  const abertos=M.itens.filter(i=>i.st==="NOK"&&i.rev!=="OK"); let yy=108; d.text(`ITENS NÃO OK EM ABERTO (${abertos.length})`,m,yy,10,true,NAVY); yy+=6;
+  for(const i of abertos.slice(0,14)){ d.text(`${i.n}.`,m,yy,8.5,true,PET); d.text(d.wrap(i.desc,W-2*m-14,8.5,false)[0],m+9,yy,8.5,false,[20,35,45]); yy+=5.2; }
+  if(abertos.length>14) d.text(`… e mais ${abertos.length-14} (ver páginas seguintes)`,m+9,yy,8,false,GR);
+  if(!abertos.length) d.text("Nenhum item NÃO OK em aberto.",m,yy,9,false,GR);
+  // itens: 3 por página
+  const foto=(x,y,w,h,f,rot)=>{ d.rect(x,y,w,h,[244,246,248],LINE);
+    if(f){ let iw=w,ih=w*f.h/f.w; if(ih>h){ ih=h; iw=h*f.w/f.h; } d.image(f.bytes,f.w,f.h,x+(w-iw)/2,y+(h-ih)/2,iw,ih); } else d.text("sem foto",x+w/2,y+h/2+1,8,false,GR,"c");
+    d.text(rot+(f?` · ${f.dh}`:""),x,y+h+3.6,7,true,PET); };
+  M.itens.forEach((it,idx)=>{ if(idx%3===0){ d.addPage(); cab(); } const y=20+(idx%3)*60;
+    d.rect(m,y,W-2*m,57,null,LINE); const tx=m+3, tw=98;
+    d.text(`${it.n}.`,tx,y+6,10,true,PET); const dl=d.wrap(it.desc,tw-9,9.5,true).slice(0,3); d.lines(dl,tx+8,y+6,9.5,true,NAVY,4.3);
+    let ty=y+6+4.3*dl.length+1.2;
+    if(it.local){ d.text(it.local,tx+8,ty,7.5,false,GR); ty+=4.2; }
+    const col=CL_COR[it.st]; const lab=it.st==="OK"?"OK":it.st==="NOK"?"NÃO OK":it.st==="NV"?"NV":"SEM VERIFICAÇÃO";
+    d.rect(tx+8,ty-3,it.st==="NOK"?20:it.st?14:30,4.8,col||[200,206,212]); d.text(lab,tx+8+(it.st==="NOK"?10:it.st?7:15),ty+0.5,6.8,true,[255,255,255],"c");
+    if(it.st==="NOK"&&it.rev){ const ok=it.rev==="OK"; d.rect(tx+30,ty-3,ok?34:30,4.8,ok?OKc:RED); d.text(ok?"CORRIGIDO · OK":"AINDA NÃO OK",tx+30+(ok?17:15),ty+0.5,6.8,true,[255,255,255],"c"); }
+    ty+=7;
+    if(it.obs){ d.text(it.st==="NV"?"Motivo:":"Não OK:",tx+8,ty,7,true,GR); for(const t of d.wrap(it.obs,tw-9,7.5,false).slice(0,3)){ d.text(t,tx+8+11,ty,7.5,false,[20,35,45]); ty+=3.6; } }
+    if(it.pos&&it.st==="NOK"){ d.text("Depois:",tx+8,ty+1,7,true,GR); let t2=ty+1; for(const t of d.wrap(it.pos,tw-9,7.5,false).slice(0,3)){ d.text(t,tx+8+11,t2,7.5,false,[20,35,45]); t2+=3.6; } }
+    foto(m+106,y+2,82,48,it.antes,"ANTES");
+    if(it.st==="NOK") foto(m+106+86,y+2,82,48,it.depois,"DEPOIS"); });
+  const tot=d.pages.length-1; d.pages.forEach((ops,k)=>{ if(!k) return; d.ops=ops; d.text(M.rodape,m,H-5,6.5,false,GR); d.text(`página ${k} de ${tot}`,W-m,H-5,7,false,GR,"r"); });
+  return d;
+}
+function gerarCL_DOCX(M){
+  const c=M.c, K=M.k;
+  M.corpo=KK=>{ const {run,par,img,cell,tbl,tr,brk,FULL,cabec}=KK;
+    const dir=par(run(M.titulo,{b:1,sz:13,color:"004D6D"}),{before:1800,after:40})+par(run(`${clTipoTxt(c).toUpperCase()} | ${c.titulo.toUpperCase()}`,{b:1,sz:9,color:"58595B"}),{after:600})
+      +par(run(M.obra.nome||"-",{b:1,sz:28,color:"002639"}),{after:500})+par(run("Nº",{b:1,sz:8,color:"58595B"}),{after:0})+par(run(`${M.num} | R00`,{b:1,sz:15}),{after:300})
+      +par(run("DATA",{b:1,sz:8,color:"58595B"}),{after:0})+par(run(fmtData(c.data),{b:1,sz:15}),{after:300})
+      +(c.local?par(run(`Local: ${c.local}`,{sz:9}),{after:100}):"")+par(run(`${K.ver}/${K.t} itens verificados · Responsável: ${c.resp}`,{sz:9,color:"58595B"}),{after:900})
+      +par(run("PROTÓTIPO · DADOS DE TESTE · SEM VALIDADE COMO REGISTRO DE OBRA",{b:1,sz:8,color:"FFFFFF"}),{align:"center",shd:"BE1E2D"});
+    const esq=par("",{before:3600})+par(img(logoBytes(),6.5,6.5*LOGO_JPG_H/LOGO_JPG_W),{align:"center",after:0});
+    let body=`<w:tbl><w:tblPr><w:tblW w:w="15704" w:type="dxa"/><w:tblLayout w:type="fixed"/><w:tblBorders><w:top w:val="nil"/><w:left w:val="nil"/><w:bottom w:val="nil"/><w:right w:val="nil"/><w:insideH w:val="nil"/><w:insideV w:val="nil"/></w:tblBorders></w:tblPr><w:tblGrid><w:gridCol w:w="6000"/><w:gridCol w:w="9704"/></w:tblGrid><w:tr><w:trPr><w:trHeight w:val="10400" w:hRule="exact"/></w:trPr>${cell(esq,6000,{fill:"002639"})}<w:tc><w:tcPr><w:tcW w:w="9704" w:type="dxa"/><w:tcMar><w:left w:w="700" w:type="dxa"/><w:right w:w="400" w:type="dxa"/></w:tcMar></w:tcPr>${dir}</w:tc></w:tr></w:tbl>`;
+    body+=brk+cabec(`${M.titulo} · ${clTipoTxt(c).toUpperCase()}`)+par(run("INDICADORES DO CHECKLIST",{b:1,sz:12,color:"002639"}),{before:200,after:120});
+    const kw=Math.floor(FULL/6), cx=[["ITENS",K.t,"002639"],["VERIFICADOS",`${K.ver}/${K.t}`,"004D6D"],["OK",K.ok,"3F8F2A"],["NÃO OK",K.nok,"BE1E2D"],["NÃO OK CORRIGIDOS",K.corr,"3F8F2A"],["NÃO OK EM ABERTO",K.aberto,"BE1E2D"]];
+    body+=tbl([tr(cx.map(([t,v,col])=>cell(par(run(String(v),{b:1,sz:20,color:col}),{align:"center",after:0})+par(run(t,{b:1,sz:7,color:"58595B"}),{align:"center",after:0}),kw,{fill:"F4F6F8"})))],cx.map(()=>kw),true);
+    if(K.semPos) body+=par(run(`Atenção: ${K.semPos} item(ns) NÃO OK sem foto ou texto do depois.`,{b:1,sz:9,color:"BE1E2D"}),{before:120});
+    const ab=M.itens.filter(i=>i.st==="NOK"&&i.rev!=="OK");
+    body+=par(run(`Itens NÃO OK em aberto (${ab.length})`,{b:1,sz:10,color:"002639"}),{before:200,after:60});
+    for(const i of ab) body+=par(run(`${i.n}. `,{b:1,sz:9,color:"004D6D"})+run(i.desc,{sz:9}),{after:20});
+    if(!ab.length) body+=par(run("Nenhum item NÃO OK em aberto.",{sz:9,color:"58595B"}));
+    body+=brk+cabec(`${M.titulo} · ${clTipoTxt(c).toUpperCase()}`);
+    const w0=5000, w1=5352, rows=[tr([cell(par(run("ITEM",{b:1,sz:8,color:"FFFFFF"}),{after:0}),w0,{fill:"004D6D"}),cell(par(run("ANTES",{b:1,sz:8,color:"FFFFFF"}),{after:0}),w1,{fill:"004D6D"}),cell(par(run("DEPOIS",{b:1,sz:8,color:"FFFFFF"}),{after:0}),w1,{fill:"004D6D"})])];
+    const cor={OK:"3F8F2A",NOK:"BE1E2D",NV:"B06E00"};
+    const fcell=(f,w)=>{ if(!f) return cell(par(run("sem foto",{sz:8,color:"58595B"}),{after:0}),w); let iw=8.6, ih=iw*f.h/f.w; if(ih>5.8){ ih=5.8; iw=ih*f.w/f.h; } return cell(par(img(f.bytes,iw,ih),{after:20,align:"center"})+par(run(f.dh,{sz:7,color:"58595B"}),{after:0}),w); };
+    for(const it of M.itens){
+      const st=it.st?({OK:"OK",NOK:"NÃO OK",NV:"NV"}[it.st]):"SEM VERIFICAÇÃO";
+      let tx=par(run(`${it.n}. `,{b:1,sz:9,color:"004D6D"})+run(it.desc,{b:1,sz:9.5,color:"002639"}),{after:30})+(it.local?par(run(it.local,{sz:8,color:"58595B"}),{after:30}):"")
+        +par(run(st,{b:1,sz:8.5,color:cor[it.st]||"58595B"})+((it.st==="NOK"&&it.rev)?run(it.rev==="OK"?"   CORRIGIDO · OK":"   AINDA NÃO OK",{b:1,sz:8,color:it.rev==="OK"?"3F8F2A":"BE1E2D"}):""),{after:30});
+      if(it.obs) tx+=par(run((it.st==="NV"?"Motivo: ":"Não OK: "),{b:1,sz:8,color:"58595B"})+run(it.obs,{sz:8.5}),{after:30});
+      if(it.pos&&it.st==="NOK") tx+=par(run("Depois: ",{b:1,sz:8,color:"58595B"})+run(it.pos,{sz:8.5}),{after:0});
+      rows.push(tr([cell(tx,w0),fcell(it.antes,w1),it.st==="NOK"?fcell(it.depois,w1):cell(par("",{after:0}),w1)]));
+    }
+    body+=tbl(rows,[w0,w1,w1],true);
+    return body; };
+  return gerarDOCX(M);
+}
+async function exportarCL(fmt){
+  const c=clAtual(); if(!c||!c.itens.length){ aviso("Checklist vazio","Inclua ao menos um item antes de gerar o arquivo."); return; }
+  const M=await modeloCL(c); let blob; if(fmt==="pdf") blob=await finalizarPDF(gerarCL_PDF(M),[],M.num); else { M.anexosDocx=[]; blob=gerarCL_DOCX(M); }
+  await entregarArquivo(`${M.num}_${c.titulo.replace(/[^\wÀ-ú]+/g,"_")}.${fmt==="pdf"?"pdf":"docx"}`,blob);
+}
+async function gerarCLDoc(fmt){ FALHAS_FOTO=0; try{ progresso(fmt==="pdf"?"Gerando PDF…":"Gerando Word…"); await new Promise(r=>setTimeout(r,60)); await exportarCL(fmt); if($("#sheet .prog")) fechar();
+    if(FALHAS_FOTO) toast(`${FALHAS_FOTO} foto(s) não puderam ser lidas e ficaram fora do arquivo.`); }
+  catch(err){ console.error(err); aviso("Erro ao gerar o arquivo",`O ${fmt==="pdf"?"PDF":"Word"} não pôde ser montado. Detalhe: ${err?.message||err}.`); } }
 
 (async function iniciar(){ $("#logo").src=LOGO_DARK; rede(); await openDB(); S=(await kvGet("state2"))||estadoInicial(); if(!S.rfs){ S.rfs=[]; } S.seqAV=S.seqAV||1;
   migrar(); purgarModelo(); await carregarIndiceFotosHist(); lastJSON=snapJSON(); kvSet("state2",S); UI.oid=(S.obras[0]||{}).id||null; render(); })();
