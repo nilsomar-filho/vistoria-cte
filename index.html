@@ -699,6 +699,24 @@ body.rep .fab-mais{bottom:calc(156px + env(safe-area-inset-bottom,0px))!importan
 .sit10-t{display:flex;flex-direction:column;min-width:0}.sit10-t b{font-size:14px;overflow-wrap:anywhere}.sit10-t small{color:var(--fg2)}
 .tp10{flex:none;font-size:11px;font-weight:800;border-radius:6px;padding:2px 8px;margin-top:1px}
 .tp10.ab{background:#f8ecd0;color:#8a5d06}.tp10.fe{background:#e1efe5;color:#2f6b43}
+.disc11{margin:8px 0 2px}.disc11 em{font-style:normal;color:var(--warn,#b26a00);font-size:.78em}
+.disc11 select{width:100%}
+.rl-f{display:grid;gap:8px}
+.rl-leg{display:flex;flex-wrap:wrap;gap:10px;font-size:.78rem;margin:2px 0 8px}
+.rl-leg span:before{content:"";display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px;background:#c8ced4}
+.rl-leg .ab:before{background:#be1e2d}.rl-leg .fe:before{background:#8cbe78}.rl-leg .co:before{background:#3f8f2a}
+.rl-tab{display:grid;gap:4px}
+.rl-row{display:grid;grid-template-columns:minmax(90px,34%) 1fr auto;gap:8px;align-items:center;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid #e3e8ec;padding:9px 2px;font:inherit;color:inherit;cursor:pointer;min-height:44px}
+.rl-row[aria-pressed="true"]{background:#eef3f6}
+.rl-n{font-weight:600;font-size:.88rem}.rl-n small{font-weight:400;color:#8a5a00}
+.rl-b{display:flex;height:14px;background:#f1f3f5;border-radius:3px;overflow:hidden}
+.rl-b i{display:block;height:100%}.rl-b .ab{background:#be1e2d}.rl-b .fe{background:#8cbe78}.rl-b .co{background:#3f8f2a}.rl-b .sv{background:#c8ced4}
+.rl-q{font-size:.78rem;white-space:nowrap}
+.rl-det{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:8px}
+.rl-det li{font-size:.84rem;line-height:1.35}.rl-det small{display:block;color:#5a6670}
+.rl-s{display:inline-block;font-size:.68rem;font-weight:700;padding:1px 6px;border-radius:9px;margin-right:6px;background:#e3e8ec}
+.rl-s.s-0{background:#f6d5d9;color:#8f1220}.rl-s.s-1{background:#dcefd2;color:#2b6a1b}.rl-s.s-2{background:#c9e6bd;color:#2b6a1b}
+.small-btn{font-size:.85rem;padding:8px 12px}
 </style>
 
 <header class="top">
@@ -4073,6 +4091,176 @@ function blocoSit(o){
   blocoObra=function(o){ const h=_bo10(o); const i=h.lastIndexOf('<footer class="ob-f">'); if(i<0) return h; return h.slice(0,i)+blocoSit(o)+h.slice(i); }; }
 document.addEventListener("click",e=>{ if(e.target.closest("#sheet")) return; const a=e.target.closest("[data-act='d10f']"); if(!a) return; e.stopImmediatePropagation();
   const y=scrollY; UI.d10=a.dataset.v; render(); scrollTo(0,y); },true);
+
+/* ================= ONDA 11: disciplina por item e relatório da obra por disciplina ================= */
+const DISC_PAD=["Acessibilidade","Ar-condicionado","Arquitetura","Caixilhos","Elétrica","Hidráulica","Impermeabilização","Incêndio","Vedações"];
+const DISC_LEG={"Áreas molhadas e impermeabilização":"Impermeabilização","Vedações e drywall":"Vedações","Elétrica e sistemas":"Elétrica","Acabamentos":"Arquitetura","Esquadrias e fachada":"Caixilhos"};
+const discNorm=d=>{ d=String(d||"").trim(); return DISC_LEG[d]||d; };
+function discOutras(){ if(!Array.isArray(S.discOutras)) S.discOutras=[]; return S.discOutras; }
+function discAdd(n){ n=String(n||"").trim().slice(0,40); if(!n) return ""; const ex=[...DISC_PAD,...discOutras()].find(x=>x.toLowerCase()===n.toLowerCase()); if(ex) return ex; discOutras().push(n); return n; }
+function discOpts(cur){ const lst=[...DISC_PAD,...discOutras().slice().sort((a,b)=>a.localeCompare(b,"pt"))]; if(cur&&!lst.includes(cur)) lst.push(cur);
+  return `<option value="">Sem disciplina</option>`+lst.map(d=>`<option ${d===cur?"selected":""}>${esc(d)}</option>`).join("")+`<option value="__outro">Outro (informar)…</option>`; }
+/* sugestão por palavras-chave: serve só como ponto de partida, sempre marcada como “sugerida” */
+const DISC_REGRAS=[
+ ["Acessibilidade",/\bpcd\b|\bpne\b|acessib|t[aá]til|rampa|cadeirante/i],
+ ["Ar-condicionado",/ar[ -]condicionado|climatiz|condensador|evaporador|\bsplit\b|\bhvac\b|infra de ar/i],
+ ["Incêndio",/inc[eê]ndio|bombeiro|hidrante|extintor|sprinkler|detector|alarme|emerg[eê]ncia/i],
+ ["Impermeabilização",/impermeab|infiltr|umidade|muret|rufo|\bcalha\b|jardineira/i],
+ ["Hidráulica",/hidr[aá]ul|hidr[oô]metro|tubula|registro|\bralo|\bvaso|chuveiro|torneira|bomba|reservat[oó]rio|caixa d|esgoto|vazament|barrilete|fluxo/i],
+ ["Elétrica",/el[eé]tric|quadro|tomada|ilumina|lumin[aá]ria|eletroduto|condulete|canaleta|aterram|diagrama|botoeira|interfone|spda|para.?raio|fia[cç][aã]o|\bcabos?\b|circuito|\bled\b|arandela|medi[cç][aã]o|\binfra\b/i],
+ ["Caixilhos",/caixilho|janela|esquadria|vidro|guarni|batente|requadro|port[aã]o|gradil|\bporta/i],
+ ["Vedações",/drywall|alvenaria|gesso|trinc|parede|forro|emass|fissura/i],
+ ["Arquitetura",/pintura|arremate|rejunt|piso|revestiment|ard[oó]sia|pastilha|granilite|ladrilho|\btaco|rodap|soleira|calafet|marcenaria|bancada|limpeza|acabamento|retoque|\bpedra|fulget|contrapiso|brinquedoteca|cobog|perfil|grelha|churrasq|espelho|sujidade|polir|tinta|veda[cç]/i]];
+function discSug(t){ for(const [d,re] of DISC_REGRAS) if(re.test(t||"")) return d; return ""; }
+function discSugerirObra(oid){ let n=0,tot=0; for(const c of (S.cls||[])){ if(c.obraId!==oid) continue; for(const i of c.itens){ if(discNorm(i.disc)) continue; tot++; const d=discSug([i.desc,i.obs,i.local].join(" ")); if(d){ i.disc=d; i.discSug=true; n++; } } } if(n) save(); return {n,sem:tot-n}; }
+
+/* seletor de disciplina nos itens de checklist e de RNC */
+const selDisc=(kind,id,cur,sug,pad)=>`<label class="f disc11"><span>Disciplina${sug?' <em>(sugerida · confirme)</em>':""}${pad?' <em>(padrão do tipo de vistoria)</em>':""}</span><select data-d11="${kind}" data-id="${esc(id)}">${discOpts(cur)}</select></label>`;
+{ const _ci=clItem; clItem=function(c,i,n){ let h=_ci(c,i,n); const sel=selDisc("cl",i.id,discNorm(i.disc),!!i.discSug,false); const k=h.indexOf('<div class="ck-btns"'); return k<0?h:h.slice(0,k)+sel+h.slice(k); }; }
+{ const _li=linhaItem; linhaItem=function(v,i){ let h=_li(v,i); const r=v.resp[i.cod]; if(!r||r.status!=="NOK") return h;
+    const pad=!r.disc, cur=discNorm(r.disc||recDisc(v)); const sel=selDisc("rnc",i.cod,cur,false,pad); const k=h.indexOf('<div class="row between"><span class="small'); return k<0?h:h.slice(0,k)+sel+h.slice(k); }; }
+function aplicarDisc(kind,id,val){ if(kind==="cl"){ const i=clItemPor(id); if(i){ i.disc=val; delete i.discSug; } } else { const v=vAtual(); if(v&&v.resp[id]) v.resp[id].disc=val; } save(); const y=scrollY; render(); scrollTo(0,y); }
+document.addEventListener("change",e=>{ const t=e.target; if(!t.dataset||!t.dataset.d11) return; e.stopImmediatePropagation();
+  const kind=t.dataset.d11, id=t.dataset.id, val=t.value;
+  if(val!=="__outro"){ aplicarDisc(kind,id,val); return; }
+  abrirSheet(`<div class="row between"><h2>Outra disciplina</h2><button class="link" data-x="1">Cancelar</button></div>
+    <p class="muted small">Digite o nome. Ele fica na lista de todos os itens e relatórios deste aparelho.</p>
+    <label class="f"><span class="req">Nome da disciplina</span><input id="d11-n" maxlength="40" placeholder="ex.: Elevadores, Paisagismo, Gás"></label>
+    <p id="d11-e" class="warn" hidden></p><button class="btn primary block" data-ok="1">Usar esta disciplina</button>`,
+    e2=>{ if(!e2.target.closest("[data-ok]")) return; const nm=discAdd($("#d11-n").value); if(!nm){ const x=$("#d11-e"); x.textContent="Informe o nome da disciplina."; x.hidden=false; return; } fechar(); aplicarDisc(kind,id,nm); });
+  const y=scrollY; render(); scrollTo(0,y); },true);
+{ const _mb=mesclarBackup; mesclarBackup=async function(d,cont){ await _mb(d,cont); for(const n of ((d.estado||{}).discOutras||[])) discAdd(n); }; }
+
+/* ---------- dados do relatório ---------- */
+const REL_SIT=["Aberto","Fechado","Conforme","Não verificado","Sem verificação"];
+function relLinhas(oid){
+  const L=[];
+  for(const c of (S.cls||[])){ if(c.obraId!==oid) continue;
+    c.itens.forEach((i,k)=>{ const st=i.st==="NOK"?(i.rev==="OK"?"Fechado":"Aberto"):i.st==="OK"?"Conforme":i.st==="NV"?"Não verificado":"Sem verificação";
+      L.push({orig:"Checklist",docId:c.id,doc:c.numero,docNome:c.titulo,grupo:String(i.g||"").split(" · ")[0]||"",loc:[i.g,i.local].filter(Boolean).join(" · "),n:k+1,txt:i.desc,disc:discNorm(i.disc),sug:!!i.discSug,st,fp:!!(i.fotoPend&&!i.antes),data:c.data||"",obs:i.obs||""}); }); }
+  for(const v of S.vistorias){ if(v.modelo||v.obraId!==oid) continue;
+    for(const it of itensDe(v)){ const r=v.resp[it.cod]; if(!r) continue; const s=stEf(r); if(!s) continue;
+      const st=s==="OK"?"Conforme":s==="NV"?"Não verificado":s==="NCE"?"Fechado":"Aberto";
+      L.push({orig:"RNC",docId:v.id,doc:v.numero||"RNC",docNome:`${nomeCk(v)} · ${v.amb||""} ${v.unid||""}`.trim(),grupo:v.pav||"RNC",loc:[v.pav,v.unid,v.amb].filter(Boolean).join(" · "),n:it.cod,txt:it.s,disc:discNorm(r.disc||recDisc(v)),sug:false,st,fp:false,data:v.data||"",obs:r.obs||""}); } }
+  const B=baseDados(); const rn={}; for(const r of B.rncs) rn[r.key]=r;
+  for(const i of B.itens){ if(i.oid!==oid||i.org==="app") continue; const r=rn[i.key]||{}; const fech=r.st==="corrigida"||r.st==="cancelada";
+    const st=i.st==="C"?"Conforme":i.st==="NV"?"Não verificado":fech?"Fechado":"Aberto";
+    L.push({orig:"RNC",docId:i.key,doc:"RNC "+pad(i.rnc,3),docNome:r.tema||"",grupo:String(i.local||"").split(" · ")[0]||"RNC",loc:i.local||"",n:i.n,txt:i.txt||"",disc:discNorm(i.disc),sug:false,st,fp:false,data:i.data||"",obs:""}); }
+  return L;
+}
+function relFiltra(L,f){ return L.filter(x=>{ const o=f.orig||"todos"; if(o==="RNC"&&x.orig!=="RNC") return false; if(o==="CL"&&x.orig!=="Checklist") return false; if(o.startsWith("CL:")&&x.docId!==o.slice(3)) return false; return !f.grupo||x.grupo===f.grupo; }); }
+function relAgg(L){ const m=new Map(); for(const x of L){ const k=x.disc||""; let a=m.get(k); if(!a){ a={disc:k,t:0,Aberto:0,Fechado:0,Conforme:0,sv:0,fp:0,sug:0}; m.set(k,a); } a.t++; if(x.st==="Aberto")a.Aberto++; else if(x.st==="Fechado")a.Fechado++; else if(x.st==="Conforme")a.Conforme++; else a.sv++; if(x.fp)a.fp++; if(x.sug)a.sug++; }
+  return [...m.values()].sort((a,b)=>(a.disc===""?1:0)-(b.disc===""?1:0)||b.Aberto-a.Aberto||b.t-a.t||a.disc.localeCompare(b.disc,"pt")); }
+const relTot=A=>A.reduce((a,x)=>({t:a.t+x.t,Aberto:a.Aberto+x.Aberto,Fechado:a.Fechado+x.Fechado,Conforme:a.Conforme+x.Conforme,sv:a.sv+x.sv,fp:a.fp+x.fp,sug:a.sug+x.sug}),{t:0,Aberto:0,Fechado:0,Conforme:0,sv:0,fp:0,sug:0});
+const discTxt=d=>d||"(sem disciplina)";
+
+/* ---------- tela ---------- */
+UI.r11=UI.r11||{oid:"",orig:"todos",grupo:"",disc:null};
+function relObras(){ return S.obras.filter(o=>!o.modelo); }
+function vRel11(){
+  const f=UI.r11; const obras=relObras(); if(!f.oid||!obras.some(o=>o.id===f.oid)) f.oid=(obras.find(o=>o.id===UI.oid)||obras[0]||{}).id||"";
+  const o=obraDe(f.oid)||{nome:"—"}; const Lall=relLinhas(f.oid); const grupos=[...new Set(Lall.map(x=>x.grupo).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"pt",{numeric:true}));
+  const cls=(S.cls||[]).filter(c=>c.obraId===f.oid);
+  const L=relFiltra(Lall,f), A=relAgg(L), T=relTot(A); const sem=(A.find(a=>a.disc==="")||{t:0}).t;
+  const kp=(n,t,c)=>`<div class="${c||""}"><b>${n}</b><span>${t}</span></div>`;
+  const mx=Math.max(1,...A.map(a=>a.t));
+  const linhas=A.map(a=>`<button type="button" class="rl-row" data-act="r11d" data-v="${esc(a.disc)}" aria-pressed="${f.disc===a.disc}"><span class="rl-n">${esc(discTxt(a.disc))}${a.sug?` <small>(${a.sug} sugerida${a.sug>1?"s":""})</small>`:""}</span><span class="rl-b"><i class="ab" style="width:${a.Aberto/mx*100}%"></i><i class="fe" style="width:${a.Fechado/mx*100}%"></i><i class="co" style="width:${a.Conforme/mx*100}%"></i><i class="sv" style="width:${a.sv/mx*100}%"></i></span><span class="rl-q"><b>${a.t}</b> · ${a.Aberto} aberto${a.Aberto===1?"":"s"}</span></button>`).join("");
+  let det="";
+  if(f.disc!==null){ const D=L.filter(x=>(x.disc||"")===f.disc).sort((a,b)=>REL_SIT.indexOf(a.st)-REL_SIT.indexOf(b.st));
+    det=`<section class="card"><div class="row between"><h2>${esc(discTxt(f.disc))} · ${D.length} item(ns)</h2><button class="link" data-act="r11d" data-v="__x">Fechar</button></div><ul class="rl-det">${D.slice(0,80).map(x=>`<li><span class="rl-s s-${REL_SIT.indexOf(x.st)}">${x.st}</span><b>${esc(x.doc)}</b> · ${esc(clTxt(x.txt,110))}<small>${esc(x.loc)}${x.fp?" · foto pendente":""}</small></li>`).join("")}</ul>${D.length>80?`<p class="muted small">Mostrando 80 de ${D.length}. A lista completa está no Excel.</p>`:""}</section>`; }
+  return `<div><p class="eyebrow">CTE Gerenciamento · Análise da obra</p><h1>Relatório por disciplina</h1><p class="muted small">RNC e checklists juntos, por disciplina. Disciplina definida item a item; pode ser alterada a qualquer momento.</p></div>
+  <section class="card rl-f"><label class="f"><span>Obra</span><select id="r11-o">${obras.map(x=>`<option value="${esc(x.id)}" ${x.id===f.oid?"selected":""}>${esc(x.nome)}</option>`).join("")}</select></label>
+   <label class="f"><span>Origem</span><select id="r11-s"><option value="todos">RNC e checklists</option><option value="RNC" ${f.orig==="RNC"?"selected":""}>Somente RNC</option><option value="CL" ${f.orig==="CL"?"selected":""}>Todos os checklists</option>${cls.map(c=>`<option value="CL:${esc(c.id)}" ${f.orig==="CL:"+c.id?"selected":""}>${esc(c.numero)} · ${esc(clTxt(c.titulo,46))}</option>`).join("")}</select></label>
+   <label class="f"><span>Local</span><select id="r11-g"><option value="">Todos</option>${grupos.map(g=>`<option ${f.grupo===g?"selected":""}>${esc(g)}</option>`).join("")}</select></label></section>
+  <section class="card cl-ind"><div class="cl-kp">${kp(T.t,"itens")}${kp(T.Aberto,"em aberto","nc")}${kp(T.Fechado,"fechados","ok")}${kp(T.Conforme,"conformes","ok")}${kp(T.sv,"sem verificação / NV")}${kp(T.fp,"foto pendente")}</div>
+   <p class="muted small">${sem?`<b class="txt-nc">${sem} item(ns) sem disciplina.</b> `:""}${T.sug?`${T.sug} disciplina(s) sugerida(s) automaticamente: confirme item a item. `:""}Fechado = corrigido e verificado (checklist) ou NC encerrada / RNC corrigida.</p></section>
+  <section class="card"><h2>Por disciplina</h2><div class="rl-leg"><span class="ab">Aberto</span><span class="fe">Fechado</span><span class="co">Conforme</span><span class="sv">Sem verif./NV</span></div><div class="rl-tab">${linhas||'<p class="muted">Nenhum item nesta seleção.</p>'}</div></section>${det}
+  <div class="cl-acoes"><button class="btn" data-act="r11sug">Sugerir disciplinas (${sem} sem)</button><button class="btn" data-act="r11xls">Gerar Excel</button><button class="btn primary" data-act="r11pdf">Gerar PDF</button></div>
+  <p class="muted small">O PDF segue a seleção acima. O Excel traz todos os itens da obra (com filtros e resumo).</p>`;
+}
+{ const _vI=vInicio; vInicio=function(){ return UI.view==="rel11"?vRel11():_vI(); }; }
+document.addEventListener("click",e=>{ if(e.target.closest("#sheet")) return; const a=e.target.closest("[data-act]"); if(!a) return; const act=a.dataset.act, v=a.dataset.v;
+  if(act==="rel11"){ e.stopImmediatePropagation(); if(a.dataset.o) UI.r11={oid:a.dataset.o,orig:"todos",grupo:"",disc:null}; UI.view="rel11"; render(); scrollTo(0,0); }
+  else if(act==="r11d"){ e.stopImmediatePropagation(); const y=scrollY; UI.r11.disc=(v==="__x"||UI.r11.disc===v)?null:v; render(); scrollTo(0,y); }
+  else if(act==="r11sug"){ e.stopImmediatePropagation(); const r=discSugerirObra(UI.r11.oid); const y=scrollY; render(); scrollTo(0,y); toast(r.n?`${r.n} disciplina(s) sugerida(s). ${r.sem?r.sem+" sem sugestão: defina manualmente.":"Confirme item a item."}`:"Nada a sugerir: itens já têm disciplina ou o texto não permite sugerir."); }
+  else if(act==="r11pdf"){ e.stopImmediatePropagation(); relPDF(); }
+  else if(act==="r11xls"){ e.stopImmediatePropagation(); relXLS(); } },true);
+document.addEventListener("change",e=>{ const t=e.target; if(!t.id||!t.id.startsWith("r11-")||UI.view!=="rel11") return; e.stopImmediatePropagation();
+  if(t.id==="r11-o") UI.r11={oid:t.value,orig:"todos",grupo:"",disc:null}; else if(t.id==="r11-s"){ UI.r11.orig=t.value; UI.r11.disc=null; } else if(t.id==="r11-g"){ UI.r11.grupo=t.value; UI.r11.disc=null; }
+  render(); },true);
+/* acessos: menu lateral e bloco da obra */
+{ const _rn=renderNav; renderNav=function(){ _rn(); const n=document.getElementById("nav"); if(!n||n.querySelector('[data-act="rel11"]')) return;
+    const b=document.createElement("button"); b.dataset.act="rel11"; b.className="so-lat"; if(UI.view==="rel11") b.setAttribute("aria-current","page");
+    b.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16M7 20v-7M12 20V5M17 20v-10"/></svg><span>Relatório por disciplina</span>`;
+    const fil=[...n.children]; const ref=fil.find(x=>x.dataset&&x.dataset.v==="aprov")||fil.find(x=>x.dataset&&x.dataset.act==="menu")||fil.find(x=>x.id==="arv-lat")||null; n.insertBefore(b,ref);
+    if(UI.view==="rel11") n.querySelectorAll('[aria-current="page"]:not([data-act="rel11"])').forEach(x=>x.removeAttribute("aria-current"));
+    if(document.getElementById("drawer")&&typeof montarGaveta==="function") montarGaveta(); }; }
+{ const _bo=blocoObra; blocoObra=function(o){ const h=_bo(o); const i=h.lastIndexOf("</footer>"); if(i<0) return h; return h.slice(0,i)+`<button class="btn small-btn" data-act="rel11" data-o="${esc(o.id)}">Por disciplina</button>`+h.slice(i); }; }
+
+/* ---------- Excel ---------- */
+const xcol=n=>{ let s=""; n++; while(n>0){ const r=(n-1)%26; s=String.fromCharCode(65+r)+s; n=Math.floor((n-1)/26); } return s; };
+const xtx=s=>String(s??"").replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g,"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function xcel(r,c,x){ const o=(x&&typeof x==="object")?x:{v:x}; const ref=xcol(c)+(r+1), s=o.s?` s="${o.s}"`:"";
+  if(o.f!==undefined) return `<c r="${ref}"${s}><f>${xtx(o.f)}</f><v>${o.v}</v></c>`;
+  if(typeof o.v==="number") return `<c r="${ref}"${s}><v>${o.v}</v></c>`;
+  if(o.v===""||o.v==null) return o.s?`<c r="${ref}"${s}/>`:"";
+  return `<c r="${ref}" t="inlineStr"${s}><is><t xml:space="preserve">${xtx(o.v)}</t></is></c>`; }
+function xsheet(rows,widths,opt){ opt=opt||{}; const nc=Math.max(...rows.map(r=>r.length));
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0"${opt.first?' tabSelected="1"':""}>${opt.freeze?`<pane ySplit="${opt.freeze}" topLeftCell="A${opt.freeze+1}" activePane="bottomLeft" state="frozen"/>`:""}</sheetView></sheetViews><cols>${widths.map((w,i)=>`<col min="${i+1}" max="${i+1}" width="${w}" customWidth="1"/>`).join("")}</cols><sheetData>${rows.map((r,i)=>`<row r="${i+1}">${r.map((x,j)=>xcel(i,j,x)).join("")}</row>`).join("")}</sheetData>${opt.filter?`<autoFilter ref="A${opt.filter}:${xcol(nc-1)}${rows.length}"/>`:""}</worksheet>`; }
+function xlsxBlob(sheets){ const ns='xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"';
+  const styles=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet ${ns}><fonts count="4"><font><sz val="10"/><name val="Calibri"/></font><font><b/><sz val="10"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font><font><b/><sz val="14"/><color rgb="FF002639"/><name val="Calibri"/></font><font><b/><sz val="10"/><color rgb="FF002639"/><name val="Calibri"/></font></fonts><fills count="4"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF002639"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFF4F6F8"/></patternFill></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="7"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0" applyAlignment="1"><alignment vertical="top" wrapText="1"/></xf><xf numFmtId="9" fontId="3" fillId="3" borderId="0" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1"/><xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1"/><xf numFmtId="0" fontId="3" fillId="0" borderId="0" xfId="0" applyFont="1"/><xf numFmtId="0" fontId="3" fillId="3" borderId="0" xfId="0" applyFont="1" applyFill="1"/></cellXfs></styleSheet>`;
+  const files=[{name:"[Content_Types].xml",data:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>${sheets.map((s,i)=>`<Override PartName="/xl/worksheets/sheet${i+1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join("")}<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>`},
+   {name:"_rels/.rels",data:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`},
+   {name:"xl/workbook.xml",data:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook ${ns} xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><bookViews><workbookView/></bookViews><sheets>${sheets.map((s,i)=>`<sheet name="${xtx(s.nome)}" sheetId="${i+1}" r:id="rId${i+1}"/>`).join("")}</sheets>${sheets.some(s=>s.filtro)?`<definedNames>${sheets.map((s,i)=>s.filtro?`<definedName name="_xlnm._FilterDatabase" localSheetId="${i}" hidden="1">'${xtx(s.nome)}'!${s.filtro}</definedName>`:"").join("")}</definedNames>`:""}</workbook>`},
+   {name:"xl/_rels/workbook.xml.rels",data:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${sheets.map((s,i)=>`<Relationship Id="rId${i+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i+1}.xml"/>`).join("")}<Relationship Id="rId${sheets.length+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`},
+   {name:"xl/styles.xml",data:styles},...sheets.map((s,i)=>({name:`xl/worksheets/sheet${i+1}.xml`,data:s.xml}))];
+  return new Blob([zip(files)],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}); }
+async function relXLS(){
+  const f=UI.r11, o=obraDe(f.oid); const L=relLinhas(f.oid); if(!L.length){ aviso("Sem itens","Esta obra ainda não tem itens de RNC ou checklist."); return; }
+  const H=["Obra","Origem","Documento","Título do documento","Local","Nº/Cód. do item","Item","Disciplina","Disciplina sugerida?","Situação","Foto pendente","Data","Observação"];
+  const rows=[H.map(h=>({v:h,s:1}))]; const DS=x=>x.disc||"(sem disciplina)";
+  for(const x of L) rows.push([o.nome,x.orig,x.doc,x.docNome,x.loc,x.n,x.txt,DS(x),x.sug?"Sim":"",x.st,x.fp?"Sim":"",x.data?fmtData(x.data):"",x.obs].map((v,j)=>({v,s:2})));
+  const A=relAgg(L), T=relTot(A); const n=rows.length;
+  const R=[[{v:"Relatório por disciplina · "+o.nome,s:4}],[{v:"Gerado em "+fmtData(hoje())+" · CTE Gerenciamento · aba “Itens” traz todos os itens da obra (use os filtros).",s:0}],[],
+   ["Disciplina","Total de itens","Aberto","Fechado","Conforme","Não verificado / sem verificação","Foto pendente","% em aberto"].map(h=>({v:h,s:1}))];
+  A.forEach((a,k)=>{ const r=R.length+1; const nome=DS(a); const cf=(col)=>`COUNTIFS(Itens!$H$2:$H$${n},$A${r}${col})`;
+    R.push([{v:nome,s:5},{v:a.t,f:`COUNTIFS(Itens!$H$2:$H$${n},$A${r})`},{v:a.Aberto,f:cf(`,Itens!$J$2:$J$${n},"Aberto"`)},{v:a.Fechado,f:cf(`,Itens!$J$2:$J$${n},"Fechado"`)},{v:a.Conforme,f:cf(`,Itens!$J$2:$J$${n},"Conforme"`)},{v:a.sv,f:`B${r}-C${r}-D${r}-E${r}`},{v:a.fp,f:cf(`,Itens!$K$2:$K$${n},"Sim"`)},{v:a.t?a.Aberto/a.t:0,s:3,f:`IF(B${r}=0,0,C${r}/B${r})`}]); });
+  const r0=5, r1=R.length; const tr=R.length+1;
+  R.push([{v:"TOTAL",s:6},...["B","C","D","E","F","G"].map((c,i)=>({v:[T.t,T.Aberto,T.Fechado,T.Conforme,T.sv,T.fp][i],s:6,f:`SUM(${c}${r0}:${c}${r1})`})),{v:T.t?T.Aberto/T.t:0,s:3,f:`IF(B${tr}=0,0,C${tr}/B${tr})`}]);
+  R.push([],[{v:"Fechado = checklist corrigido e reverificado, NC encerrada ou RNC corrigida. Disciplinas marcadas como sugeridas na aba Itens vieram de palavras-chave e precisam de confirmação.",s:0}]);
+  const sheets=[{nome:"Resumo",xml:xsheet(R,[34,14,10,10,12,22,14,12],{first:1})},{nome:"Itens",filtro:`$A$1:$M$${n}`,xml:xsheet(rows,[18,11,16,34,36,10,60,20,12,16,10,11,40],{freeze:1,filter:1})}];
+  const nome=`${o.codigo||"OBRA"}_Relatorio_por_disciplina_${hoje()}.xlsx`; try{ entregarArquivo(nome,xlsxBlob(sheets)); }catch(err){ aviso("Erro ao gerar o Excel",String(err&&err.message||err)); } }
+{ const _sa=sheetArquivo; sheetArquivo=function(nome,blob,r){ _sa(nome,blob,r); if(/\.xlsx$/i.test(nome)){ const sh=document.getElementById("sheet"); if(sh) sh.innerHTML=sh.innerHTML.replace("Word pronto","Excel pronto").replace("Baixar Word","Baixar Excel"); } }; }
+
+/* ---------- PDF ---------- */
+async function relPDF(){
+  const f=UI.r11, o=obraDe(f.oid); const Lall=relLinhas(f.oid); const L=relFiltra(Lall,f); if(!L.length){ aviso("Sem itens","Não há itens na seleção atual."); return; }
+  progresso("Gerando PDF…"); await new Promise(r=>setTimeout(r,60));
+  try{ const A=relAgg(L), T=relTot(A); const d=new PDF(); const W=297,H=210,m=10,LOGO=logoBytes(); const num=`${o.codigo||"OBRA"}-REL-DISC-${hoje().replace(/-/g,"")}`;
+    const cab=()=>{ d.rect(0,0,W,16,NAVY); d.image(LOGO,LOGO_JPG_W,LOGO_JPG_H,m,3,10*LOGO_JPG_W/LOGO_JPG_H,10); d.text("RELATÓRIO POR DISCIPLINA",W/2,8.3,9.5,true,[255,255,255],"c"); d.text(o.nome||"",W/2,12.6,7.5,false,[200,214,222],"c"); d.text(num,W-m,10,8,true,[255,255,255],"r"); };
+    const OKc=[63,143,42], SVc=[200,206,212], FEc=[140,190,120], ABc=RED;
+    d.addPage(); cab(); d.text("Situação dos itens por disciplina",m,28,12,true,NAVY); d.rect(m,31,30,1,PET);
+    const orig=f.orig==="RNC"?"Somente RNC":f.orig==="CL"?"Todos os checklists":f.orig&&f.orig.startsWith("CL:")?((S.cls||[]).find(c=>c.id===f.orig.slice(3))||{}).numero||"Checklist":"RNC e checklists";
+    d.text(`Origem: ${orig}${f.grupo?" · Local: "+f.grupo:""} · Emitido em ${fmtData(hoje())}`,m,36,8,false,GR);
+    const cx=[["ITENS",T.t,NAVY],["EM ABERTO",T.Aberto,RED],["FECHADOS",T.Fechado,OKc],["CONFORMES",T.Conforme,OKc],["SEM VERIF. / NV",T.sv,GR],["FOTO PENDENTE",T.fp,PET]]; const bw=(W-2*m-5*5)/6;
+    cx.forEach(([t,v,col],j)=>{ const x=m+j*(bw+5); d.rect(x,40,bw,22,[244,246,248],LINE); d.rect(x,40,bw,1.6,col); d.text(String(v),x+bw/2,53,17,true,col,"c"); d.text(t,x+bw/2,59,6.8,true,GR,"c"); });
+    let y=72; d.text("DISCIPLINA",m,y,7,true,GR); d.text("TOTAL",m+78,y,7,true,GR,"r"); d.text("ABERTO",m+98,y,7,true,GR,"r"); d.text("FECHADO",m+118,y,7,true,GR,"r"); d.text("CONFORME",m+140,y,7,true,GR,"r"); d.text("S/ VERIF.",m+160,y,7,true,GR,"r"); d.text("DISTRIBUIÇÃO",m+168,y,7,true,GR); y+=3;
+    const mx=Math.max(1,...A.map(a=>a.t)), bwid=W-2*m-168;
+    for(const a of A.slice(0,16)){ y+=7.5; d.rect(m,y-5,W-2*m,0.2,LINE); d.text(discTxt(a.disc)+(a.sug?` (${a.sug} sug.)`:""),m,y,8.5,true,[20,35,45]);
+      [[a.t,78],[a.Aberto,98],[a.Fechado,118],[a.Conforme,140],[a.sv,160]].forEach(([v,x])=>d.text(String(v),m+x,y,8.5,false,[20,35,45],"r"));
+      let xs=m+168; for(const [q,col] of [[a.Aberto,ABc],[a.Fechado,FEc],[a.Conforme,OKc],[a.sv,SVc]]){ const w=bwid*q/mx; if(w>0){ d.rect(xs,y-3.6,w,4.4,col); xs+=w; } } }
+    y+=9; d.text("Legenda: vermelho = aberto · verde claro = fechado · verde = conforme · cinza = sem verificação / NV. Fechado = corrigido e reverificado, NC encerrada ou RNC corrigida.",m,y,6.8,false,GR);
+    if(T.sug||A.some(a=>a.disc==="")){ y+=5; d.text(`${(A.find(a=>a.disc===""))?(A.find(a=>a.disc==="").t)+" item(ns) sem disciplina. ":""}${T.sug?T.sug+" disciplina(s) sugerida(s) por palavras-chave, a confirmar.":""}`,m,y,7.2,true,RED); }
+    /* itens em aberto por disciplina */
+    const ab=L.filter(x=>x.st==="Aberto"); const CAP=700; let pg=null, yy=0; const novaPg=(tit)=>{ d.addPage(); cab(); d.text(tit,m,26,10,true,NAVY); yy=33; };
+    if(ab.length){ novaPg(`Itens em aberto (${ab.length})`); const grp=new Map(); for(const x of ab){ const k=x.disc||""; (grp.get(k)||grp.set(k,[]).get(k)).push(x); }
+      let cont=0; for(const a of A){ const g=grp.get(a.disc); if(!g) continue; if(yy>H-30) novaPg("Itens em aberto (continuação)"); d.rect(m,yy-3.6,W-2*m,5.4,[236,241,245]); d.text(`${discTxt(a.disc)} · ${g.length}`,m+2,yy,8.5,true,NAVY); yy+=6;
+        for(const x of g){ if(cont>=CAP) break; if(yy>H-14){ novaPg("Itens em aberto (continuação)"); } const t=d.wrap(`${x.txt}`,150,7.3,false)[0]||""; d.text(x.doc,m+2,yy,7,true,PET); d.text(t,m+30,yy,7.3,false,[20,35,45]); d.text(clTxt(x.loc,62),m+186,yy,6.5,false,GR); yy+=4.4; cont++; }
+        yy+=2; }
+      if(ab.length>CAP){ d.text(`Mostrando ${CAP} de ${ab.length} itens em aberto. A lista completa está no Excel.`,m,yy+2,7.5,true,GR); } }
+    const tot=d.pages.length; d.pages.forEach((ops,k)=>{ d.ops=ops; d.text("CTE Gerenciamento · Relatório de acompanhamento; não constitui aceite de serviços.",m,H-5,6.5,false,GR); d.text(`página ${k+1} de ${tot}`,W-m,H-5,7,false,GR,"r"); });
+    const blob=await finalizarPDF(d,[],num); if($("#sheet .prog")) fechar(); await entregarArquivo(`${num}.pdf`,blob);
+  }catch(err){ console.error(err); aviso("Erro ao gerar o PDF",String(err&&err.message||err)); } }
 
 (async function iniciar(){ $("#logo").src=LOGO_DARK; rede(); await openDB(); S=(await kvGet("state2"))||estadoInicial(); if(!S.rfs){ S.rfs=[]; } S.seqAV=S.seqAV||1;
   migrar(); purgarModelo(); await carregarIndiceFotosHist(); lastJSON=snapJSON(); kvSet("state2",S); UI.oid=(S.obras[0]||{}).id||null; render(); })();
