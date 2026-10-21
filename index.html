@@ -4227,8 +4227,8 @@ function vRel11(){
   <section class="card cl-ind"><div class="cl-kp">${kp(T.t,"itens","","todos")}${kp(T.Aberto,"em aberto","nc","Aberto")}${kp(T.Fechado,"fechados","ok","Fechado")}${kp(T.Conforme,"conformes","ok","Conforme")}${kp(T.sv,"sem verificação / NV","","sv")}${kp(T.fp,"foto pendente","","fp")}</div>
    <p class="muted small">${sem?`<b class="txt-nc">${sem} item(ns) sem disciplina.</b> `:""}${T.sug?`${T.sug} disciplina(s) sugerida(s) automaticamente: confirme item a item. `:""}Fechado = corrigido e verificado (checklist) ou NC encerrada / RNC corrigida.</p></section>
   <section class="card"><h2>Por disciplina</h2><div class="rl-leg"><span class="ab">Aberto</span><span class="fe">Fechado</span><span class="co">Conforme</span><span class="sv">Sem verif./NV</span></div><div class="rl-tab">${linhas||'<p class="muted">Nenhum item nesta seleção.</p>'}</div></section>${det}
-  <div class="cl-acoes"><button class="btn" data-act="r11sug">Sugerir disciplinas (${sem} sem)</button><button class="btn" data-act="r11xls">Gerar Excel</button><button class="btn primary" data-act="r11pdf">Gerar PDF</button></div>
-  <p class="muted small">O PDF segue a seleção acima. O Excel traz todos os itens da obra (com filtros e resumo).</p>`;
+  <div class="cl-acoes"><button class="btn" data-act="r11sug">Sugerir disciplinas (${sem} sem)</button><button class="btn" data-act="r11xls">Gerar Excel</button><button class="btn primary" data-act="r11pdf">PDF sem fotos</button><button class="btn primary" data-act="r11pdff">PDF com fotos</button></div>
+  <p class="muted small"><b>Sem fotos:</b> resumo por disciplina e lista dos itens em aberto. <b>Com fotos:</b> resumo e, por disciplina, cada item com as fotos registradas (antes/depois); sem filtro de situação traz os itens em aberto, e com filtro (ex.: “fechados”) traz a situação escolhida. Os dois PDFs seguem a origem, o local e a disciplina selecionados. O Excel traz todos os itens da obra, sem fotos.</p>`;
 }
 { const _vI=vInicio; vInicio=function(){ return UI.view==="rel11"?vRel11():_vI(); }; }
 document.addEventListener("click",e=>{ if(e.target.closest("#sheet")) return; const a=e.target.closest("[data-act]"); if(!a) return; const act=a.dataset.act, v=a.dataset.v;
@@ -4238,7 +4238,8 @@ document.addEventListener("click",e=>{ if(e.target.closest("#sheet")) return; co
   else if(act==="r11mais"){ e.stopImmediatePropagation(); const y=scrollY; UI.r11.lim=(UI.r11.lim||60)+60; render(); scrollTo(0,y); }
   else if(act==="r11go"){ e.stopImmediatePropagation(); const x=(UI.r11rows||[])[+a.dataset.n]; if(x) irItemRel(x); }
   else if(act==="r11sug"){ e.stopImmediatePropagation(); const r=discSugerirObra(UI.r11.oid); const y=scrollY; render(); scrollTo(0,y); toast(r.n?`${r.n} disciplina(s) sugerida(s). ${r.sem?r.sem+" sem sugestão: defina manualmente.":"Confirme item a item."}`:"Nada a sugerir: itens já têm disciplina ou o texto não permite sugerir."); }
-  else if(act==="r11pdf"){ e.stopImmediatePropagation(); relPDF(); }
+  else if(act==="r11pdf"){ e.stopImmediatePropagation(); relPDF(false); }
+  else if(act==="r11pdff"){ e.stopImmediatePropagation(); relPDF(true); }
   else if(act==="r11xls"){ e.stopImmediatePropagation(); relXLS(); } },true);
 document.addEventListener("change",e=>{ const t=e.target; if(!t.id||!t.id.startsWith("r11-")||UI.view!=="rel11") return; e.stopImmediatePropagation();
   if(t.id==="r11-o") UI.r11={oid:t.value,orig:"todos",grupo:"",disc:null}; else if(t.id==="r11-s"){ UI.r11.orig=t.value; UI.r11.disc=null; } else if(t.id==="r11-g"){ UI.r11.grupo=t.value; UI.r11.disc=null; }
@@ -4288,10 +4289,10 @@ async function relXLS(){
 { const _sa=sheetArquivo; sheetArquivo=function(nome,blob,r){ _sa(nome,blob,r); if(/\.xlsx$/i.test(nome)){ const sh=document.getElementById("sheet"); if(sh) sh.innerHTML=sh.innerHTML.replace("Word pronto","Excel pronto").replace("Baixar Word","Baixar Excel"); } }; }
 
 /* ---------- PDF ---------- */
-async function relPDF(){
+async function relPDF(fotos){
   const f=UI.r11, o=obraDe(f.oid); const Lall=relLinhas(f.oid); const L=relFiltra(Lall,f); if(!L.length){ aviso("Sem itens","Não há itens na seleção atual."); return; }
   progresso("Gerando PDF…"); await new Promise(r=>setTimeout(r,60));
-  try{ const A=relAgg(L), T=relTot(A); const d=new PDF(); const W=297,H=210,m=10,LOGO=logoBytes(); const num=`${o.codigo||"OBRA"}-REL-DISC-${hoje().replace(/-/g,"")}`;
+  try{ const A=relAgg(L), T=relTot(A); const d=new PDF(); const W=297,H=210,m=10,LOGO=logoBytes(); const num=`${o.codigo||"OBRA"}-REL-DISC${fotos?"-FOTOS":""}-${hoje().replace(/-/g,"")}`;
     const cab=()=>{ d.rect(0,0,W,16,NAVY); d.image(LOGO,LOGO_JPG_W,LOGO_JPG_H,m,3,10*LOGO_JPG_W/LOGO_JPG_H,10); d.text("RELATÓRIO POR DISCIPLINA",W/2,8.3,9.5,true,[255,255,255],"c"); d.text(o.nome||"",W/2,12.6,7.5,false,[200,214,222],"c"); d.text(num,W-m,10,8,true,[255,255,255],"r"); };
     const OKc=[63,143,42], SVc=[200,206,212], FEc=[140,190,120], ABc=RED;
     d.addPage(); cab(); d.text("Situação dos itens por disciplina",m,28,12,true,NAVY); d.rect(m,31,30,1,PET);
@@ -4308,7 +4309,8 @@ async function relPDF(){
     if(T.sug||A.some(a=>a.disc==="")){ y+=5; d.text(`${(A.find(a=>a.disc===""))?(A.find(a=>a.disc==="").t)+" item(ns) sem disciplina. ":""}${T.sug?T.sug+" disciplina(s) sugerida(s) por palavras-chave, a confirmar.":""}`,m,y,7.2,true,RED); }
     /* itens em aberto por disciplina */
     const ab=L.filter(x=>x.st==="Aberto"); const CAP=700; let pg=null, yy=0; const novaPg=(tit)=>{ d.addPage(); cab(); d.text(tit,m,26,10,true,NAVY); yy=33; };
-    if(ab.length){ novaPg(`Itens em aberto (${ab.length})`); const grp=new Map(); for(const x of ab){ const k=x.disc||""; (grp.get(k)||grp.set(k,[]).get(k)).push(x); }
+    if(fotos) await relFotosPDF(d,cab,L,A,f,m,W,H);
+    if(ab.length&&!fotos){ novaPg(`Itens em aberto (${ab.length})`); const grp=new Map(); for(const x of ab){ const k=x.disc||""; (grp.get(k)||grp.set(k,[]).get(k)).push(x); }
       let cont=0; for(const a of A){ const g=grp.get(a.disc); if(!g) continue; if(yy>H-30) novaPg("Itens em aberto (continuação)"); d.rect(m,yy-3.6,W-2*m,5.4,[236,241,245]); d.text(`${discTxt(a.disc)} · ${g.length}`,m+2,yy,8.5,true,NAVY); yy+=6;
         for(const x of g){ if(cont>=CAP) break; if(yy>H-14){ novaPg("Itens em aberto (continuação)"); } const t=d.wrap(`${x.txt}`,150,7.3,false)[0]||""; d.text(x.doc,m+2,yy,7,true,PET); d.text(t,m+30,yy,7.3,false,[20,35,45]); d.text(clTxt(x.loc,62),m+186,yy,6.5,false,GR); yy+=4.4; cont++; }
         yy+=2; }
@@ -4881,6 +4883,36 @@ novoRecMenu=function(){ menuSheet("Novo relatório",[["Checklist – itens verif
 /* lista de obras: contador de checklists */
 { const _vos=vObras;
   vObras=function(){ return _vos().replace(/data-v="([^"]+)" role="button" tabindex="0"><span class="rr-ic brief">[\s\S]*?avulso\(s\)/g,(m,id)=>{ const n=clDaObra(id).length; return n?m+` · ${n} checklist(s)`:m; }); }; }
+
+/* ================= ONDA 17: relatório por disciplina com fotos ================= */
+async function relFotosItem(x){
+  const out=[]; const add=async(id,rot,pref)=>{ try{ const rec=await fotoGet((pref||"")+id); if(!rec||!rec.blob) return; const red=await reduzirOuNull(rec.blob,900,0.72); if(!red) return; out.push({bytes:new Uint8Array(await red.blob.arrayBuffer()),w:red.w,h:red.h,rot,dh:rec.em?fmtDH(rec.em):""}); }catch(_){ } };
+  if(x.orig==="Checklist"){ const c=(S.cls||[]).find(y=>y.id===x.docId); const i=c&&c.itens.find(y=>y.id===x.itemId); if(i){ await add(i.antes,"ANTES"); await add(i.depois,"DEPOIS"); } }
+  else if(x.vid){ const v=S.vistorias.find(y=>y.id===x.vid); const fs=(v&&v.fotos||[]).filter(f=>(f.itens||[]).includes(x.cod)).slice(0,2); let k=1; for(const f of fs) await add(f.id,"FOTO "+(k++)); }
+  else if(x.hist){ const key=chaveFH(x.hist.o,x.hist.n,x.n); const q=Math.min(2,FOTOS_HIST[key]||0); for(let j=0;j<q;j++) await add(key+"#"+j,"FOTO "+(j+1),"h:"); }
+  return out;
+}
+async function relFotosPDF(d,cab,L,A,f,m,W,H){
+  const sit=f.sit||"Aberto"; const ordem=A.map(a=>a.disc);
+  let D=L.filter(x=>(f.disc==null||(x.disc||"")===f.disc)&&relSitOk(x,sit)).sort((a,b)=>ordem.indexOf(a.disc)-ordem.indexOf(b.disc)||String(a.doc).localeCompare(String(b.doc),"pt",{numeric:true}));
+  const CAP=90, tot=D.length; D=D.slice(0,CAP);
+  const rotSit={Aberto:"em aberto",Fechado:"fechados",Conforme:"conformes",sv:"sem verificação / NV",fp:"com foto pendente",todos:"todos"}[sit]||sit;
+  if(!D.length){ d.addPage(); cab(); d.text(`Nenhum item ${rotSit} na seleção.`,m,30,10,true,GR); return; }
+  const foto=(x,y,w,h,ft,rotFallback)=>{ d.rect(x,y,w,h,[244,246,248],LINE);
+    if(ft){ let iw=w,ih=w*ft.h/ft.w; if(ih>h){ ih=h; iw=h*ft.w/ft.h; } d.image(ft.bytes,ft.w,ft.h,x+(w-iw)/2,y+(h-ih)/2,iw,ih); d.text(ft.rot+(ft.dh?` · ${ft.dh}`:""),x,y+h+3.6,7,true,PET); }
+    else { d.text("sem foto registrada",x+w/2,y+h/2+1,8,false,GR,"c"); d.text(rotFallback,x,y+h+3.6,7,true,GR); } };
+  const corSit={Aberto:RED,Fechado:[140,190,120],Conforme:[63,143,42]};
+  for(let idx=0;idx<D.length;idx++){ const x=D[idx];
+    if(idx%3===0){ d.addPage(); cab(); d.text(`Itens ${rotSit} com fotos · ${Math.min(tot,CAP)} de ${tot}`,m,22.5,8,true,NAVY); }
+    const y=26+(idx%3)*57, fs=await relFotosItem(x); d.rect(m,y,W-2*m,54,null,LINE);
+    const tx=m+3, tw=100; d.text(discTxt(x.disc),tx,y+5,7.5,true,PET);
+    const dl=d.wrap(`${x.n}. ${x.txt}`,tw,9,true).slice(0,3); d.lines(dl,tx,y+10,9,true,NAVY,4.2); let ty=y+10+4.2*dl.length+1;
+    d.text(`${x.doc}${x.loc?" · "+clTxt(x.loc,40):""}`,tx,ty,7,false,GR); ty+=4.6;
+    const col=corSit[x.st]||[200,206,212]; d.rect(tx,ty-3,Math.max(18,x.st.length*2.4+6),4.8,col); d.text(x.st.toUpperCase(),tx+Math.max(18,x.st.length*2.4+6)/2,ty+0.5,6.6,true,[255,255,255],"c"); ty+=6;
+    if(x.obs){ for(const t of d.wrap(x.obs,tw,7.3,false).slice(0,3)){ d.text(t,tx,ty,7.3,false,[20,35,45]); ty+=3.5; } }
+    const par=x.orig==="Checklist"; foto(m+106,y+2,82,46,fs[0]||null,par?"ANTES":"FOTO 1"); foto(m+106+86,y+2,82,46,fs[1]||null,par?"DEPOIS":"FOTO 2"); }
+  if(tot>CAP){ d.addPage(); cab(); d.text(`Mostrando ${CAP} de ${tot} itens (limite para manter o PDF leve).`,m,30,10,true,RED); d.text("Para ver os demais, filtre por disciplina ou por local e gere novamente, ou use o Excel (lista completa).",m,37,8.5,false,GR); }
+}
 
 (async function iniciar(){ $("#logo").src=LOGO_DARK; rede(); await openDB(); S=(await kvGet("state2"))||estadoInicial(); if(!S.rfs){ S.rfs=[]; } S.seqAV=S.seqAV||1;
   migrar(); purgarModelo(); await carregarIndiceFotosHist(); lastJSON=snapJSON(); kvSet("state2",S); UI.oid=(S.obras[0]||{}).id||null; render(); })();
