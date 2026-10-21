@@ -756,6 +756,16 @@ body.rep .fab-mais{bottom:calc(156px + env(safe-area-inset-bottom,0px))!importan
 .pki input{width:22px;height:22px;flex:none;margin-top:1px}
 .pki-t{flex:1}.pki-t b{font-size:1rem;color:#004d6d;margin-right:4px}
 .ed-tx{display:flex;gap:6px;flex:1 1 220px}.ed-tx input{flex:1}
+.kp11{border:0;font:inherit;cursor:pointer;background:var(--surface2);border-radius:10px;padding:8px;text-align:center;color:inherit;min-height:64px}
+.kp11 b{display:block;font-size:22px;color:var(--petroleo)}.kp11 span{font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--fg2)}
+.kp11.ok b{color:#2f6b43}.kp11.nc b{color:#b3202c}
+.kp11[aria-pressed="true"]{outline:2px solid #009cd7;background:#e3f1f8}
+.rn-b{border:0;font:inherit;color:inherit;cursor:pointer;width:100%}.rn-b:active{filter:brightness(.95)}
+.h12{margin-top:12px}
+.rl-it{display:block;width:100%;text-align:left;font:inherit;color:inherit;background:none;border:0;padding:8px 2px;border-bottom:1px solid #e3e8ec;cursor:pointer;min-height:44px}
+.rl-det li{border:0}
+.flash12{animation:fl12 2.4s ease-out}
+@keyframes fl12{0%,60%{box-shadow:0 0 0 3px #009cd7;background:#e3f1f8}100%{box-shadow:0 0 0 0 transparent}}
 </style>
 
 <header class="top">
@@ -4176,15 +4186,15 @@ function relLinhas(oid){
   const L=[];
   for(const c of (S.cls||[])){ if(c.obraId!==oid) continue;
     c.itens.forEach((i,k)=>{ const st=i.st==="NOK"?(i.rev==="OK"?"Fechado":"Aberto"):i.st==="OK"?"Conforme":i.st==="NV"?"Não verificado":"Sem verificação";
-      L.push({orig:"Checklist",docId:c.id,doc:c.numero,docNome:c.titulo,grupo:String(i.g||"").split(" · ")[0]||"",loc:[i.g,i.local].filter(Boolean).join(" · "),n:k+1,txt:i.desc,disc:discNorm(i.disc),sug:!!i.discSug,st,fp:!!(i.fotoPend&&!i.antes),data:c.data||"",obs:i.obs||""}); }); }
+      L.push({orig:"Checklist",itemId:i.id,docId:c.id,doc:c.numero,docNome:c.titulo,grupo:String(i.g||"").split(" · ")[0]||"",loc:[i.g,i.local].filter(Boolean).join(" · "),n:k+1,txt:i.desc,disc:discNorm(i.disc),sug:!!i.discSug,st,fp:!!(i.fotoPend&&!i.antes),data:c.data||"",obs:i.obs||""}); }); }
   for(const v of S.vistorias){ if(v.modelo||v.obraId!==oid) continue;
     for(const it of itensDe(v)){ const r=v.resp[it.cod]; if(!r) continue; const s=stEf(r); if(!s) continue;
       const st=s==="OK"?"Conforme":s==="NV"?"Não verificado":s==="NCE"?"Fechado":"Aberto";
-      L.push({orig:"RNC",docId:v.id,doc:v.numero||"RNC",docNome:`${nomeCk(v)} · ${v.amb||""} ${v.unid||""}`.trim(),grupo:v.pav||"RNC",loc:[v.pav,v.unid,v.amb].filter(Boolean).join(" · "),n:it.cod,txt:it.s,disc:discNorm(r.disc||recDisc(v)),sug:false,st,fp:false,data:v.data||"",obs:r.obs||""}); } }
+      L.push({orig:"RNC",vid:v.id,cod:it.cod,docId:v.id,doc:v.numero||"RNC",docNome:`${nomeCk(v)} · ${v.amb||""} ${v.unid||""}`.trim(),grupo:v.pav||"RNC",loc:[v.pav,v.unid,v.amb].filter(Boolean).join(" · "),n:it.cod,txt:it.s,disc:discNorm(r.disc||recDisc(v)),sug:false,st,fp:false,data:v.data||"",obs:r.obs||""}); } }
   const B=baseDados(); const rn={}; for(const r of B.rncs) rn[r.key]=r;
   for(const i of B.itens){ if(i.oid!==oid||i.org==="app") continue; const r=rn[i.key]||{}; const fech=r.st==="corrigida"||r.st==="cancelada";
     const st=i.st==="C"?"Conforme":i.st==="NV"?"Não verificado":fech?"Fechado":"Aberto";
-    L.push({orig:"RNC",docId:i.key,doc:"RNC "+pad(i.rnc,3),docNome:r.tema||"",grupo:String(i.local||"").split(" · ")[0]||"RNC",loc:i.local||"",n:i.n,txt:i.txt||"",disc:discNorm(i.disc),sug:false,st,fp:false,data:i.data||"",obs:""}); }
+    L.push({orig:"RNC",hist:{o:i.oid,n:i.rnc},docId:i.key,doc:"RNC "+pad(i.rnc,3),docNome:r.tema||"",grupo:String(i.local||"").split(" · ")[0]||"RNC",loc:i.local||"",n:i.n,txt:i.txt||"",disc:discNorm(i.disc),sug:false,st,fp:false,data:i.data||"",obs:""}); }
   return L;
 }
 function relFiltra(L,f){ return L.filter(x=>{ const o=f.orig||"todos"; if(o==="RNC"&&x.orig!=="RNC") return false; if(o==="CL"&&x.orig!=="Checklist") return false; if(o.startsWith("CL:")&&x.docId!==o.slice(3)) return false; return !f.grupo||x.grupo===f.grupo; }); }
@@ -4192,6 +4202,7 @@ function relAgg(L){ const m=new Map(); for(const x of L){ const k=x.disc||""; le
   return [...m.values()].sort((a,b)=>(a.disc===""?1:0)-(b.disc===""?1:0)||b.Aberto-a.Aberto||b.t-a.t||a.disc.localeCompare(b.disc,"pt")); }
 const relTot=A=>A.reduce((a,x)=>({t:a.t+x.t,Aberto:a.Aberto+x.Aberto,Fechado:a.Fechado+x.Fechado,Conforme:a.Conforme+x.Conforme,sv:a.sv+x.sv,fp:a.fp+x.fp,sug:a.sug+x.sug}),{t:0,Aberto:0,Fechado:0,Conforme:0,sv:0,fp:0,sug:0});
 const discTxt=d=>d||"(sem disciplina)";
+const relSitOk=(x,sit)=>!sit||sit==="todos"||(sit==="sv"?(x.st==="Não verificado"||x.st==="Sem verificação"):sit==="fp"?!!x.fp:x.st===sit);
 
 /* ---------- tela ---------- */
 UI.r11=UI.r11||{oid:"",orig:"todos",grupo:"",disc:null};
@@ -4201,17 +4212,18 @@ function vRel11(){
   const o=obraDe(f.oid)||{nome:"—"}; const Lall=relLinhas(f.oid); const grupos=[...new Set(Lall.map(x=>x.grupo).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"pt",{numeric:true}));
   const cls=(S.cls||[]).filter(c=>c.obraId===f.oid);
   const L=relFiltra(Lall,f), A=relAgg(L), T=relTot(A); const sem=(A.find(a=>a.disc==="")||{t:0}).t;
-  const kp=(n,t,c)=>`<div class="${c||""}"><b>${n}</b><span>${t}</span></div>`;
+  const kp=(n,t,c,k)=>`<button type="button" class="kp11 ${c||""}" data-act="r11k" data-v="${k}" aria-pressed="${(f.sit||"todos")===k}"><b>${n}</b><span>${t}</span></button>`;
   const mx=Math.max(1,...A.map(a=>a.t));
   const linhas=A.map(a=>`<button type="button" class="rl-row" data-act="r11d" data-v="${esc(a.disc)}" aria-pressed="${f.disc===a.disc}"><span class="rl-n">${esc(discTxt(a.disc))}${a.sug?` <small>(${a.sug} sugerida${a.sug>1?"s":""})</small>`:""}</span><span class="rl-b"><i class="ab" style="width:${a.Aberto/mx*100}%"></i><i class="fe" style="width:${a.Fechado/mx*100}%"></i><i class="co" style="width:${a.Conforme/mx*100}%"></i><i class="sv" style="width:${a.sv/mx*100}%"></i></span><span class="rl-q"><b>${a.t}</b> · ${a.Aberto} aberto${a.Aberto===1?"":"s"}</span></button>`).join("");
   let det="";
-  if(f.disc!==null){ const D=L.filter(x=>(x.disc||"")===f.disc).sort((a,b)=>REL_SIT.indexOf(a.st)-REL_SIT.indexOf(b.st));
-    det=`<section class="card"><div class="row between"><h2>${esc(discTxt(f.disc))} · ${D.length} item(ns)</h2><button class="link" data-act="r11d" data-v="__x">Fechar</button></div><ul class="rl-det">${D.slice(0,80).map(x=>`<li><span class="rl-s s-${REL_SIT.indexOf(x.st)}">${x.st}</span><b>${esc(x.doc)}</b> · ${esc(clTxt(x.txt,110))}<small>${esc(x.loc)}${x.fp?" · foto pendente":""}</small></li>`).join("")}</ul>${D.length>80?`<p class="muted small">Mostrando 80 de ${D.length}. A lista completa está no Excel.</p>`:""}</section>`; }
+  if(f.disc!==null||f.sit){ const D=L.filter(x=>(f.disc===null||(x.disc||"")===f.disc)&&relSitOk(x,f.sit)).sort((a,b)=>REL_SIT.indexOf(a.st)-REL_SIT.indexOf(b.st)); UI.r11rows=D; const lim=f.lim||60;
+    const tit=[f.sit?({Aberto:"Em aberto",Fechado:"Fechados",Conforme:"Conformes",sv:"Sem verificação / NV",fp:"Foto pendente",todos:"Todos"}[f.sit]):"",f.disc!==null?discTxt(f.disc):""].filter(Boolean).join(" · ")||"Itens";
+    det=`<section class="card"><div class="row between"><h2>${esc(tit)} · ${D.length} item(ns)</h2><button class="link" data-act="r11d" data-v="__x">Limpar filtro</button></div><p class="muted small">Toque num item para abrir o registro, ver a foto, editar e mudar o status. Os indicadores se atualizam sozinhos.</p><ul class="rl-det">${D.slice(0,lim).map((x,n)=>`<li><button type="button" class="rl-it" data-act="r11go" data-n="${n}"><span class="rl-s s-${REL_SIT.indexOf(x.st)}">${x.st}</span><b>${esc(x.doc)}</b> · ${esc(clTxt(x.txt,110))}<small>${esc(x.loc)}${x.fp?" · foto pendente":""}${x.disc?"":" · sem disciplina"}</small></button></li>`).join("")}</ul>${D.length>lim?`<button class="btn block" data-act="r11mais">Mostrar mais (${D.length-lim} restantes)</button>`:""}</section>`; }
   return `<div><p class="eyebrow">CTE Gerenciamento · Análise da obra</p><h1>Relatório por disciplina</h1><p class="muted small">RNC e checklists juntos, por disciplina. Disciplina definida item a item; pode ser alterada a qualquer momento.</p></div>
   <section class="card rl-f"><label class="f"><span>Obra</span><select id="r11-o">${obras.map(x=>`<option value="${esc(x.id)}" ${x.id===f.oid?"selected":""}>${esc(x.nome)}</option>`).join("")}</select></label>
    <label class="f"><span>Origem</span><select id="r11-s"><option value="todos">RNC e checklists</option><option value="RNC" ${f.orig==="RNC"?"selected":""}>Somente RNC</option><option value="CL" ${f.orig==="CL"?"selected":""}>Todos os checklists</option>${cls.map(c=>`<option value="CL:${esc(c.id)}" ${f.orig==="CL:"+c.id?"selected":""}>${esc(c.numero)} · ${esc(clTxt(c.titulo,46))}</option>`).join("")}</select></label>
    <label class="f"><span>Local</span><select id="r11-g"><option value="">Todos</option>${grupos.map(g=>`<option ${f.grupo===g?"selected":""}>${esc(g)}</option>`).join("")}</select></label></section>
-  <section class="card cl-ind"><div class="cl-kp">${kp(T.t,"itens")}${kp(T.Aberto,"em aberto","nc")}${kp(T.Fechado,"fechados","ok")}${kp(T.Conforme,"conformes","ok")}${kp(T.sv,"sem verificação / NV")}${kp(T.fp,"foto pendente")}</div>
+  <section class="card cl-ind"><div class="cl-kp">${kp(T.t,"itens","","todos")}${kp(T.Aberto,"em aberto","nc","Aberto")}${kp(T.Fechado,"fechados","ok","Fechado")}${kp(T.Conforme,"conformes","ok","Conforme")}${kp(T.sv,"sem verificação / NV","","sv")}${kp(T.fp,"foto pendente","","fp")}</div>
    <p class="muted small">${sem?`<b class="txt-nc">${sem} item(ns) sem disciplina.</b> `:""}${T.sug?`${T.sug} disciplina(s) sugerida(s) automaticamente: confirme item a item. `:""}Fechado = corrigido e verificado (checklist) ou NC encerrada / RNC corrigida.</p></section>
   <section class="card"><h2>Por disciplina</h2><div class="rl-leg"><span class="ab">Aberto</span><span class="fe">Fechado</span><span class="co">Conforme</span><span class="sv">Sem verif./NV</span></div><div class="rl-tab">${linhas||'<p class="muted">Nenhum item nesta seleção.</p>'}</div></section>${det}
   <div class="cl-acoes"><button class="btn" data-act="r11sug">Sugerir disciplinas (${sem} sem)</button><button class="btn" data-act="r11xls">Gerar Excel</button><button class="btn primary" data-act="r11pdf">Gerar PDF</button></div>
@@ -4219,8 +4231,11 @@ function vRel11(){
 }
 { const _vI=vInicio; vInicio=function(){ return UI.view==="rel11"?vRel11():_vI(); }; }
 document.addEventListener("click",e=>{ if(e.target.closest("#sheet")) return; const a=e.target.closest("[data-act]"); if(!a) return; const act=a.dataset.act, v=a.dataset.v;
-  if(act==="rel11"){ e.stopImmediatePropagation(); if(a.dataset.o) UI.r11={oid:a.dataset.o,orig:"todos",grupo:"",disc:null}; UI.view="rel11"; render(); scrollTo(0,0); }
-  else if(act==="r11d"){ e.stopImmediatePropagation(); const y=scrollY; UI.r11.disc=(v==="__x"||UI.r11.disc===v)?null:v; render(); scrollTo(0,y); }
+  if(act==="rel11"){ e.stopImmediatePropagation(); if(a.dataset.o) UI.r11={oid:a.dataset.o,orig:a.dataset.s||"todos",grupo:"",disc:null,sit:a.dataset.k||null}; UI.view="rel11"; render(); scrollTo(0,0); }
+  else if(act==="r11d"){ e.stopImmediatePropagation(); const y=scrollY; if(v==="__x"){ UI.r11.disc=null; UI.r11.sit=null; } else UI.r11.disc=(UI.r11.disc===v)?null:v; UI.r11.lim=60; render(); scrollTo(0,y); }
+  else if(act==="r11k"){ e.stopImmediatePropagation(); const y=scrollY; UI.r11.sit=(v==="todos"||UI.r11.sit===v)?null:v; UI.r11.lim=60; render(); scrollTo(0,y); }
+  else if(act==="r11mais"){ e.stopImmediatePropagation(); const y=scrollY; UI.r11.lim=(UI.r11.lim||60)+60; render(); scrollTo(0,y); }
+  else if(act==="r11go"){ e.stopImmediatePropagation(); const x=(UI.r11rows||[])[+a.dataset.n]; if(x) irItemRel(x); }
   else if(act==="r11sug"){ e.stopImmediatePropagation(); const r=discSugerirObra(UI.r11.oid); const y=scrollY; render(); scrollTo(0,y); toast(r.n?`${r.n} disciplina(s) sugerida(s). ${r.sem?r.sem+" sem sugestão: defina manualmente.":"Confirme item a item."}`:"Nada a sugerir: itens já têm disciplina ou o texto não permite sugerir."); }
   else if(act==="r11pdf"){ e.stopImmediatePropagation(); relPDF(); }
   else if(act==="r11xls"){ e.stopImmediatePropagation(); relXLS(); } },true);
@@ -4804,6 +4819,43 @@ sheetFoto=function(id){
   const dt=document.querySelector("#sheet .pf-det"); if(dt) dt.addEventListener("toggle",()=>{ UI.pfOpen=dt.open; });
   const bq=document.querySelector("#sheet .pk-busca"); if(bq) bq.addEventListener("input",()=>{ const q=bq.value.trim().toLowerCase(); document.querySelectorAll("#sheet .pki").forEach(l=>{ l.hidden=!!q&&!l.dataset.t.includes(q); }); });
 };
+
+/* ================= ONDA 15: toque nos números abre o que está por trás (Dashboard e relatórios) ================= */
+function flash12(el){ if(!el) return; el.scrollIntoView({block:"center"}); el.classList.add("flash12"); setTimeout(()=>el.classList.remove("flash12"),2600); }
+/* abre o registro e leva ao item, onde é possível ver, editar e mudar o status */
+function irItemRel(x){
+  if(x.orig==="Checklist"){ UI.clid=x.docId; UI.view="cl"; render(); setTimeout(()=>flash12(document.getElementById("cli-"+x.itemId)),150); return; }
+  if(x.vid){ UI.vid=x.vid; UI.view="vistoria"; UI.rt="itens"; render(); setTimeout(()=>flash12(document.getElementById("it-"+x.cod)),150); return; }
+  if(x.hist){ const b=document.createElement("button"); b.dataset.act="hist"; b.dataset.o=x.hist.o; b.dataset.v=x.hist.n; document.body.appendChild(b); b.click(); b.remove(); }
+}
+/* Dashboard: números de RNC e aprovações viram botões */
+blocoRNC=function(o){
+  const c=contRNC(o.id); const L=relLinhas(o.id); const abR=L.filter(x=>x.orig==="RNC"&&x.st==="Aberto").length, abC=L.filter(x=>x.orig==="Checklist"&&x.st==="Aberto").length;
+  const t=(n,l,cl,k)=>`<button type="button" class="rn rn-b ${cl||""}" data-act="d12rnc" data-o="${esc(o.id)}" data-k="${k}"><b>${n}</b><span>${l}</span></button>`;
+  return `<div class="ob-sec"><h3>Relatórios de não conformidade</h3><div class="rn-g">${t(c.emit,"emitidas","","emit")}${t(c.corr,"corrigidas","ok","corr")}${t(c.aberta,"abertas",c.aberta?"nc":"","aberta")}<button type="button" class="rn rn-b ${c.aguard?"pv":""}" data-act="d12aprov" data-o="${esc(o.id)}"><b>${c.aguard}</b><span>aguard. aprov.</span></button>${t(c.canc,"canceladas","","canc")}</div>
+    <p class="muted small">Toque num número para ver a lista e abrir. Histórico lido da Lista Mestra e dos PDFs + registros feitos no app (${c.app}).</p>
+    <h3 class="h12">Itens em aberto</h3><div class="rn-g g3"><button type="button" class="rn rn-b ${abR?"nc":""}" data-act="rel11" data-o="${esc(o.id)}" data-s="RNC" data-k="Aberto"><b>${abR}</b><span>em RNC</span></button><button type="button" class="rn rn-b ${abC?"nc":""}" data-act="rel11" data-o="${esc(o.id)}" data-s="CL" data-k="Aberto"><b>${abC}</b><span>em checklists</span></button><button type="button" class="rn rn-b" data-act="rel11" data-o="${esc(o.id)}"><b>›</b><span>por disciplina</span></button></div></div>`;
+};
+blocoAprov=function(o){
+  const a=contAprov(o.id); const t=(n,l,cl)=>`<button type="button" class="rn rn-b ${cl||""}" data-act="d12aprov" data-o="${esc(o.id)}"><b>${n}</b><span>${l}</span></button>`;
+  return `<div class="ob-sec"><h3>Aprovações</h3><div class="rn-g g3">${t(a.pend,"pendentes",a.pend?"pv":"")}${t(a.dev,"devolvidos",a.dev?"nc":"")}${t(a.ok,"aprovados","ok")}</div></div>`;
+};
+/* lista de RNC por situação (Dashboard) */
+UI.d12=UI.d12||{oid:"",k:"aberta"};
+const D12_ROT={emit:"RNC emitidas",corr:"RNC corrigidas",aberta:"RNC abertas / a verificar",canc:"RNC canceladas"};
+const d12Ok={emit:r=>r.st!=="naoemit",corr:r=>r.st==="corrigida",aberta:r=>r.st==="aberta"||r.st==="averif",canc:r=>r.st==="cancelada"};
+function vDrill12(){
+  const f=UI.d12, o=obraDe(f.oid)||{nome:"—"}; const B=baseDados().rncs.filter(r=>r.oid===f.oid); const L=B.filter(d12Ok[f.k]||(()=>true)).sort((a,b)=>(b.data||"").localeCompare(a.data||""));
+  const chips=Object.keys(D12_ROT).map(k=>`<button type="button" class="fil10" data-act="d12rnc" data-o="${esc(f.oid)}" data-k="${k}" aria-pressed="${f.k===k}">${D12_ROT[k].replace("RNC ","")} <b>${B.filter(d12Ok[k]).length}</b></button>`).join("");
+  return `<div><p class="eyebrow">${esc(o.nome)}</p><h1>${esc(D12_ROT[f.k]||"RNC")}</h1><p class="muted small">Toque numa RNC para abrir, ver os itens, editar e mudar o status. Os números do Dashboard se atualizam sozinhos.</p></div>
+  <div class="fil10-g" role="group">${chips}</div>
+  <ul class="sit10">${L.map(r=>`<li><button type="button" class="sit10-i" ${r.vid?`data-act="abrir" data-v="${esc(r.vid)}"`:`data-act="hist" data-o="${esc(r.oid)}" data-v="${esc(r.n)}"`}><span class="tp tp10 ${r.st==="corrigida"||r.st==="cancelada"?"fe":"ab"}">${esc(ST_RNC[r.st]||r.st)}</span><span class="sit10-t"><b>RNC ${pad(r.n,3)} · ${esc(r.tema||"")}</b><small>${r.crit?esc(String(r.crit).toLowerCase())+" · ":""}${r.data?fmtData(r.data):"sem data"}</small></span></button></li>`).join("")||'<li class="muted small">Nenhuma RNC nesta situação.</li>'}</ul>
+  <div class="cl-acoes"><button class="btn" data-act="rel11" data-o="${esc(f.oid)}" data-s="RNC" data-k="Aberto">Ver itens em aberto</button></div>`;
+}
+{ const _vI=vInicio; vInicio=function(){ return UI.view==="d12"?vDrill12():_vI(); }; }
+document.addEventListener("click",e=>{ if(e.target.closest("#sheet")) return; const a=e.target.closest("[data-act]"); if(!a) return; const act=a.dataset.act;
+  if(act==="d12rnc"){ e.stopImmediatePropagation(); const y=scrollY, mesma=UI.view==="d12"; UI.d12={oid:a.dataset.o,k:a.dataset.k}; UI.view="d12"; render(); scrollTo(0,mesma?y:0); }
+  else if(act==="d12aprov"){ e.stopImmediatePropagation(); UI.apF=a.dataset.o; UI.view="aprovdash"; render(); scrollTo(0,0); } },true);
 
 (async function iniciar(){ $("#logo").src=LOGO_DARK; rede(); await openDB(); S=(await kvGet("state2"))||estadoInicial(); if(!S.rfs){ S.rfs=[]; } S.seqAV=S.seqAV||1;
   migrar(); purgarModelo(); await carregarIndiceFotosHist(); lastJSON=snapJSON(); kvSet("state2",S); UI.oid=(S.obras[0]||{}).id||null; render(); })();
