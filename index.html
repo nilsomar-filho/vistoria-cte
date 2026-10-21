@@ -677,6 +677,23 @@ body.rep .fab-mais{bottom:calc(156px + env(safe-area-inset-bottom,0px))!importan
 .cl-nok{border-top:1px solid var(--line);margin-top:8px;padding-top:8px}
 .cl-acoes{display:flex;gap:8px;margin:14px 0 4px;flex-wrap:wrap}.cl-acoes .btn{flex:1}
 .btn.perigo{color:#b3202c;border-color:#b3202c}
+
+.cl-fw{display:flex;flex-direction:column;gap:2px;min-width:0}
+.cl-f.vazio{border:2px dashed var(--petroleo);background:transparent;min-height:112px;gap:0}
+.cl-f.vazio b{font-size:13px;letter-spacing:.08em}
+.cl-mais{font-size:38px;font-weight:300;line-height:1}
+.cl-f.vazio small{color:var(--fg2);text-align:center;padding:0 6px}
+.cl-dt{font-size:11px;color:var(--fg2)}
+/* ===== onda 10 ===== */
+.ob-sit{grid-column:1/-1}
+.fil10-g{display:flex;gap:6px;flex-wrap:wrap}
+.fil10{border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:999px;padding:6px 12px;font-size:13px;font-weight:600;cursor:pointer}
+.fil10[aria-pressed="true"]{background:var(--brand-bar);color:#fff;border-color:transparent}
+.sit10{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;max-height:340px;overflow:auto}
+.sit10-i{width:100%;display:flex;gap:10px;align-items:flex-start;text-align:left;background:var(--surface);border:0;border-radius:10px;padding:8px 10px;cursor:pointer;color:inherit}
+.sit10-t{display:flex;flex-direction:column;min-width:0}.sit10-t b{font-size:14px;overflow-wrap:anywhere}.sit10-t small{color:var(--fg2)}
+.tp10{flex:none;font-size:11px;font-weight:800;border-radius:6px;padding:2px 8px;margin-top:1px}
+.tp10.ab{background:#f8ecd0;color:#8a5d06}.tp10.fe{background:#e1efe5;color:#2f6b43}
 </style>
 
 <header class="top">
@@ -3750,16 +3767,17 @@ function clCriar(){
   clL().unshift(c); UI.oid=o.id; UI.cln=null; UI.clid=c.id; UI.view="cl"; save(); render(); scrollTo(0,0);
 }
 
-function clFotoSlot(i,k,rot){
-  if(i[k]) return `<div class="cl-f tem"><span class="cl-fl">${rot}</span><img data-foto="${esc(i[k])}" alt="Foto ${rot.toLowerCase()}"><button type="button" class="cl-fx" data-act="clfx" data-i="${esc(i.id)}" data-k="${k}" aria-label="Remover foto ${rot.toLowerCase()}">×</button></div>`;
-  return `<label class="cl-f vazio"><span class="cl-fl">${rot}</span>${ICON.cam}<small>Tirar foto</small><input type="file" accept="image/*" capture="environment" data-clf="${k}" data-i="${esc(i.id)}" hidden></label>`;
+function clFotoSlot(i,k,rot,dica){
+  const em=i[k+"Em"]?`<small class="cl-dt">${fmtDH(i[k+"Em"])}</small>`:"";
+  if(i[k]) return `<div class="cl-fw"><div class="cl-f tem"><span class="cl-fl">${rot}</span><img data-foto="${esc(i[k])}" alt="Foto ${rot.toLowerCase()}"><button type="button" class="cl-fx" data-act="clfx" data-i="${esc(i.id)}" data-k="${k}" aria-label="Remover foto ${rot.toLowerCase()}">×</button></div>${em}</div>`;
+  return `<div class="cl-fw"><label class="cl-f vazio"><span class="cl-mais">+</span><b>${rot}</b><small>${dica||"Tirar foto"}</small><input type="file" accept="image/*" capture="environment" data-clf="${k}" data-i="${esc(i.id)}" hidden></label></div>`;
 }
 function clItem(c,i,n){
   const nk=i.st==="NOK", nvv=i.st==="NV"; const posOk=!!(i.depois||(i.pos||"").trim());
   return `<article class="cli st-${i.st||"x"}" id="cli-${esc(i.id)}">
     <div class="cli-h"><span class="cli-n">${n}</span><span class="cli-t"><b>${esc(i.desc)}</b>${i.local?`<small>${esc(i.local)}</small>`:""}</span><button type="button" class="ph-more" data-act="clitem" data-i="${esc(i.id)}" aria-label="Editar item ${n}">${IC.vdots}</button></div>
     <div class="ck-btns" role="group" aria-label="Resultado do item ${n}">${[["OK","OK"],["NOK","NÃO OK"],["NV","NV"]].map(([k,t])=>`<button type="button" data-act="clst" data-i="${esc(i.id)}" data-v="${k}" aria-pressed="${i.st===k}">${t}</button>`).join("")}</div>
-    <div class="cl-fotos">${clFotoSlot(i,"antes","ANTES")}${nk?clFotoSlot(i,"depois","DEPOIS"):""}</div>
+    <div class="cl-fotos">${clFotoSlot(i,"antes","ANTES","Como está")}${clFotoSlot(i,"depois","DEPOIS",nk?"Obrigatório: foto ou texto":i.st==="OK"?"Opcional (item OK)":"Após a correção")}</div>
     ${(nk||nvv)?`<label class="f"><span>${nk?"O que não está OK":"Por que não foi verificado"}</span><textarea rows="2" data-clt="obs" data-i="${esc(i.id)}" placeholder="${nk?"descreva a não conformidade":"ex.: sem acesso, etapa não executada"}">${esc(i.obs||"")}</textarea></label>`:""}
     ${nk?`<div class="cl-nok"><label class="f"><span class="req">Depois / providência</span><textarea rows="2" data-clt="pos" data-i="${esc(i.id)}" placeholder="ex.: Pendência concluída, vistoriado in loco">${esc(i.pos||"")}</textarea></label>
       <p class="small ${posOk?"muted":"warn"}">${posOk?"Registro do depois informado.":"Obrigatório: foto do depois ou texto da providência (ao menos um)."}</p>
@@ -3786,12 +3804,16 @@ function sheetClItem(novo,id){
   const c=clAtual(); if(!c) return; const it=novo?null:clItemPor(id);
   abrirSheet(`<div class="row between"><h2>${novo?"Adicionar item":"Editar item"}</h2><button class="link" data-x="1">Fechar</button></div>
     <label class="f"><span class="req">Item a verificar</span><input id="ci-d" maxlength="200" value="${esc(it?it.desc:"")}" placeholder="ex.: Piso sem trincas e com caimento para o ralo"></label>
-    <label class="f"><span>Local (opcional)</span><input id="ci-l" maxlength="80" value="${esc(it?it.local:"")}" placeholder="ex.: Banheiro social"></label>
+    <label class="f"><span>Local (opcional)</span><input id="ci-l" maxlength="80" value="${esc(it?it.local:(c.local||""))}" placeholder="ex.: Banheiro social"></label>
+    ${novo?`<label class="btn block">${ICON.cam} Foto do ANTES (opcional agora)<input type="file" accept="image/*" capture="environment" id="ci-f" hidden></label><p id="ci-fn" class="muted small" hidden>Foto pronta. O DEPOIS entra depois, no mesmo item.</p>`:""}
     <p id="ci-e" class="warn" hidden></p>
     <button class="btn primary block" data-ok="1">${novo?"Adicionar":"Salvar"}</button>${novo?"":`<button class="btn block perigo" data-rm="1">Remover item</button>`}`,
-    e=>{ if(e.target.closest("[data-rm]")){ c.itens=c.itens.filter(x=>x!==it); save(); fechar(); render(); toast("Item removido."); return; }
+    async e=>{ if(e.target.id==="ci-f") return;
+      if(e.target.closest("[data-rm]")){ c.itens=c.itens.filter(x=>x!==it); save(); fechar(); render(); toast("Item removido."); return; }
       if(!e.target.closest("[data-ok]")) return; const d=$("#ci-d").value.trim(); if(!d){ const x=$("#ci-e"); x.textContent="Descreva o item."; x.hidden=false; return; }
-      if(novo){ const nid="i"+(Math.max(0,...c.itens.map(x=>+String(x.id).slice(1)||0))+1); c.itens.push({id:nid,g:c.itens.some(x=>x.g)?"Itens adicionados em campo":"",desc:d,local:$("#ci-l").value.trim(),st:"",obs:"",antes:null,depois:null,pos:"",rev:"",extra:true}); save(); fechar(); render(); setTimeout(()=>document.getElementById("cli-"+nid)?.scrollIntoView({behavior:"smooth",block:"center"}),120); }
+      if(novo){ const nid="i"+(Math.max(0,...c.itens.map(x=>+String(x.id).slice(1)||0))+1); const novoIt={id:nid,g:c.itens.some(x=>x.g)?"Itens adicionados em campo":"",desc:d,local:$("#ci-l").value.trim(),st:"",obs:"",antes:null,depois:null,pos:"",rev:"",extra:true}; c.itens.push(novoIt);
+        const file=$("#ci-f")&&$("#ci-f").files&&$("#ci-f").files[0]; if(file){ try{ const red=await reduzir(file); const fid=uid("f"); await fotoSet(fid,{blob:red.blob,w:red.w,h:red.h,em:Date.now()}); novoIt.antes=fid; novoIt.antesEm=Date.now(); }catch(_){ toast("Não foi possível ler a foto; o item foi criado sem ela."); } }
+        save(); fechar(); render(); setTimeout(()=>document.getElementById("cli-"+nid)?.scrollIntoView({behavior:"smooth",block:"center"}),120); }
       else { it.desc=d; it.local=$("#ci-l").value.trim(); save(); fechar(); render(); } });
 }
 function sheetClDados(){
@@ -3953,7 +3975,8 @@ function gerarCL_PDF(M){
     if(it.obs){ d.text(it.st==="NV"?"Motivo:":"Não OK:",tx+8,ty,7,true,GR); for(const t of d.wrap(it.obs,tw-9,7.5,false).slice(0,3)){ d.text(t,tx+8+11,ty,7.5,false,[20,35,45]); ty+=3.6; } }
     if(it.pos&&it.st==="NOK"){ d.text("Depois:",tx+8,ty+1,7,true,GR); let t2=ty+1; for(const t of d.wrap(it.pos,tw-9,7.5,false).slice(0,3)){ d.text(t,tx+8+11,t2,7.5,false,[20,35,45]); t2+=3.6; } }
     foto(m+106,y+2,82,48,it.antes,"ANTES");
-    if(it.st==="NOK") foto(m+106+86,y+2,82,48,it.depois,"DEPOIS"); });
+    if(it.st==="NOK"||it.depois) foto(m+106+86,y+2,82,48,it.depois,"DEPOIS");
+    else { d.rect(m+106+86,y+2,82,48,[250,251,252],LINE); d.text(it.st==="OK"?"DEPOIS não exigido (item OK)":"DEPOIS ainda não registrado",m+106+86+41,y+27,8,false,GR,"c"); } });
   const tot=d.pages.length-1; d.pages.forEach((ops,k)=>{ if(!k) return; d.ops=ops; d.text(M.rodape,m,H-5,6.5,false,GR); d.text(`página ${k} de ${tot}`,W-m,H-5,7,false,GR,"r"); });
   return d;
 }
@@ -3985,7 +4008,7 @@ function gerarCL_DOCX(M){
         +par(run(st,{b:1,sz:8.5,color:cor[it.st]||"58595B"})+((it.st==="NOK"&&it.rev)?run(it.rev==="OK"?"   CORRIGIDO · OK":"   AINDA NÃO OK",{b:1,sz:8,color:it.rev==="OK"?"3F8F2A":"BE1E2D"}):""),{after:30});
       if(it.obs) tx+=par(run((it.st==="NV"?"Motivo: ":"Não OK: "),{b:1,sz:8,color:"58595B"})+run(it.obs,{sz:8.5}),{after:30});
       if(it.pos&&it.st==="NOK") tx+=par(run("Depois: ",{b:1,sz:8,color:"58595B"})+run(it.pos,{sz:8.5}),{after:0});
-      rows.push(tr([cell(tx,w0),fcell(it.antes,w1),it.st==="NOK"?fcell(it.depois,w1):cell(par("",{after:0}),w1)]));
+      rows.push(tr([cell(tx,w0),fcell(it.antes,w1),(it.st==="NOK"||it.depois)?fcell(it.depois,w1):cell(par(run(it.st==="OK"?"DEPOIS não exigido (item OK)":"DEPOIS ainda não registrado",{sz:8,color:"58595B"}),{after:0}),w1)]));
     }
     body+=tbl(rows,[w0,w1,w1],true);
     return body; };
@@ -3999,6 +4022,38 @@ async function exportarCL(fmt){
 async function gerarCLDoc(fmt){ FALHAS_FOTO=0; try{ progresso(fmt==="pdf"?"Gerando PDF…":"Gerando Word…"); await new Promise(r=>setTimeout(r,60)); await exportarCL(fmt); if($("#sheet .prog")) fechar();
     if(FALHAS_FOTO) toast(`${FALHAS_FOTO} foto(s) não puderam ser lidas e ficaram fora do arquivo.`); }
   catch(err){ console.error(err); aviso("Erro ao gerar o arquivo",`O ${fmt==="pdf"?"PDF":"Word"} não pôde ser montado. Detalhe: ${err?.message||err}.`); } }
+
+document.addEventListener("change",e=>{ if(e.target.id==="ci-f"){ const n=$("#ci-fn"); if(n) n.hidden=!(e.target.files&&e.target.files.length); } });
+
+/* ===== onda 10 · Dashboard com filtro Pendentes / Fechados (RNC, checklists, tarefas) por obra ===== */
+UI.d10=UI.d10||"abertos";
+function itensSit(o){
+  const L=[];
+  for(const r of baseDados().rncs){ if(r.oid!==o.id||r.st==="naoemit") continue;
+    let fechado=r.st==="corrigida"||r.st==="cancelada";
+    if(r.st==="app"){ const v=S.vistorias.find(x=>x.id===r.vid); fechado=!!v&&v.aprov&&v.aprov.st==="aprovado"&&!(r.cont&&r.cont.NC); }
+    L.push({tipo:"RNC",fechado,tag:r.st==="averif"?"A verificar":"",ord:r.data||"",titulo:`RNC ${pad(r.n,3)} · ${r.tema||""}`,sub:`${ST_RNC[r.st]||r.st}${r.crit?" · "+String(r.crit).toLowerCase():""}${r.data?" · "+fmtData(r.data):""}`,act:r.vid?`data-act="abrir" data-v="${esc(r.vid)}"`:`data-act="hist" data-o="${esc(r.oid)}" data-v="${esc(r.n)}"`}); }
+  for(const c of clL().filter(x=>x.obraId===o.id)){ const k=clInd(c); const fechado=k.t>0&&k.ver===k.t&&k.aberto===0;
+    L.push({tipo:"Checklist",fechado,ord:c.data||"",titulo:`${c.numero} · ${c.titulo}`,sub:`${k.ver}/${k.t} verificados · ${k.ok} OK · ${k.nok} NÃO OK${k.aberto?` (${k.aberto} em aberto)`:""}`,act:`data-act="clabrir" data-v="${esc(c.id)}"`}); }
+  for(const t of pendS().tarefas){ if(t.del||(t.obraId||"")!==o.id) continue;
+    L.push({tipo:"Tarefa",fechado:!!t.feita,ord:t.prazo||"",titulo:t.titulo,sub:t.prazo?("prazo "+fmtData(t.prazo)):"sem prazo",act:`data-act="go" data-v="pend"`}); }
+  return L.sort((a,b)=>(b.ord||"").localeCompare(a.ord||""));
+}
+function blocoSit(o){
+  const L=itensSit(o), f=UI.d10||"abertos", ab=L.filter(x=>!x.fechado).length, fe=L.length-ab;
+  const vis=L.filter(x=>f==="todos"||(f==="abertos"?!x.fechado:x.fechado));
+  const ch=(k,t,n)=>`<button class="fil10" data-act="d10f" data-v="${k}" aria-pressed="${f===k}">${t} <b>${n}</b></button>`;
+  const cls=clL().filter(x=>x.obraId===o.id).map(clInd);
+  return `<div class="ob-sec ob-sit"><h3>Itens da obra · situação</h3>
+    <div class="fil10-g" role="group" aria-label="Filtrar por situação">${ch("abertos","Pendentes / não adequados",ab)}${ch("fechados","Fechados / adequados",fe)}${ch("todos","Todos",L.length)}</div>
+    ${cls.length?`<p class="muted small">Checklists: ${cls.length} · ${cls.filter(k=>k.t>0&&k.ver===k.t&&!k.aberto).length} concluídos · ${cls.reduce((a,k)=>a+k.aberto,0)} NÃO OK em aberto</p>`:""}
+    <ul class="sit10">${vis.slice(0,40).map(x=>`<li><button type="button" class="sit10-i" ${x.act}><span class="tp tp10 ${x.fechado?"fe":"ab"}">${x.tag||(x.fechado?"Fechado":"Pendente")}</span><span class="sit10-t"><b>${esc(x.titulo)}</b><small>${esc(x.tipo)} · ${esc(x.sub)}</small></span></button></li>`).join("")||`<li class="muted small">Nenhum item nesta situação.</li>`}</ul>
+    ${vis.length>40?`<p class="muted small">Mostrando 40 de ${vis.length}. Use Análise de RNC para a lista completa.</p>`:""}</div>`;
+}
+{ const _bo10=blocoObra;
+  blocoObra=function(o){ const h=_bo10(o); const i=h.lastIndexOf('<footer class="ob-f">'); if(i<0) return h; return h.slice(0,i)+blocoSit(o)+h.slice(i); }; }
+document.addEventListener("click",e=>{ if(e.target.closest("#sheet")) return; const a=e.target.closest("[data-act='d10f']"); if(!a) return; e.stopImmediatePropagation();
+  const y=scrollY; UI.d10=a.dataset.v; render(); scrollTo(0,y); },true);
 
 (async function iniciar(){ $("#logo").src=LOGO_DARK; rede(); await openDB(); S=(await kvGet("state2"))||estadoInicial(); if(!S.rfs){ S.rfs=[]; } S.seqAV=S.seqAV||1;
   migrar(); purgarModelo(); await carregarIndiceFotosHist(); lastJSON=snapJSON(); kvSet("state2",S); UI.oid=(S.obras[0]||{}).id||null; render(); })();
