@@ -766,6 +766,7 @@ body.rep .fab-mais{bottom:calc(156px + env(safe-area-inset-bottom,0px))!importan
 .rl-det li{border:0}
 .flash12{animation:fl12 2.4s ease-out}
 @keyframes fl12{0%,60%{box-shadow:0 0 0 3px #009cd7;background:#e3f1f8}100%{box-shadow:0 0 0 0 transparent}}
+.rr-card .cl-chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
 </style>
 
 <header class="top">
@@ -4856,6 +4857,30 @@ function vDrill12(){
 document.addEventListener("click",e=>{ if(e.target.closest("#sheet")) return; const a=e.target.closest("[data-act]"); if(!a) return; const act=a.dataset.act;
   if(act==="d12rnc"){ e.stopImmediatePropagation(); const y=scrollY, mesma=UI.view==="d12"; UI.d12={oid:a.dataset.o,k:a.dataset.k}; UI.view="d12"; render(); scrollTo(0,mesma?y:0); }
   else if(act==="d12aprov"){ e.stopImmediatePropagation(); UI.apF=a.dataset.o; UI.view="aprovdash"; render(); scrollTo(0,0); } },true);
+
+/* ================= ONDA 16: checklists dentro de cada obra (lista, novo, contadores) ================= */
+const clDaObra=oid=>clL().filter(c=>c.obraId===oid).sort((a,b)=>(b.criado||0)-(a.criado||0));
+function cardCL16(c){ const k=clInd(c);
+  return `<div class="rr-card" data-act="clabrir" data-v="${esc(c.id)}" role="button" tabindex="0"><span class="rr-ic">${IC.clip}</span><span class="rr-t"><b>${esc(c.numero)} · ${esc(c.titulo)}</b><span class="rr-sub">Checklist · ${esc(clTipoTxt(c))}${c.local?" · "+esc(c.local):""} · ${fmtData(c.data)}</span><span class="cl-chips">${clChips(k)}</span></span></div>`; }
+{ const _vo=vObra;
+  vObra=function(){
+    const o=obraAtual(); if(!o||UI.otab==="PAINEL") return _vo();
+    const cl=clDaObra(o.id), f=UI.ofil||"TODOS", soCL=f==="CL";
+    if(soCL) UI.ofil="__CL";
+    let h; try{ h=_vo(); } finally { if(soCL) UI.ofil="CL"; }
+    const chip=`<button data-act="ofil" data-v="CL" aria-pressed="${soCL}">Checklists${cl.length?" · "+cl.length:""}</button>`;
+    h=h.replace(/(<button data-act="ofil" data-v="AV"[^>]*>Avulso<\/button>)/,"$1"+chip);
+    const vazio='<div class="rr-vazio">Nenhum relatório. Toque em + para criar.</div>';
+    const cards=cl.map(cardCL16).join("");
+    if(soCL){ const msg=cards||`<div class="rr-vazio">Nenhum checklist nesta obra neste aparelho.<br>Toque em + para criar, ou importe o backup em “Dados e fotos”.<div style="margin-top:10px"><button class="btn primary" data-act="clnovo" data-o="${esc(o.id)}">+ Novo checklist</button></div></div>`;
+      h=h.replace(vazio,msg); }
+    else if(f==="TODOS"&&cards){ h=h.replace(vazio,""); h=h.replace('<div class="rr-list">','<div class="rr-list">'+cards); }
+    return h; }; }
+novoRecMenu=function(){ menuSheet("Novo relatório",[["Checklist – itens verificados",()=>{ UI.cln={oid:UI.oid}; UI.view="clnovo"; render(); }],["RNC – vistoria com checklist",()=>{ UI.view="nova"; render(); }],["RNC livre – assunto novo",()=>{ UI.view="novalivre"; render(); }],
+  ["Inspeção SST / Meio Ambiente",()=>{ UI.view="novasm"; render(); }],["Relatório fotográfico",()=>{ UI.view="novarf"; render(); }],["Relatório avulso",()=>{ UI.view="novaav"; render(); }]]); };
+/* lista de obras: contador de checklists */
+{ const _vos=vObras;
+  vObras=function(){ return _vos().replace(/data-v="([^"]+)" role="button" tabindex="0"><span class="rr-ic brief">[\s\S]*?avulso\(s\)/g,(m,id)=>{ const n=clDaObra(id).length; return n?m+` · ${n} checklist(s)`:m; }); }; }
 
 (async function iniciar(){ $("#logo").src=LOGO_DARK; rede(); await openDB(); S=(await kvGet("state2"))||estadoInicial(); if(!S.rfs){ S.rfs=[]; } S.seqAV=S.seqAV||1;
   migrar(); purgarModelo(); await carregarIndiceFotosHist(); lastJSON=snapJSON(); kvSet("state2",S); UI.oid=(S.obras[0]||{}).id||null; render(); })();
