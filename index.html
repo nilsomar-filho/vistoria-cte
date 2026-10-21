@@ -635,16 +635,18 @@ a.btn{text-decoration:none;display:flex;align-items:center;justify-content:cente
 .pend-rnc{margin-top:8px}.pend-rnc ul{margin:8px 0 0;padding-left:18px}
 @media (min-width:900px){.fab-mais{right:40px;bottom:96px}}
 /* ===== onda 9 · menu/voltar fixos + checklist ===== */
-#fx9{position:fixed;right:12px;bottom:calc(76px + env(safe-area-inset-bottom,0px));z-index:26;display:flex;gap:8px}
-body.rep #fx9{bottom:calc(92px + env(safe-area-inset-bottom,0px))}
-#fx9 button{display:flex;align-items:center;gap:6px;height:44px;padding:0 14px 0 10px;border:0;border-radius:999px;background:var(--brand-bar);color:#fff;font-size:13px;font-weight:700;box-shadow:0 3px 12px rgba(0,16,26,.35);cursor:pointer}
+#fx9{display:none;position:fixed;right:12px;bottom:calc(92px + env(safe-area-inset-bottom,0px));z-index:26;gap:8px}
+body.rep #fx9{display:flex}
+#fx9 button{display:grid;place-items:center;width:46px;height:46px;padding:0;border:0;border-radius:50%;background:var(--brand-bar);color:#fff;box-shadow:0 3px 12px rgba(0,16,26,.35);cursor:pointer}
+.nav button.nav-ic{min-width:0;padding:8px 0 10px}.nav button.nav-ic svg{width:26px;height:26px}
+.nav button.nav-ic.sem-volta{opacity:.3}
 #fx9 button svg{width:20px;height:20px}
 #fx9.sem-volta button[data-act="fxback"]{display:none}
 body.rep .nav{display:none}
-.fab,.fab-mais{bottom:calc(140px + env(safe-area-inset-bottom,0px))!important}
+.fab,.fab-mais{bottom:calc(84px + env(safe-area-inset-bottom,0px))!important}
 body.rep .fab-mais{bottom:calc(156px + env(safe-area-inset-bottom,0px))!important}
 @media (min-width:900px){
-  #fx9{right:20px;bottom:20px}#fx9 button[data-act="menu"]{display:none}
+  #fx9{display:flex;right:20px;bottom:20px}#fx9 button[data-act="menu"]{display:none}.nav button[data-act="fxback"]{display:none}
   body.rep .nav{display:flex}
   .fab,.fab-mais{bottom:96px!important}
   .rbar{z-index:25}
@@ -3362,14 +3364,14 @@ const ICON_MENU='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stro
 const _renderNav6=renderNav;
 renderNav=function(){ _renderNav6();
   const n=document.getElementById("nav"); if(!n) return;
-  if(!n.querySelector('[data-act="menu"]')){ const b=document.createElement("button"); b.dataset.act="menu"; b.setAttribute("aria-label","Abrir menu"); b.innerHTML=ICON_MENU+"<span>Menu</span>"; n.insertBefore(b,document.getElementById("arv-lat")||null); }
+  if(!n.querySelector('[data-act="menu"]')){ const b=document.createElement("button"); b.dataset.act="menu"; b.setAttribute("aria-label","Abrir menu"); b.innerHTML=ICON_MENU; n.insertBefore(b,document.getElementById("arv-lat")||null); }
   const g=n.querySelectorAll(":scope > button:not([data-act='menu'])").length; n.style.setProperty("grid-template-columns",`repeat(${g+1},1fr)`,"important");
   if(document.getElementById("drawer")) montarGaveta();
 };
 function montarGaveta(){
   const dr=document.getElementById("drawer"); if(!dr) return;
   const n=document.getElementById("nav");
-  const btns=[...n.querySelectorAll(":scope > button:not([data-act='menu'])")].map(b=>b.outerHTML).join("");
+  const btns=[...n.querySelectorAll(":scope > button:not([data-act='menu']):not([data-act='fxback'])")].map(b=>b.outerHTML).join("");
   const arv=document.getElementById("arv-lat"); 
   dr.innerHTML=`<button class="dr-x" data-act="menux" aria-label="Fechar menu">×</button>${marcaLateral()}<div id="drawer-nav">${btns}</div><div id="arv-lat">${arv?arv.innerHTML:""}</div>`;
 }
@@ -3667,7 +3669,9 @@ document.addEventListener("click",e=>{
 /* ===== onda 9 · navegação fixa (menu + voltar), aviso de dados no Dashboard e CHECKLIST (antes/depois) ===== */
 
 /* ---------- A) Menu sempre visível, gaveta que recolhe e botão Voltar ---------- */
-const HS9=[]; let ULT9=null, REST9=false;
+const ICON_VOLTA9='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>';
+const HS9=[];
+const semVolta9=()=>!HS9.length&&UI.view==="inicio"&&(!UI.pv||UI.pv.nivel==="port")&&!(UI.pv&&UI.pv.analise); let ULT9=null, REST9=false;
 const CH9=["view","vid","rid","oid","pv","clid","cmid","clf"];
 function snap9(){ const o={}; for(const k of CH9){ if(UI[k]!==undefined&&UI[k]!==null) o[k]=JSON.parse(JSON.stringify(UI[k])); } return o; }
 function voltar9(){
@@ -3685,13 +3689,13 @@ function voltar9(){
   render=function(){ _r9.apply(this,arguments);
     const k=JSON.stringify(snap9());
     if(k!==ULT9){ if(ULT9!==null&&!REST9){ try{ HS9.push(JSON.parse(ULT9)); if(HS9.length>40) HS9.shift(); history.pushState({c:1},""); }catch(_){} } ULT9=k; }
-    const fx=document.getElementById("fx9"); if(fx) fx.classList.toggle("sem-volta",!HS9.length&&UI.view==="inicio"&&(!UI.pv||UI.pv.nivel==="port")&&!UI.pv?.analise);
+    const fx=document.getElementById("fx9"); if(fx) fx.classList.toggle("sem-volta",semVolta9()); document.querySelectorAll('#nav [data-act="fxback"]').forEach(b=>b.classList.toggle("sem-volta",semVolta9()));
   };
 }
 (function(){
   if(document.getElementById("fx9")) return;
   const d=document.createElement("div"); d.id="fx9";
-  d.innerHTML=`<button type="button" data-act="fxback" aria-label="Voltar à tela anterior"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg><span>Voltar</span></button><button type="button" data-act="menu" aria-label="Abrir menu">${ICON_MENU}<span>Menu</span></button>`;
+  d.innerHTML=`<button type="button" data-act="fxback" aria-label="Voltar à tela anterior">${ICON_VOLTA9}</button><button type="button" data-act="menu" aria-label="Abrir menu">${ICON_MENU}</button>`;
   document.body.appendChild(d);
   try{ history.replaceState({c:1},""); }catch(_){}
 })();
@@ -3902,7 +3906,12 @@ document.addEventListener("change",async e=>{
 
 /* nav: Checklists */
 { const _rn9=renderNav;
-  renderNav=function(){ _rn9(); const n=document.getElementById("nav"); if(!n||n.querySelector('[data-act="cls"]')) return;
+  renderNav=function(){ _rn9(); const n=document.getElementById("nav"); if(!n) return;
+    if(!n.querySelector('[data-act="fxback"]')){ const vb=document.createElement("button"); vb.type="button"; vb.dataset.act="fxback"; vb.className="nav-ic"; vb.setAttribute("aria-label","Voltar à tela anterior"); vb.innerHTML=ICON_VOLTA9; vb.classList.toggle("sem-volta",semVolta9());
+      const mb=[...n.children].find(x=>x.dataset&&x.dataset.act==="menu"); n.insertBefore(vb,mb||null); }
+    const mb2=[...n.children].find(x=>x.dataset&&x.dataset.act==="menu"); if(mb2) mb2.classList.add("nav-ic");
+    const g=[...n.children].filter(x=>x.tagName==="BUTTON"&&!x.classList.contains("so-lat")&&!x.classList.contains("nav-ic")).length; n.style.setProperty("grid-template-columns",`repeat(${g},1fr) 52px 52px`,"important");
+    if(n.querySelector('[data-act="cls"]')) return;
     const on=["cls","clnovo","cl","clmods","clmod"].includes(UI.view);
     const b=document.createElement("button"); b.dataset.act="cls"; b.className="so-lat"; if(on) b.setAttribute("aria-current","page");
     b.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 11l1.6 1.6L14 9M9 17h6"/></svg><span>Checklists</span>`;
