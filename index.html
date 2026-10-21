@@ -923,7 +923,7 @@ const nomeCk = v => v.livre? (v.assunto||"RNC livre") : v.snap&&v.nome? v.nome :
 
 const LASTROS = ["Projeto","Memorial descritivo","Especificação técnica","Norma ABNT","Norma Regulamentadora","Ficha técnica do fabricante","Procedimento executivo","Requisito de concessionária","Contrato"];
 const PREMISSA = "Este Relatório de Não Conformidade registra as condições observadas pela GERENCIADORA durante as inspeções realizadas nas áreas e elementos indicados, mediante comparação com os projetos, memoriais, especificações, requisitos normativos e demais documentos técnicos aplicáveis e disponibilizados para a inspeção. As verificações possuem caráter técnico e amostral, com abrangência definida conforme as áreas acessíveis, tipologias, etapas executivas, criticidade e condições observadas em campo, podendo ser ampliadas quando identificadas ocorrências recorrentes, sistêmicas ou relevantes. A inspeção e o registro de itens conformes não caracterizam aceite integral da obra nem desobrigam a CONTRATADA de suas responsabilidades quanto à qualidade, conformidade, desempenho, operacionalidade e correção dos serviços. Toda Não Conformidade deverá possuir lastro técnico identificável; na ausência de referência conclusiva, o item deverá ser registrado como Pendente de Validação.";
-const FOTO_MIN = 3, FOTO_MAX = 12;
+const FOTO_MIN = 3, FOTO_MAX = 40;
 
 /* ================= ARMAZENAMENTO NO APARELHO ================= */
 const mem = {kv:new Map(), fotos:new Map()};
@@ -1001,7 +1001,7 @@ async function reduzir(blob, maxW=1600, q=0.8){
 }
 async function urlFoto(id){ if(urls.has(id)) return urls.get(id); const r=await fotoGet(id); if(!r) return null; const u=URL.createObjectURL(r.blob); urls.set(id,u); return u; }
 async function novaFoto(file, itens){
-  const v=vAtual(); if(v.fotos.length>=FOTO_MAX){ aviso("Limite de 12 fotos","Esta vistoria já tem 12 fotos. Apague uma foto para tirar outra."); return; }
+  const v=vAtual(); if(v.fotos.length>=FOTO_MAX){ aviso("Limite de 40 fotos","Esta vistoria já tem 40 fotos. Apague uma foto para tirar outra."); return; }
   let img; try{ img=await lerImagem(file); }catch(e){ toast("Não foi possível ler esta imagem."); return; }
   if(img.naturalHeight>img.naturalWidth){ aviso("Foto na vertical","Refaça a foto com o celular deitado (na horizontal). O relatório só aceita fotos horizontais."); return; }
   const red=await reduzir(file); const id=uid("f"); await fotoSet(id,{blob:red.blob,w:red.w,h:red.h,em:Date.now()});
@@ -1707,7 +1707,7 @@ function linhaItem(v,i){
     extra=`<div class="ck-extra"><label class="f"><span class="req">Por que não verificou?</span><select data-fld="nvMotivo" data-c="${i.cod}" ${dis?"disabled":""}>${["","Sem acesso","Etapa não executada","Sem projeto na frente",...(v.snap?["Evidência ainda não apresentada","Gatilho inexistente nesta obra"]:[]),"Outro"].map(o=>`<option ${r.nvMotivo===o?"selected":""} value="${o}">${o||"Selecione"}</option>`).join("")}</select></label></div>`;
   }
   return `<article class="ck st-${s||"x"}" id="it-${i.cod}">
-    <div class="ck-top"><span class="code">${i.cod}</span>${!eng&&!v.modelo&&v.fotos.length<FOTO_MAX?`<label class="ck-cam ${fotosDoItem(v,i.cod).length?"tem":""}" aria-label="Foto do item ${i.cod}">${ICON.cam}${fotosDoItem(v,i.cod).length||""}<input type="file" accept="image/*" capture="environment" data-act="foto" data-c="${i.cod}" hidden></label>`:""}${i.trava?'<span class="chip trava">TRAVA</span>':""}<span class="sp"></span>${(v.ck==="LV"||i.livre||i.extra)&&!v.modelo?`<button class="link" data-act="lvrm" data-c="${i.cod}">remover</button>`:""}${i.como?`<button class="duv" data-act="duvida" data-c="${i.cod}" aria-label="Dúvida: certo ou errado do item ${i.cod}">? Dúvida</button>`:""}</div>
+    <div class="ck-top"><span class="code">${i.cod}</span>${!v.modelo&&v.fotos.length<FOTO_MAX?`<label class="ck-cam ${fotosDoItem(v,i.cod).length?"tem":""}" aria-label="Foto do item ${i.cod}">${ICON.cam}${fotosDoItem(v,i.cod).length||""}<input type="file" accept="image/*" capture="environment" data-act="foto" data-c="${i.cod}" hidden></label>`:""}${i.trava?'<span class="chip trava">TRAVA</span>':""}<span class="sp"></span>${(v.ck==="LV"||i.livre||i.extra)&&!v.modelo?`<button class="link" data-act="lvrm" data-c="${i.cod}">remover</button>`:""}${i.como?`<button class="duv" data-act="duvida" data-c="${i.cod}" aria-label="Dúvida: certo ou errado do item ${i.cod}">? Dúvida</button>`:""}</div>
     <p class="ck-q">${esc(i.s)}</p>
     <div class="ck-btns" role="group" aria-label="Resultado do item ${i.cod}">${b("OK","OK")}${b("NOK","NÃO OK")}${b("NV","NV")}${b("NA","NA")}</div>${extra}</article>`;
 }
