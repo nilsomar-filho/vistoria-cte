@@ -717,6 +717,22 @@ body.rep .fab-mais{bottom:calc(156px + env(safe-area-inset-bottom,0px))!importan
 .rl-s{display:inline-block;font-size:.68rem;font-weight:700;padding:1px 6px;border-radius:9px;margin-right:6px;background:#e3e8ec}
 .rl-s.s-0{background:#f6d5d9;color:#8f1220}.rl-s.s-1{background:#dcefd2;color:#2b6a1b}.rl-s.s-2{background:#c9e6bd;color:#2b6a1b}
 .small-btn{font-size:.85rem;padding:8px 12px}
+.exs{margin:6px 0 10px;padding:10px;border:1px dashed #9db4c0;border-radius:10px;background:#f4f8fa}
+.exs-t{display:block;font-size:.76rem;color:#4a5a64;margin-bottom:6px}
+.exs-l{display:grid;gap:6px}
+.exs-b{text-align:left;font:inherit;font-size:.84rem;line-height:1.3;padding:9px 10px 9px 32px;border:1px solid #c7d3da;border-radius:8px;background:#fff;color:inherit;position:relative;min-height:44px;cursor:pointer}
+.exs-b:before{content:"+";position:absolute;left:11px;top:8px;font-weight:700;color:#004d6d;font-size:1.05rem}
+.exs-b[aria-pressed="true"]{background:#e4f2dd;border-color:#6fae55}
+.exs-b[aria-pressed="true"]:before{content:"✓";color:#2b6a1b}
+.exs-a{display:flex;gap:16px;margin-top:8px}
+.ph-edit{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+.ph-thumb{position:relative;border:0;padding:0;background:none;border-radius:8px;overflow:hidden;cursor:pointer;width:96px;height:72px}
+.ph-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.ph-thumb span,.cl-ed{position:absolute;left:0;right:0;bottom:0;background:rgba(0,38,57,.82);color:#fff;font-size:.66rem;padding:2px 4px;text-align:center;pointer-events:none}
+.cl-f.tem{position:relative}.cl-f.tem img{cursor:pointer}.cl-ed{z-index:1}
+.ph-tap,#sheet .ph-row img[data-foto]{cursor:pointer}
+.ph-dica{margin:4px 0 8px}
+.pk-busca{width:100%;margin:6px 0;padding:10px;border:1px solid #c7d3da;border-radius:8px;font:inherit}
 </style>
 
 <header class="top">
@@ -4261,6 +4277,389 @@ async function relPDF(){
     const tot=d.pages.length; d.pages.forEach((ops,k)=>{ d.ops=ops; d.text("CTE Gerenciamento · Relatório de acompanhamento; não constitui aceite de serviços.",m,H-5,6.5,false,GR); d.text(`página ${k+1} de ${tot}`,W-m,H-5,7,false,GR,"r"); });
     const blob=await finalizarPDF(d,[],num); if($("#sheet .prog")) fechar(); await entregarArquivo(`${num}.pdf`,blob);
   }catch(err){ console.error(err); aviso("Erro ao gerar o PDF",String(err&&err.message||err)); } }
+
+/* Exemplos de “o que costuma estar não conforme” por item. Textos de partida: o vistoriador aceita, edita ou apaga e escreve o que viu. Não citam número de item de norma. */
+const EXNC={
+/* ---- EMPRESA / OBRA / MEIO AMBIENTE ---- */
+"EMP.01":["CNPJ, CNAE ou grau de risco informados na mobilização não conferem com o cartão CNPJ da contratada.","Enquadramento de grau de risco não foi apresentado ou está diferente do utilizado no dimensionamento de SESMT/CIPA."],
+"EMP.02":["Contrato social não apresentado ou sem as últimas alterações.","Quem assina os documentos da obra não consta como representante no contrato social nem possui procuração."],
+"EMP.03":["Registro da empresa no conselho profissional não apresentado ou vencido.","Responsável técnico indicado não consta na certidão do conselho."],
+"EMP.04":["ART/RRT não emitida para parte do escopo executado (ex.: instalações elétricas, fachada, andaimes).","ART/RRT emitida com descrição do serviço ou endereço diferente da obra."],
+"EMP.05":["Há trabalhadores na frente de serviço que não constam na relação enviada.","Relação desatualizada: sem função, sem empresa ou sem frente de trabalho."],
+"EMP.06":["Subcontratada atuando na obra sem constar na relação nem ter documentos apresentados.","Relação de subcontratadas sem CNPJ, escopo ou responsável."],
+"EMP.07":["Convenção ou acordo coletivo aplicável não foi identificado nem informado.","Instrumento coletivo apresentado é de outra categoria ou de outra base territorial."],
+"EMP.08":["Apólice de seguro ou garantia contratual vencida ou não apresentada.","Seguro apresentado não cobre o escopo ou o prazo atual da obra."],
+"EMP.09":["Não foi apresentada comprovação de vínculo de trabalhadores que já estão na obra.","Vínculo informado não confere com a empresa que consta no crachá ou na relação."],
+"EMP.10":["LTCAT não elaborado, apesar de haver exposição a agentes nocivos (ex.: poeira, ruído, solventes).","LTCAT desatualizado em relação às funções e atividades hoje executadas."],
+"OB.01":["ART/RRT da obra ou de serviço especializado não apresentada antes do início da atividade.","ART/RRT apresentada sem comprovante de pagamento ou com dados da obra incorretos."],
+"OB.02":["Comprovante de inscrição no CNO não apresentado.","Responsável pelo CNO não definido ou com dados desatualizados."],
+"OB.03":["Alvará de execução vencido ou não disponível no local da obra.","Escopo executado diferente do que consta no alvará ou na licença."],
+"OB.04":["Documento de segurança contra incêndio vencido ou incompatível com a intervenção em andamento.","Projeto de prevenção contra incêndio não considera as alterações feitas pelo retrofit."],
+"OB.05":["Vistoria cautelar dos imóveis vizinhos não realizada antes de demolição ou cravação.","Laudo de vizinhança sem registro fotográfico ou sem assinatura do responsável."],
+"OB.06":["Demolição iniciada sem prospecção de shafts, forros e prumadas existentes.","Tubulação ou cabeamento ativo atingido por falta de identificação prévia das interferências.","Não há desenho ou marcação de eletrodutos e prumadas ativas na área de demolição."],
+"OB.07":["Edifício ocupado sem isolamento entre obra e usuários (tapume, cortina, sinalização).","Circulação de usuários cruza a área de obra sem controle de acesso.","Plano de emergência não considera a presença simultânea de usuários e obra."],
+"OB.08":["Passeio danificado ou obstruído por material e entulho sem proteção e sinalização.","Falta de tapume ou cobertura protegendo pedestres no passeio lindeiro.","Via suja de terra e entulho sem limpeza ao final do turno."],
+"MA.01":["Licença ou autorização ambiental exigida não localizada.","Condicionante da licença sem comprovação de atendimento (ex.: relatório, destinação, supressão).","Autorização para poda ou remoção de árvore não apresentada."],
+"MA.02":["PGRCC/PGRS não elaborado ou não corresponde aos resíduos realmente gerados.","Plano não prevê resíduos de retrofit (gesso, madeira de forma, vidro, material de demolição seletiva)."],
+"MA.03":["Resíduos misturados na mesma caçamba (entulho, madeira, gesso, plástico, papelão).","Baias ou recipientes sem identificação do tipo de resíduo.","Resíduo perigoso (tinta, solvente, lâmpada, embalagem contaminada) armazenado junto ao entulho comum.","Entulho acumulado fora das baias, obstruindo a circulação."],
+"MA.04":["MTR/CTR não emitido ou não apresentado para as retiradas realizadas.","Retirada de caçamba sem registro de data, volume e transportador."],
+"MA.05":["Comprovante de destinação final (CDF) não apresentado para retiradas já feitas.","CDF não permite identificar o transportador, o receptor ou o destino."],
+"MA.06":["Transportador de resíduos sem licença ou com licença vencida.","Receptor/aterro/usina sem licença ambiental válida apresentada."],
+"MA.07":["Material suspeito de amianto, tinta com chumbo ou outro contaminante removido sem avaliação prévia.","Telhas ou forros de fibrocimento antigos manuseados e quebrados sem plano de remoção.","Resíduo contaminante sem segregação, identificação e destinação específica."],
+"MA.08":["Árvore dentro da área de trabalho sem proteção de tronco e raízes.","Poda ou supressão realizada sem autorização do órgão competente.","Paisagismo a ser preservado sem isolamento."],
+"MA.09":["Poeira em suspensão acima do aceitável durante demolição, sem umectação ou proteção.","Caminhões saem do canteiro sujos de terra, sujando a via.","Falta de varrição e limpeza do acesso ao fim do dia."],
+"MA.10":["Ruído de corte e demolição fora do horário permitido ou sem medidas de controle.","Água de lavagem de betoneira ou ferramentas escoando para a rua ou galeria.","Derramamento de óleo, combustível ou tinta no solo sem contenção ou limpeza.","Proteção das bocas de lobo e da drenagem inexistente ou danificada."],
+/* ---- NR-01 ---- */
+"01.01":["PGR não apresentado, desatualizado para a etapa atual da obra ou sem inventário de riscos.","Plano de ação do PGR sem responsável e sem prazo."],
+"01.02":["Contratada ou subcontratada sem inventário de riscos entregue.","Inventário das terceiras não foi integrado ao PGR do canteiro."],
+"01.03":["Ordens de Serviço de SST não apresentadas ou genéricas, sem relação com a função.","OS não prevê os riscos das atividades que estão sendo executadas (ex.: altura, eletricidade, corte)."],
+"01.04":["Sem registro de ciência das OS pelos trabalhadores.","Lista de ciência assinada apenas por parte da equipe presente."],
+"01.05":["Trabalhadores novos sem integração registrada.","Integração não cobre riscos específicos da obra, emergência e rota de saída."],
+"01.06":["PGR não trata de riscos psicossociais (pressão por prazo, jornada, assédio).","Não há registro de análise desses fatores, mesmo com queixas ou rotatividade elevada."],
+"01.07":["Risco psicossocial identificado sem medida de prevenção ou acompanhamento.","Plano de ação sem responsável e sem evidência de execução."],
+"01.08":["Procedimento de emergência não cobre os cenários da obra (queda, choque elétrico, incêndio, soterramento).","Trabalhadores não sabem como acionar a emergência nem onde fica o ponto de encontro."],
+"01.09":["Acidente ou incidente ocorrido sem análise registrada.","Ação corretiva definida e sem evidência de execução.","CAT não emitida no prazo para acidente com afastamento."],
+/* ---- NR-04 ---- */
+"04.01":["Dimensionamento do SESMT não apresentado.","Dimensionamento considera apenas parte dos empregados ou o grau de risco incorreto."],
+"04.02":["Regras específicas para canteiros e empreiteiras não aplicadas no dimensionamento.","Número de empregados das subcontratadas ignorado no cálculo."],
+"04.03":["SESMT exigido e não constituído ou não registrado.","Profissional do SESMT indicado, mas sem atuar na obra."],
+"04.04":["Profissional do SESMT sem registro ou formação compatível apresentada.","Carga horária de atuação inferior à exigida no dimensionamento."],
+"04.05":["SESMT não participa do inventário de riscos nem do acompanhamento do plano de ação.","Riscos novos da etapa atual sem avaliação prévia."],
+"04.06":["Não há registro periódico de inspeções de segurança.","Inspeções realizadas sem lista das não conformidades ou sem fotos."],
+"04.07":["Não conformidades registradas sem plano de ação e sem prazo.","Pendências antigas reincidentes, sem acompanhamento."],
+"04.08":["Acidente ou quase acidente sem participação do SESMT na investigação.","Investigação sem causa raiz ou sem ação corretiva definida."],
+"04.09":["Sem registro de orientações e DDS ministrados pelo SESMT.","Campanhas de prevenção sem relação com os riscos atuais."],
+"04.10":["SESMT sem integração com CIPA/representante, PCMSO e controle de EPI.","Falta de registro de reuniões ou trocas de informação entre essas áreas."],
+/* ---- NR-05 ---- */
+"05.01":["CIPA ou representante não dimensionado para o canteiro.","Dimensionamento feito com número de empregados diferente do real."],
+"05.02":["Quantidade de representantes menor do que a do dimensionamento.","Representantes titular e suplente não nomeados."],
+"05.03":["Obra de curta duração sem o regime de representante nomeado.","Duração prevista da obra não foi considerada no enquadramento."],
+"05.04":["Prestadora que atingiu o número de empregados sem nomear representante.","CIPA centralizada citada, mas sem formalização."],
+"05.05":["Documento de constituição ou nomeação não localizado.","Ata ou designação sem assinatura ou sem data."],
+"05.06":["Eleição da CIPA sem ata, edital ou lista de votação.","Prazos do processo eleitoral não respeitados."],
+"05.07":["Trabalhadores não sabem quem é o representante da CIPA.","Quadro de identificação dos membros não está afixado."],
+"05.08":["Membros da CIPA ou representante sem certificado do treinamento.","Certificado vencido ou de carga horária insuficiente."],
+"05.09":["Reuniões da CIPA sem ata ou sem calendário.","Plano de trabalho da CIPA não acompanhado."],
+"05.10":["CIPA ou representante não participa das inspeções de risco nem da análise de acidentes.","Sem registro de recomendações enviadas à obra."],
+"05.11":["SIPAT não realizada no ano ou sem registro (lista de presença, fotos, programação).","Programação sem temas ligados aos riscos da obra."],
+"05.12":["Regras de conduta sobre assédio e violência não divulgadas.","Sem registro de capacitação sobre assédio sexual e outras formas de violência."],
+"05.13":["Canal de denúncia inexistente ou desconhecido dos trabalhadores.","Sem procedimento de apuração e de proteção do denunciante."],
+/* ---- NR-06 ---- */
+"06.01":["Trabalhadores comprando ou levando o próprio EPI.","Falta EPI no almoxarifado para parte da equipe."],
+"06.02":["EPI não adequado ao risco da atividade (ex.: luva comum em corte, óculos comum em esmerilhamento).","EPIs usados juntos incompatíveis entre si (ex.: capacete com protetor auditivo tipo concha sem compatibilidade)."],
+"06.03":["EPI sem CA ou com CA vencido.","Capacete ou cinto com validade de fabricação vencida.","EPI sem identificação do fabricante."],
+"06.04":["Capacete rachado, ressecado ou sem jugular.","Luvas furadas ou rasgadas.","Botina com solado gasto ou bico solto.","Cinto tipo paraquedista com fita desgastada."],
+"06.05":["Ficha de entrega de EPI inexistente ou sem assinatura do trabalhador.","Ficha sem data, sem CA ou sem item entregue."],
+"06.06":["Trabalhadores sem capacete, óculos ou luvas na frente de serviço.","Cinto de segurança usado sem trava-quedas ou sem conexão à ancoragem.","Protetor auricular não utilizado em área de ruído."],
+"06.07":["Sem registro de orientação sobre uso e guarda do EPI.","Trabalhadores usando o EPI de forma incorreta (ex.: jugular solta, cinto mal ajustado)."],
+"06.08":["EPI danificado continua em uso, sem troca.","Sem controle de reposição de EPI extraviado.","Sem rotina de higienização de respiradores e protetores reutilizáveis."],
+/* ---- NR-07 ---- */
+"07.01":["PCMSO não apresentado ou não implementado.","PCMSO genérico, sem relação com as funções da obra."],
+"07.02":["PCMSO não prevê exames compatíveis com os riscos do PGR (ex.: altura, ruído, poeira, produtos químicos).","Função presente na obra que não consta no PCMSO."],
+"07.03":["Médico coordenador do PCMSO não identificado.","Documento sem assinatura do médico responsável."],
+"07.04":["Exames necessários às funções não planejados.","Exames complementares não solicitados para função com exposição relevante."],
+"07.05":["Trabalhador na obra sem ASO admissional.","ASO admissional com data posterior ao início das atividades."],
+"07.06":["ASO periódico vencido.","Controle de vencimento dos ASO inexistente."],
+"07.07":["Trabalhador retornou de afastamento sem exame de retorno.","Retorno sem ASO ou com ASO sem aptidão registrada."],
+"07.08":["Trabalhador mudou de função ou de risco sem novo exame antes da mudança.","Mudança para atividade em altura sem exame específico."],
+"07.09":["Exame demissional não realizado ou fora do prazo.","Sem controle de desligamentos."],
+"07.10":["ASO sem função, riscos, exames realizados ou assinatura do médico.","ASO com aptidão em branco ou rasurado."],
+"07.11":["ASO sem aptidão para trabalho em altura para quem executa essa atividade.","ASO sem aptidão para espaço confinado."],
+"07.12":["Relatório analítico do PCMSO não disponível.","Relatório antigo, sem os dados do período atual."],
+/* ---- NR-09 ---- */
+"09.01":["Agentes de risco (poeira, ruído, vibração, solventes, calor, biológicos) não identificados.","Identificação não considera a etapa atual (ex.: corte de concreto, lixamento, aplicação de impermeabilizante)."],
+"09.02":["Agente identificado em campo, mas não consta no inventário do PGR.","Exposição de terceiros ou usuários não considerada."],
+"09.03":["Medições necessárias não realizadas (ex.: ruído, poeira, vibração).","Avaliação feita em área ou função diferente da realmente exposta."],
+"09.04":["Instrumento de medição sem certificado de calibração.","Método da avaliação não identificado no relatório."],
+"09.05":["Medidas recomendadas pela avaliação sem prazo ou sem responsável.","Medidas de prevenção sem verificação de eficácia."],
+"09.06":["Resultados das avaliações não repassados ao médico do PCMSO.","PCMSO sem exames compatíveis com os agentes avaliados."],
+"09.07":["Demolição em edifício antigo iniciada sem avaliação de amianto, chumbo ou outros materiais perigosos.","Histórico da edificação não foi consultado antes de intervir.","Material suspeito encontrado na demolição e trabalho não interrompido."],
+/* ---- NR-10 ---- */
+"10.01":["Trabalhador intervém em instalação elétrica sem autorização formal.","Autorização sem relação com o tipo de serviço executado.","Eletricista sem qualificação comprovada."],
+"10.02":["Certificado de NR-10 vencido ou ausente.","Certificado não cobre o tipo de instalação ou a tensão do serviço."],
+"10.03":["Trabalhador atua perto de rede de potência sem treinamento de SEP.","Certificado de SEP não apresentado."],
+"10.04":["Ferramentas sem isolação para o serviço (chaves comuns em quadro energizado).","Luvas isolantes sem ensaio ou fora da validade.","Sem tapete, cobertura ou isolação provisória no serviço."],
+"10.05":["Diagrama unifilar desatualizado em relação ao que foi instalado.","Quadro sem identificação dos circuitos nem diagrama disponível."],
+"10.06":["Prontuário das instalações elétricas não elaborado, apesar de carga instalada superior a 75 kW.","Prontuário sem esquemas, procedimentos e relatórios de inspeção."],
+"10.07":["Serviço em circuito sem desenergização e bloqueio (cadeado e etiqueta).","Sem sinalização ou isolamento da área durante o serviço elétrico.","APR sem previsão de desenergização e teste de ausência de tensão."],
+"10.08":["Quadro provisório aberto, sem porta, com fios soltos ou emendas expostas.","Sem DR no circuito de tomadas e ferramentas.","Quadro provisório sem identificação e sem fechamento com chave.","Extensões no chão, em área molhada ou com emenda de fita."],
+"10.09":["Sem medição periódica do aterramento do canteiro.","Laudo de aterramento vencido ou sem responsável técnico habilitado.","Haste de aterramento solta ou ausente no quadro provisório."],
+"10.10":["Canteiro sem SPDA e sem laudo de dispensa.","Laudo de dispensa sem responsável técnico habilitado.","Estrutura metálica provisória elevada sem proteção contra descargas atmosféricas."],
+/* ---- NR-11 ---- */
+"11.01":["Equipamento de movimentação sem manual, inspeção ou identificação na obra.","Equipamento sem placa de capacidade e sem registro de manutenção."],
+"11.02":["Operador sem treinamento compatível com o equipamento (ex.: empilhadeira, munck, guincho).","Certificado do treinamento vencido ou de outro equipamento."],
+"11.03":["Operador sem autorização formal.","Pessoa não habilitada operando o equipamento."],
+"11.04":["Sem check-list de inspeção antes do uso do equipamento.","Inspeção periódica vencida ou sem registro."],
+"11.05":["Equipamento com dispositivo de segurança inoperante (limitador, trava, freio).","Cabo, polia ou gancho com desgaste visível."],
+"11.06":["Capacidade máxima de carga não identificada ou ilegível.","Carga içada maior do que a capacidade informada."],
+"11.07":["Buzina, sinal de ré ou luz de advertência não funciona.","Alarme sonoro desligado."],
+"11.08":["Manutenção sem registro ou fora do prazo do fabricante.","Equipamento com defeito conhecido em uso."],
+"11.09":["Cintas ou cabos de aço desgastados ou sem identificação de capacidade.","Ganchos sem trava de segurança.","Acessórios de içamento improvisados."],
+"11.10":["Carga solta, mal amarrada ou desequilibrada durante o içamento.","Trabalhador passa ou permanece sob carga suspensa.","Área de içamento sem isolamento."],
+"11.11":["Içamento sem sinaleiro ou sem comunicação entre operador e equipe.","Sinaleiro sem identificação ou sem treinamento."],
+"11.12":["Pilhas de material instáveis, muito altas ou apoiadas em parede.","Material estocado obstruindo passagem, escada ou saída de emergência.","Material pesado armazenado em laje sem verificação da capacidade."],
+"11.13":["Içamento sem procedimento ou análise de risco para a carga.","Sem verificação do peso real da carga antes da operação."],
+"11.14":["Içamento complexo (carga pesada, perto de rede elétrica, vizinhos ou via) sem plano de içamento.","Plano de içamento não apresentado ao responsável pela liberação."],
+/* ---- NR-12 ---- */
+"12.01":["Máquina sem identificação, sem placa e sem sinalização de risco.","Sem advertências visíveis em serra, esmerilhadeira, betoneira ou policorte."],
+"12.02":["Serra circular sem coifa ou sem cutelo divisor.","Betoneira sem proteção da correia e das engrenagens.","Disco do policorte sem proteção.","Partes móveis acessíveis, sem proteção fixa."],
+"12.03":["Chave de segurança ou intertravamento desativado ou com jumper.","Dispositivo de segurança retirado para facilitar a operação."],
+"12.04":["Parada de emergência inexistente, inacessível ou sem identificação.","Botão de emergência não funciona ao teste."],
+"12.05":["Painel de comando aberto, sem identificação ou com acionamento improvisado.","Máquina liga com a chave de outra pessoa ou sem bloqueio."],
+"12.06":["Manual ou instrução da máquina não está disponível.","Sem procedimento de trabalho seguro para a operação."],
+"12.07":["Operador sem capacitação para a máquina.","Operador não autorizado formalmente."],
+"12.08":["Sem registro de manutenção e inspeção da máquina.","Máquina com defeito em uso, sem bloqueio nem etiqueta."],
+"12.09":["EPI da operação não definido (óculos, luva, protetor auricular, protetor facial).","EPI definido, mas não disponível no local."],
+"12.10":["Máquina alterada sem documentação técnica.","Proteção ou comando improvisado, sem responsável técnico."],
+/* ---- NR-18 ---- */
+"18.01":["Comunicação prévia da obra não realizada ou não localizada.","Dados da comunicação diferem dos da obra (endereço, número de trabalhadores, prazo)."],
+"18.02":["PGR do canteiro não atualizado para a etapa atual (demolição, estrutura, acabamento).","Frentes de trabalho em andamento sem avaliação de riscos."],
+"18.03":["Projeto da área de vivência não apresentado.","Projeto elétrico provisório, de proteção coletiva ou de ancoragem ausente.","Relação de EPI por função não apresentada."],
+"18.04":["Inventário de riscos da contratada ausente do PGR do canteiro.","Inventários incompatíveis entre as empresas na mesma frente."],
+"18.05":["Atividade crítica (altura, elétrica, içamento, demolição) sem APR ou permissão de trabalho.","APR genérica, copiada de outra obra, sem os riscos da atividade."],
+"18.06":["Canteiro desorganizado, com material espalhado e obstruindo passagem.","Entulho e sobras acumulados em corredores, escadas e áreas de circulação.","Pregos expostos em madeira de formas deixada no chão.","Fiação, mangueiras e extensões atravessando a circulação.","Iluminação insuficiente em corredores, escadas e áreas de serviço."],
+"18.07":["Sanitários sujos, sem manutenção ou com odor.","Faltam papel higiênico, sabonete ou toalha.","Portas ou divisórias danificadas, sem privacidade.","Quantidade de sanitários insuficiente para o número de trabalhadores.","Vaso, lavatório ou mictório entupido ou sem funcionamento."],
+"18.08":["Bebedouro sem água potável, sem filtro ou distante da frente de serviço.","Copos descartáveis ausentes ou uso de copo coletivo.","Água sem proteção, sem limpeza do reservatório ou sem registro de higienização."],
+"18.09":["Local de refeição pequeno, sujo ou sem mesas e bancos suficientes.","Equipamento de aquecimento das marmitas inadequado ou com ligação elétrica improvisada.","Bancos sem encosto ou desconfortáveis.","Sem lixeira com tampa para descarte dos restos.","Local sem proteção contra poeira, chuva e sol.","Sem pia ou local para lavar as mãos antes da refeição."],
+"18.10":["Vestiário sem armários individuais ou sem chave.","Vestiário sujo, sem ventilação ou iluminação.","Falta de bancos para troca de roupa.","Roupas e pertences guardados em local improvisado."],
+"18.11":["Chuveiros insuficientes ou sem funcionamento.","Chuveiro sem água quente quando exigida ou sem privacidade.","Piso escorregadio e sem ralo desobstruído.","Instalações de higiene sujas ou sem manutenção."],
+"18.12":["Almoxarifado desorganizado, com pilhas instáveis.","Material inflamável no mesmo espaço sem segregação.","Prateleiras sem fixação ou sobrecarregadas.","Sem sinalização, sem extintor ou com acesso obstruído."],
+"18.13":["Passagens obstruídas por material, equipamento ou entulho.","Piso com buracos, desnível ou poças sem sinalização.","Circulação de pessoas e veículos sem separação."],
+"18.14":["Escada provisória improvisada, sem corrimão ou degraus soltos.","Rampa sem antiderrapante, inclinação excessiva ou sem guarda-corpo.","Passarela instável, estreita ou sem proteção lateral."],
+"18.15":["Fiação provisória emendada com fita, sem proteção mecânica.","Quadro provisório diferente do projeto elétrico temporário.","Tomadas e extensões penduradas, no chão ou perto de água."],
+"18.16":["Demolição iniciada sem Plano de Demolição ou sem responsável habilitado.","Plano de Demolição desatualizado em relação à sequência executada."],
+"18.17":["Plano não considera utilidades ativas (energia, água, gás, esgoto).","Plano não prevê proteção de vizinhos, queda de entulho, poeira ou circulação de pessoas.","Demolição sem isolamento da área abaixo e sem sinalização."],
+"18.18":["Escavação sem projeto ou sem supervisão de responsável.","Talude instável, sem escoramento nem isolamento da borda.","Material escavado depositado junto à borda da vala.","Vala sem escada de acesso ou sem sinalização."],
+"18.19":["Abertura em laje ou vão sem guarda-corpo, tampa ou fechamento.","Guarda-corpo incompleto, sem rodapé ou com altura insuficiente.","Tela ou fechamento de abertura solto, removido ou improvisado.","Bordas de laje sem proteção durante a execução."],
+"18.20":["Perímetro da edificação sem proteção contra queda de materiais.","Plataforma de proteção ou tela danificada, incompleta ou sem fixação.","Descarte de entulho sem calha ou tubo fechado."],
+"18.21":["Trabalho em altura sem análise de risco, autorização ou plano de resgate.","Ponto de ancoragem não definido antes de iniciar.","Trabalhador em altura sem treinamento ou sem aptidão no ASO."],
+"18.22":["Andaime com guarda-corpo ou rodapé incompleto.","Andaime sem travamento, base nivelada ou plataforma completa.","Balancim sem trava ou sem linha de vida independente.","Montagem sem responsável habilitado ou sem inspeção registrada."],
+"18.23":["Linha de vida ou ancoragem sem projeto, sem laudo ou sem inspeção registrada.","Ancoragem improvisada em elemento sem resistência comprovada.","Componentes do sistema sem identificação ou fora da validade."],
+"18.24":["Operador de equipamento sem capacitação ou sem autorização formal.","Pessoa não habilitada usando o equipamento."],
+"18.25":["Grua, elevador ou plataforma sem laudo, inspeção ou ART.","Dispositivos de segurança do equipamento inoperantes.","Sem registro das inspeções diárias do operador."],
+"18.26":["Área de risco sem isolamento e sem placa de advertência.","Acesso à área perigosa sem controle de entrada.","Sinalização danificada, apagada ou não visível."],
+"18.27":["Trabalhadores sem treinamento exigido para a função ou atividade.","Certificados vencidos ou sem carga horária compatível.","Treinamento sem lista de presença assinada ou sem instrutor identificado."],
+"18.28":["DDS definido no PGR ou contrato sem registro.","Registros sem assinatura dos participantes.","Temas repetidos, sem relação com as atividades do dia."],
+"18.29":["Documentos de SST dispersos e fora do local da obra.","Liberações críticas (PT, APR) sem registro, sem assinatura ou sem encerramento.","Pasta de SST sem índice nem controle de versão."],
+/* ---- NR-20 ---- */
+"20.01":["Combustíveis e inflamáveis armazenados sem avaliação de enquadramento.","Quantidade e classe do produto não registradas."],
+"20.02":["Prontuário da instalação exigido e não apresentado.","Prontuário sem análise de riscos, projeto ou procedimentos."],
+"20.03":["Análise de riscos e procedimentos do trabalho com inflamáveis desatualizados.","Procedimento não considera a atividade realizada (abastecimento, solda, aplicação de solventes)."],
+"20.04":["Sem registro de inspeção e manutenção de tanques, mangueiras e recipientes.","Mangueira ou conexão com vazamento ou desgaste."],
+"20.05":["Solda, corte ou esmerilhamento sem permissão de trabalho a quente.","Sem vigia de fogo nem extintor próximo.","Material combustível próximo ao ponto de trabalho a quente."],
+"20.06":["Trabalhadores com inflamáveis sem capacitação compatível.","Certificado da NR-20 vencido ou de nível inadequado."],
+"20.07":["Plano de emergência não prevê vazamento, incêndio e explosão.","Sem equipamento de combate e de contenção no local."],
+"20.08":["Inflamável armazenado sem bacia de contenção ou sem ventilação.","Produtos incompatíveis armazenados juntos.","Fonte de ignição (tomada, solda, cigarro) perto da área.","Sem placa de proibição de fogo e fumo."],
+/* ---- NR-23 ---- */
+"23.01":["Projeto ou documento de prevenção contra incêndio exigido não identificado.","Exigência da legislação estadual não comprovada."],
+"23.02":["Saída de emergência obstruída por material, entulho ou equipamento.","Rota sem sinalização ou sem iluminação de emergência.","Portas de saída trancadas durante o expediente."],
+"23.03":["Extintor vencido, descarregado ou sem lacre.","Extintor sem sinalização, bloqueado ou fora do suporte.","Tipo de extintor incompatível com o risco (ex.: elétrico, líquidos inflamáveis).","Quantidade insuficiente para a área."],
+"23.04":["Trabalhadores sem orientação sobre alarme, rota de fuga e ponto de encontro.","Sem planta de emergência afixada no canteiro."],
+"23.05":["Brigada exigida e não formada ou sem treinamento.","Brigadistas sem identificação ou com treinamento vencido."],
+/* ---- NR-26 ---- */
+"26.01":["Sem relação dos produtos químicos usados na obra (tintas, solventes, selantes, desmoldante, ácidos).","Relação desatualizada, sem quantidade ou local de armazenamento."],
+"26.02":["Produto transferido para garrafa ou balde sem rótulo.","Rótulo apagado, ilegível ou em outro idioma.","Embalagem danificada ou aberta sem identificação."],
+"26.03":["FDS não disponível para os produtos usados.","FDS desatualizada ou guardada longe do local de uso."],
+"26.04":["Trabalhadores sem orientação sobre os produtos que manuseiam.","Sem registro de treinamento sobre leitura de rótulos e FDS."],
+"26.05":["Produtos químicos armazenados ao sol, na chuva ou junto a alimentos.","Armazenamento sem controle de acesso e sem prateleiras.","Produtos incompatíveis estocados lado a lado.","Embalagens empilhadas de forma instável."],
+"26.06":["Sem placa de advertência na área de produtos químicos.","Recipientes sem pictograma de risco."],
+"26.07":["Sem kit de contenção para derramamento (material absorvente, EPI, recipiente).","Local de armazenamento sem bacia de contenção.","Sem lava-olhos ou chuveiro de emergência quando exigido."],
+/* ---- NR-33 ---- */
+"33.01":["Espaço (cisterna, poço de elevador, caixa d'água, shaft) usado sem verificar se é espaço confinado.","Ambiente com risco atmosférico tratado como espaço comum."],
+"33.02":["Sem responsável técnico indicado para espaços confinados.","Cadastro dos espaços da obra ausente ou desatualizado."],
+"33.03":["Contratada sem inventário de riscos específico para o espaço.","Informações do contratante sobre o espaço não repassadas."],
+"33.04":["Sem procedimento de entrada, trabalho e encerramento.","Procedimento sem etapa de cancelamento da PET."],
+"33.05":["Entrada em espaço confinado sem PET.","PET sem assinatura, com data vencida ou sem medição atmosférica registrada."],
+"33.06":["Vigia, supervisor ou trabalhador sem capacitação.","Vigia ausente ou executando outra tarefa."],
+"33.07":["ASO sem aptidão para espaço confinado.","Aptidão não prevista no PCMSO."],
+"33.08":["Plano de resgate inexistente ou sem equipe designada.","Equipamento de resgate (tripé, talabarte, maca) indisponível.","Sem simulado registrado."],
+"33.09":["Medição de gases sem aparelho calibrado.","Monitoramento contínuo não realizado durante o trabalho.","Registros de leitura incompletos."],
+/* ---- NR-35 ---- */
+"35.01":["Trabalhador em altura sem autorização formal.","Lista de autorizados desatualizada em relação à equipe da frente."],
+"35.02":["Certificado de NR-35 vencido ou ausente.","Treinamento sem carga horária ou conteúdo compatível."],
+"35.03":["ASO sem aptidão para trabalho em altura.","ASO emitido para outra função ou vencido."],
+"35.04":["Trabalho em altura iniciado sem análise de risco.","Análise de risco genérica, sem a atividade e o local."],
+"35.05":["Atividade rotineira em altura sem procedimento operacional.","Procedimento sem condições impeditivas e medidas de prevenção."],
+"35.06":["Atividade não rotineira sem permissão de trabalho.","Permissão sem assinatura, sem validade ou não encerrada."],
+"35.07":["Ancoragem em ponto não projetado ou sem resistência comprovada.","Talabarte inadequado para o risco (sem absorvedor, comprimento excessivo).","Cinto tipo paraquedista com ajuste incorreto."],
+"35.08":["Sem registro de inspeção do cinto, talabarte e trava-quedas antes do uso.","Equipamento com fita desgastada, costura aberta ou mosquetão sem trava.","Inspeção periódica vencida."],
+"35.09":["Sem plano de resgate em altura.","Equipe e equipamento de resgate não definidos.","Trabalhadores desconhecem como proceder em caso de queda suspensa."],
+"35.10":["Escada fixa vertical sem proteção ou sem adequação aos requisitos aplicáveis.","Escada com degraus danificados ou sem gaiola quando exigida."],
+/* ---- SST EM CAMPO ---- */
+"SS.01":["Serviço iniciado sem a frente liberada pelo responsável.","Equipe sem orientação prévia sobre os riscos da atividade do dia.","Sem registro de DDS ou APR da atividade."],
+"SS.02":["Vão, abertura de laje ou borda sem guarda-corpo ou fechamento.","Guarda-corpo sem rodapé ou com altura insuficiente.","Abertura coberta com material solto, sem fixação ou sinalização."],
+"SS.03":["Trabalho em altura sem ancoragem ou sem cinto conectado.","Ponto de ancoragem improvisado.","Escada usada sem amarração, fora de posição ou com degraus danificados."],
+"SS.04":["Quadro provisório aberto, sem porta ou sem identificação.","Fios expostos, emendas com fita ou extensões no piso molhado.","Sem DR ou sem aterramento no quadro."],
+"SS.05":["Serra, esmerilhadeira ou furadeira com proteção removida.","Cabo de alimentação danificado.","Disco gasto, trincado ou inadequado para a ferramenta."],
+"SS.06":["Pessoas sob carga içada.","Içamento sem sinaleiro ou sem isolar a área.","Cinta, corda ou acessório improvisado e sem capacidade identificada."],
+"SS.07":["Rota de fuga obstruída com material.","Extintor sem acesso, sem sinalização ou vencido.","Saída de emergência trancada."],
+"SS.08":["Trabalhador sem capacete, óculos, luva ou botina.","EPI inadequado para a atividade ou danificado.","Protetor auricular ou respirador não utilizado onde necessário."],
+"SS.09":["Sanitário sem higiene, sem papel ou sem sabonete.","Local de refeição sujo ou sem bancos.","Bebedouro sem água potável ou sem copos.","Vestiário sem armário ou sem condições de uso."],
+/* ---- ÁREAS MOLHADAS ---- */
+"AM.01":["Ponto de água ou esgoto fora da posição ou da altura do projeto.","Projeto da revisão vigente não estava disponível para conferência."],
+"AM.02":["Ralo ligado a prumada errada ou sem caixa sifonada.","Lavatório ligado ao esgoto diferente do projeto.","Ralo com fecho hídrico inexistente ou desnivelado."],
+"AM.03":["Teste de estanqueidade não realizado ou sem registro antes do fechamento.","Registro do teste sem pressão, tempo ou assinatura do responsável."],
+"AM.04":["Reforço para bancada, louça ou barra ausente ou fora de posição.","Reforço executado com material inadequado."],
+"AM.05":["Caixa elétrica fora da posição ou da altura do projeto.","Caixa elétrica invadindo a área de zona molhada sem proteção."],
+"AM.06":["Duto do exaustor ausente ou sem saída para o exterior.","Alimentação elétrica do exaustor não prevista."],
+"AM.07":["Teste de lâmina d'água não realizado ou sem registro.","Teste com tempo menor que o previsto ou sem marcação do nível.","Vazamento ou manchas de infiltração durante o teste."],
+"AM.08":["Impermeabilização sem a altura de subida prevista na parede.","Arremate mal executado em ralos, tubos e cantos.","Manta ou pintura com bolhas, furos ou sem proteção mecânica."],
+"AM.09":["Piso com caimento insuficiente, formando poça.","Caimento no sentido contrário ao ralo."],
+"AM.10":["Soleira ou desnível da porta diferente do projeto.","Soleira que não contém a água do box."],
+"AM.11":["Torneira, sifão, descarga ou chuveiro com vazamento.","Registro que não fecha ou não abre.","Fixação da louça solta."],
+"AM.12":["Tomada ou luminária que não funciona.","Exaustor sem funcionamento ou com ruído excessivo.","Tomada próxima ao box fora do previsto em projeto."],
+/* ---- ALVENARIA ---- */
+"AL.01":["Marcação dos eixos e vãos diferente do projeto.","Shaft ou prumada sem marcação antes de iniciar."],
+"AL.02":["Base suja, com pó, óleo ou resto de argamassa.","Base irregular, desnivelada ou sem preparo."],
+"AL.03":["Primeira fiada fora de alinhamento ou nível.","Modulação não segue a do projeto."],
+"AL.04":["Juntas verticais ou horizontais sem preenchimento.","Juntas com espessura irregular.","Amarração diferente da modulação."],
+"AL.05":["Parede fora de prumo.","Planeza fora da tolerância, com ondulações visíveis."],
+"AL.06":["Falta de amarração com pilar ou estrutura.","Ferro-cabelo ou tela ausente ou insuficiente."],
+"AL.07":["Vão de porta ou janela sem verga ou contraverga.","Verga com apoio menor que o previsto."],
+"AL.08":["Rasgos grandes que cortam reforços ou comprometem a parede.","Passagem de instalação fora do compatibilizado."],
+"AL.09":["Encunhamento não executado ou executado antes do prazo.","Folga no topo da parede sem preenchimento."],
+"AL.10":["Parede com sujeira ou argamassa solta, não liberada para o revestimento.","Trincas na parede sem tratamento."],
+/* ---- DRYWALL ---- */
+"DW.01":["Parede com espessura ou tipo diferente do projeto.","Layout das paredes diferente da revisão vigente."],
+"DW.02":["Guias e montantes fora de prumo ou desalinhados.","Espaçamento dos montantes maior que o do sistema.","Fixação solta."],
+"DW.03":["Reforço para bancada, armário ou louça ausente.","Reforço mal posicionado ou de material inadequado."],
+"DW.04":["Parede fechada antes do teste das instalações internas.","Eletroduto ou tubulação sem fixação dentro da parede."],
+"DW.05":["Lã mineral ou isolante ausente onde está previsto.","Isolante mal preenchido, com vãos."],
+"DW.06":["Chapa comum em área úmida onde se exigia RU.","Chapa com especificação diferente da do projeto."],
+"DW.07":["Parafusos fora do espaçamento do sistema.","Juntas das chapas coincidindo nas duas faces.","Bordas de chapa danificadas."],
+"DW.08":["Junta com trinca, ressalto ou fita aparente.","Parafuso saliente ou sem massa."],
+"DW.09":["Parede fora de prumo ou planeza para o acabamento.","Marcas de lixamento excessivo ou ondulação visível com luz rasante."],
+/* ---- CONTRAPISO ---- */
+"CP.01":["Cota do piso acabado não definida no projeto ou diferente da executada.","Revisão do projeto usada não é a vigente."],
+"CP.02":["Base com pó, óleo ou partes soltas antes do lançamento.","Base não saturada ou sem preparo."],
+"CP.03":["Tubulação ou eletroduto coberto sem conferência ou teste.","Infraestrutura sem fixação antes do contrapiso."],
+"CP.04":["Ponte de aderência não aplicada quando prevista.","Aplicação fora do tempo de validade."],
+"CP.05":["Espessura menor ou maior que a prevista.","Espessura acima do limite sem solução validada pelo projetista."],
+"CP.06":["Taliscas e mestras sem nível ou sem cotas do projeto.","Caimento não respeitado nas mestras."],
+"CP.07":["Caimento para ralo insuficiente, com acúmulo de água.","Ralo mais alto que o piso adjacente."],
+"CP.08":["Superfície esfarelando ou com som cavo.","Fissuras relevantes ou destacamentos."],
+"CP.09":["Cura não realizada ou interrompida.","Piso liberado ao tráfego antes do prazo."],
+/* ---- HIDRÁULICA, ESGOTO E VENTILAÇÃO ---- */
+"HI.01":["Projeto hidráulico não está na frente de serviço.","Detalhes de shaft e prumadas sem a revisão vigente."],
+"HI.02":["Ponto de AF ou AQ fora da posição ou da altura.","Pontos de água sem tampão ou proteção."],
+"HI.03":["Entradas de AF e AQ invertidas ou sem identificação.","Registro de água quente ligado na água fria."],
+"HI.04":["Ligação de esgoto diferente do projeto (caixa sifonada, bacia, ralo).","Ramal de esgoto com ligação irregular."],
+"HI.05":["Coluna de ventilação misturada com o esgoto ou sem a continuidade.","Ventilação sem a identificação do projeto."],
+"HI.06":["Declividade insuficiente ou contrária no ramal de esgoto.","Conexões com desvio, joelhos em excesso ou sem junta correta."],
+"HI.07":["Furo em laje ou viga sem luva ou fora do projeto.","Passagem de tubulação sem vedação."],
+"HI.08":["Tubulação sem fixação ou com suportes espaçados.","Suporte inadequado ao diâmetro."],
+"HI.09":["Teste de estanqueidade não realizado ou sem registro.","Teste sem pressão ou tempo definidos, ou sem assinatura."],
+/* ---- PONTOS ELÉTRICOS ---- */
+"PE.01":["Falta ponto de tomada, interruptor ou iluminação previsto.","Quantidade de pontos diferente do projeto."],
+"PE.02":["Ponto fora da parede, da face ou da distância do projeto.","Ponto atrás de móvel ou equipamento."],
+"PE.03":["Altura da caixa diferente da do projeto ou do detalhe.","Alturas desiguais em pontos do mesmo ambiente."],
+"PE.04":["Caixa sem fundo, ou caixa de fundo onde se previa caixa sem fundo.","Caixa obstruída pelo montante ou fora do eixo."],
+"PE.05":["Caixa 4x2 onde se previa 4x4 ou o contrário.","Módulos diferentes dos do projeto."],
+"PE.06":["Tensão ou corrente da tomada diferente da do projeto (TUG/TUE).","Tomada de 20 A onde a especificação prevê 10 A."],
+"PE.07":["Espelho solto, torto ou com folga.","Espelho danificado ou sujo de tinta."],
+"PE.08":["Teste de funcionamento não realizado ou sem registro.","Tomada sem tensão, com polaridade invertida ou sem terra."],
+/* ---- QUADRO ELÉTRICO ---- */
+"QE.01":["Projeto ou diagrama unifilar não disponível no local.","Revisão do diagrama diferente da do projeto vigente."],
+"QE.02":["Quadro aberto, com partes vivas expostas durante a vistoria.","Inspeção feita sem desenergização ou sem a autorização exigida."],
+"QE.03":["Circuito do projeto não executado ou unificado indevidamente.","Circuito sem proteção própria."],
+"QE.04":["Disjuntor, DR ou DPS diferente do especificado.","Falta de DR em circuito que exige."],
+"QE.05":["Barramentos de neutro e terra misturados ou sem organização.","Condutores presos no mesmo borne."],
+"QE.06":["Condutor com seção ou cor diferente do projeto.","Cabos sem identificação ou com folga excessiva."],
+"QE.07":["Etiquetas dos circuitos ausentes ou que não conferem com o unifilar.","Identificação feita a mão, ilegível ou provisória."],
+"QE.08":["Ensaios (continuidade do PE, isolação, DR) não realizados ou sem registro.","Registro sem instrumento, data ou responsável."],
+/* ---- CENTRO DE MEDIÇÃO BT ---- */
+"CM.01":["Caixa ou equipamento diferente do projeto aprovado pela concessionária.","Identificação ausente ou fora do padrão."],
+"CM.02":["Ambiente sujo, com material estocado ou acesso obstruído.","Circulação livre menor que a exigida."],
+"CM.03":["Caixa, porta ou massa metálica sem aterramento.","Cabo de aterramento solto, sem terminal ou sem continuidade."],
+"CM.04":["QDC, Caixa D ou DPS diferente do projeto.","Fabricante ou modelo sem homologação da concessionária."],
+"CM.05":["Altura ou afastamento diferente do roteiro da concessionária.","Equipamento muito próximo da parede ou de outro equipamento."],
+"CM.06":["Proteção em policarbonato ausente ou danificada.","Lacre faltando ou ventilação obstruída."],
+"CM.07":["Iluminação normal ou de emergência que não funciona.","Bloco autônomo sem carga."],
+"CM.08":["Fotos não seguem o padrão ou a ordem exigida pela concessionária.","Faltam fotos de itens obrigatórios do roteiro."]
+};
+
+/* ================= ONDA 12: exemplos de NC por item, item novo na foto do ambiente e edição de fotos do checklist ================= */
+const exemplosDe=cod=>(Array.isArray(EXNC[cod])?EXNC[cod]:[]);
+const exTxt=s=>String(s||"").trim();
+const exUsado=(obs,t)=>String(obs||"").includes(t);
+
+/* 1) exemplos no campo “o que está não conforme” */
+{ const _li=linhaItem; linhaItem=function(v,i){ let h=_li(v,i); const r=v.resp[i.cod]; if(!r||r.status!=="NOK") return h;
+    const ex=exemplosDe(i.cod); if(!ex.length) return h;
+    const dis=S.role==="eng"||!!v.modelo||!!r.val;
+    h=h.replace(/placeholder="ex\.: ralo ligado no ramal da bacia; projeto prevê caixa sifonada"/,`placeholder="ex.: ${esc(ex[0])}"`);
+    if(dis) return h;
+    const fim="</textarea></label>"; const k=h.indexOf(fim); if(k<0) return h;
+    const blk=`<div class="exs" data-c="${esc(i.cod)}"><span class="exs-t">Ocorrências comuns neste item · toque para usar como texto e edite se precisar</span>
+      <div class="exs-l">${ex.map((t,n)=>`<button type="button" class="exs-b" data-act="exuse" data-c="${esc(i.cod)}" data-n="${n}" aria-pressed="${exUsado(r.obs,t)}">${esc(t)}</button>`).join("")}</div>
+      <div class="exs-a"><button type="button" class="link" data-act="exall" data-c="${esc(i.cod)}">Usar todos</button><button type="button" class="link" data-act="exclr" data-c="${esc(i.cod)}">Apagar o texto</button></div></div>`;
+    return h.slice(0,k+fim.length)+blk+h.slice(k+fim.length); }; }
+function exAplicar(cod,fn){ const v=vAtual(); if(!v||!v.resp[cod]) return; const ta=document.querySelector(`textarea[data-fld="obs"][data-c="${cod}"]`); const ex=exemplosDe(cod);
+  let val=String(v.resp[cod].obs||""); val=fn(val,ex).replace(/[ \t]+\n/g,"\n").replace(/\s{2,}/g," ").trim();
+  v.resp[cod].obs=val; save(); if(ta){ ta.value=val; ta.style.height="auto"; ta.style.height=Math.min(220,ta.scrollHeight+2)+"px"; }
+  document.querySelectorAll(`.exs[data-c="${cod}"] .exs-b`).forEach(b=>b.setAttribute("aria-pressed",String(exUsado(val,ex[+b.dataset.n])))); }
+document.addEventListener("click",e=>{ if(e.target.closest("#sheet")) return; const a=e.target.closest("[data-act]"); if(!a) return; const act=a.dataset.act, c=a.dataset.c;
+  if(act==="exuse"){ e.stopImmediatePropagation(); if(bloqueado()) return; exAplicar(c,(val,ex)=>{ const t=ex[+a.dataset.n]; return exUsado(val,t)? val.replace(t,"") : (val?val+" ":"")+t; }); }
+  else if(act==="exall"){ e.stopImmediatePropagation(); if(bloqueado()) return; exAplicar(c,(val,ex)=>{ let o=val; for(const t of ex.slice(0,3)) if(!exUsado(o,t)) o=(o?o+" ":"")+t; return o; }); }
+  else if(act==="exclr"){ e.stopImmediatePropagation(); if(bloqueado()) return; exAplicar(c,()=>""); } },true);
+
+/* 2) item novo criado a partir da foto do ambiente (entra também na aba Itens) */
+function criarItemExtra(v,s,st,ob,trava){ const n=Math.max(0,...v.itens.filter(i=>i.extra).map(i=>+String(i.cod).split(".")[1]||0))+1; const cod=`EX.${pad(n)}`;
+  v.itens.push({cod,m:"X",trava:!!trava,s,como:"",fer:"",certo:"",errado:"",extra:true});
+  v.resp[cod]=Object.assign(novaResp(),{status:st,obs:st==="NOK"?ob:""}); return cod; }
+function sheetItemNovoFoto(fid,sel){
+  const v=vAtual(); if(!v||v.modelo) return; const f=v.fotos.find(x=>x.id===fid); if(!f) return; let st="NOK";
+  const draw=()=>abrirSheet(`<div class="row between"><h2>Novo item para esta foto</h2><button class="link" data-x="1">Cancelar</button></div>
+    <p class="muted small">Use quando o que a foto mostra não está na lista. O item também aparece na aba Itens, com o resultado e a descrição.</p>
+    <label class="f"><span class="req">Qual é o item?</span><input id="nf-s" maxlength="160" placeholder="ex.: Escada de acesso ao 2º pavimento sem corrimão"></label>
+    <div class="f"><span class="req">Resultado</span><div class="ck-btns" role="group">${[["NOK","NÃO OK"],["OK","OK"],["NV","NV"]].map(([k,t])=>`<button type="button" data-st="${k}" aria-pressed="${st===k}">${t}</button>`).join("")}</div></div>
+    <div id="nf-nok" ${st==="NOK"?"":"hidden"}><label class="f"><span class="req">O que está não conforme?</span><textarea id="nf-o" rows="3" placeholder="descreva o que a foto mostra"></textarea></label></div>
+    <label class="f chk"><input type="checkbox" id="nf-t"> É TRAVA (impede liberar o ambiente)</label>
+    <p id="nf-e" class="warn" hidden></p><button class="btn primary block" data-ok="1">Adicionar e vincular à foto</button>`,
+    e=>{ const b=e.target.closest("[data-st]"); if(b){ st=b.dataset.st; document.querySelectorAll("#sheet [data-st]").forEach(x=>x.setAttribute("aria-pressed",String(x.dataset.st===st))); $("#nf-nok").hidden=st!=="NOK"; return; }
+      if(!e.target.closest("[data-ok]")) return; const err=m=>{ const x=$("#nf-e"); x.textContent=m; x.hidden=false; };
+      const s=$("#nf-s").value.trim(); if(!s) return err("Diga qual é o item."); const ob=$("#nf-o").value.trim(); if(st==="NOK"&&!ob) return err("Descreva o que está não conforme.");
+      const cod=criarItemExtra(v,s,st,ob,$("#nf-t").checked); sel.add(cod); f.itens=[...sel]; save(); toast(`${cod} adicionado e vinculado à foto.`); render(); sheetFoto(fid); });
+  draw();
+}
+sheetFoto=function(id){
+  const v=vAtual(); const f=v.fotos.find(x=>x.id===id); if(!f) return; const eng=S.role==="eng"||!!v.modelo, k=v.fotos.indexOf(f)+1, sel=new Set(f.itens);
+  const draw=()=>abrirSheet(`<div class="row between"><h2>Foto ${pad(k)}</h2><button class="link" data-x="1">Fechar</button></div>
+    <img data-foto="${id}" alt="Foto ${k}" class="ph-big ph-tap">${eng?"":`<button class="btn block" data-mark="1">✎ Marcar na foto (setas, círculos, mão livre, texto)</button>`}
+    <p class="small"><b>Esta foto mostra qual item?</b> Sem marcação, entra como vista geral.</p>
+    ${eng?"":`<button class="btn block" data-novo="1">+ Item novo (não está na lista)</button>`}
+    ${itensDe(v).length>12?`<input class="pk-busca" type="search" placeholder="Filtrar itens (código ou palavra)" aria-label="Filtrar itens">`:""}
+    <div class="pick">${itensDe(v).map(i=>{ const s=stEf(v.resp[i.cod]); return `<label class="pk" data-t="${esc((i.cod+" "+i.s).toLowerCase())}"><input type="checkbox" data-pick="${i.cod}" ${sel.has(i.cod)?"checked":""} ${eng?"disabled":""}><span><b>${i.cod}</b> ${esc(i.s)}</span>${s?`<span class="chip ${s==="OK"?"c":(s==="NV"||s==="NA")?"nv":s==="NC"?"nc":"a"}">${s==="NOK"?"NÃO OK":s}</span>`:""}</label>`; }).join("")}</div>
+    ${eng?"":`<div class="grid2"><button class="btn danger" data-del="1">Apagar foto</button><button class="btn primary" data-ok="1">Salvar</button></div>`}`,
+    async e=>{ if(e.target.closest("[data-mark]")||e.target.closest(".ph-tap")){ if(!eng||e.target.closest(".ph-tap")) editarFoto(f); return; }
+      if(e.target.closest("[data-novo]")){ sheetItemNovoFoto(id,sel); return; }
+      const c=e.target.dataset.pick; if(c){ e.target.checked? sel.add(c) : sel.delete(c); return; }
+      if(e.target.closest("[data-ok]")){ f.itens=[...sel]; save(); fechar(); render(); }
+      if(e.target.closest("[data-del]")){ v.fotos=v.fotos.filter(x=>x!==f); save(); fechar(); render(); toast("Foto apagada."); } });
+  draw();
+  const bq=document.querySelector("#sheet .pk-busca"); if(bq) bq.addEventListener("input",()=>{ const q=bq.value.trim().toLowerCase(); document.querySelectorAll("#sheet .pk").forEach(l=>{ l.hidden=!!q&&!l.dataset.t.includes(q); }); });
+};
+
+/* 3) tocar na foto abre a edição (RNC: item, revisão e foto ampliada; checklist: antes e depois) */
+{ const _li=linhaItem; linhaItem=function(v,i){ let h=_li(v,i); const r=v.resp[i.cod]; if(!r||r.status!=="NOK"||v.modelo) return h;
+    const fs=fotosDoItem(v,i.cod); if(!fs.length) return h; const k=h.indexOf('<div class="row between"><span class="small'); if(k<0) return h;
+    const th=`<div class="ph-row ph-edit">${fs.map(f=>`<button type="button" class="ph-thumb" data-act="edfoto" data-f="${esc(f.id)}" aria-label="Marcar na foto"><img data-foto="${esc(f.id)}" alt=""><span>${f.anot?"✎ marcada":"✎ marcar"}</span></button>`).join("")}</div>`;
+    return h.slice(0,k)+th+h.slice(k); }; }
+{ const _sr=sheetRevisar; sheetRevisar=function(vid,cod){ _sr(vid,cod); const row=document.querySelector("#sheet .ph-row"); if(row&&!row.nextElementSibling?.classList.contains("ph-dica")){ const p=document.createElement("p"); p.className="muted small ph-dica"; p.textContent="✎ Toque numa foto para marcar (setas, círculos, mão livre, texto)."; row.after(p); } }; }
+function fotoDaVistoria(id){ const v=vAtual(); return v&&!v.modelo? v.fotos.find(x=>x.id===id) : null; }
+document.addEventListener("click",e=>{
+  const th=e.target.closest('[data-act="edfoto"]'); if(th){ e.stopImmediatePropagation(); const f=fotoDaVistoria(th.dataset.f); if(f) editarFoto(f); return; }
+  const im=e.target.closest("#sheet .ph-row img[data-foto]"); if(im){ const f=fotoDaVistoria(im.dataset.foto); if(f){ e.stopImmediatePropagation(); e.preventDefault(); editarFoto(f); return; } }
+  const cf=e.target.closest(".cl-f.tem img[data-foto]"); if(cf&&!e.target.closest("#sheet")){ const bt=cf.parentElement.querySelector("[data-act='clfx']"); if(!bt) return; e.stopImmediatePropagation(); editarFotoCL(bt.dataset.i,bt.dataset.k); } },true);
+async function editarFotoCL(iid,k){
+  const c=clAtual(); const i=c&&c.itens.find(x=>x.id===iid); if(!i||!i[k]) return;
+  const orig=(i[k+"Anot"]&&i[k+"Anot"].cur===i[k]&&i[k+"Anot"].orig)||null; if(orig&&!(await fotoGet(orig))) i[k+"Anot"]=null;
+  const ref={ get id(){ return i[k]; }, set id(v){ i[k]=v; },
+    get anot(){ const a=i[k+"Anot"]; return a&&a.cur===i[k]?a:null; },
+    set anot(a){ i[k+"Anot"]=a?{orig:a.orig,formas:a.formas,cur:i[k]}:null; } };
+  await editarFoto(ref); }
+{ const _fs=clFotoSlot; clFotoSlot=function(i,k,rot,dica){ let h=_fs(i,k,rot,dica); if(!i[k]) return h;
+    const mk=i[k+"Anot"]&&i[k+"Anot"].cur===i[k]; return h.replace('<img data-foto=',`<span class="cl-ed">${mk?"✎ marcada":"✎ toque p/ marcar"}</span><img data-foto=`); }; }
 
 (async function iniciar(){ $("#logo").src=LOGO_DARK; rede(); await openDB(); S=(await kvGet("state2"))||estadoInicial(); if(!S.rfs){ S.rfs=[]; } S.seqAV=S.seqAV||1;
   migrar(); purgarModelo(); await carregarIndiceFotosHist(); lastJSON=snapJSON(); kvSet("state2",S); UI.oid=(S.obras[0]||{}).id||null; render(); })();
