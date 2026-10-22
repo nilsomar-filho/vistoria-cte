@@ -770,6 +770,12 @@ body.rep .fab-mais{bottom:calc(156px + env(safe-area-inset-bottom,0px))!importan
 button.kpi-b{border:0;font:inherit;color:inherit;cursor:pointer;width:100%;text-align:center}button.kpi-b:active{filter:brightness(.95)}
 .ck-extra .row .txt-nc{cursor:pointer;text-decoration:underline}
 .vcard[data-act="abrir"],.vcard[data-act="abrirrf"],.rr-card[data-act="clabrir"]{ -webkit-touch-callout:none; -webkit-user-select:none; user-select:none; }
+.pheat thead th{line-height:1.15}
+.pheat .mh-m{display:block;font-weight:700;color:var(--fg)}
+.pheat .mh-n{display:block;font-size:10px;font-weight:500;color:var(--fg2)}
+.pheat .mh-sep th{padding:10px 6px 2px;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--fg2);text-align:left}
+.pheat .mh-tot{background:transparent;border-top:1px solid var(--line,#cfd8dc);border-radius:0}
+.pheat .mh-pct{background:transparent;font-weight:600;color:var(--fg2)}
 </style>
 
 <header class="top">
@@ -5158,7 +5164,7 @@ try{ syUlt=+localStorage.getItem("cte_od_sync_ult")||0; }catch(_){}
 setTimeout(()=>{ if(odAtivo()) sySincronizar(false); },7000);
 
 /* ================= ONDA 21: "Versões e arquivos em uso" na tela Dados deste aparelho ================= */
-const APP_VER="v26";
+const APP_VER="v27";
 const vaFmt=t=>{ try{ return new Date(t).toLocaleString("pt-BR",{dateStyle:"short",timeStyle:"short"}); }catch(_){ return "—"; } };
 const vaGet=k=>odLS(k,null);
 { const _ej=entregarJSON; entregarJSON=function(nome){ try{ if(/^registros_/.test(nome)) odSet("cte_va_exp",{n:nome,t:Date.now()}); }catch(_){} return _ej.apply(this,arguments); }; }
@@ -5200,6 +5206,36 @@ document.addEventListener("contextmenu",e=>{ const el=e.target.closest&&e.target
 { const _mb=mesclarBackup; mesclarBackup=async function(d){ const e=(d&&d.estado)||{};
     S.excl=S.excl||{}; for(const [k,v] of Object.entries(e.excl||{})) if(!S.excl[k]||v>S.excl[k]) S.excl[k]=v;
     const r=await _mb.apply(this,arguments); const x=S.excl; for(const l of ["vistorias","rfs","cls"]) if(Array.isArray(S[l])) S[l]=S[l].filter(i=>!x[i.id]); return r; }; }
+
+/* ================= ONDA 23: "Momento da obra" em meses do calendário, amarrado às datas dos registros ================= */
+const MK_ABR=["JAN","FEV","MAR","ABR","MAI","JUN","JUL","AGO","SET","OUT","NOV","DEZ"];
+const mkRot=k=>MK_ABR[+k.slice(5,7)-1]+"/"+k.slice(2,4);
+function mkLista(a,b){ const L=[]; let y=+a.slice(0,4), m=+a.slice(5,7); const ye=+b.slice(0,4), me=+b.slice(5,7); while(y<ye||(y===ye&&m<=me)){ L.push(y+"-"+String(m).padStart(2,"0")); m++; if(m>12){ m=1; y++; } } return L; }
+heatmap=function(B,oid){
+  const disc=PD.disc, nc={}, ver={}, rn={}, cf={}, ch=new Set(); let mx=0, semData=0;
+  const mes=d=>(d&&/^\d{4}-\d{2}/.test(d))?d.slice(0,7):null;
+  for(const i of B.itens){ const k=mes(i.data); if(!k) continue; ch.add(k); if(i.st==="C"||i.st==="NC"||i.st==="PV"){ ver[k]=(ver[k]||0)+1; if(i.st!=="NC") cf[k]=(cf[k]||0)+1; } if(i.st!=="NC") continue; const kk=i.disc+"|"+k; nc[kk]=(nc[kk]||0)+1; mx=Math.max(mx,nc[kk]); }
+  for(const r of B.rncs){ const k=mes(r.data); if(!k){ semData++; continue; } ch.add(k); rn[k]=(rn[k]||0)+1; }
+  const ks=[...ch].sort(); if(!ks.length) return '<p class="muted small">Sem registros com data.</p>';
+  const cols=mkLista(ks[0],ks[ks.length-1]);
+  const lin=disc.filter(d=>cols.some(k=>nc[d+"|"+k]));
+  const cor=v=>{ if(!v) return "transparent"; const t=Math.sqrt(v/mx); const a=[230,241,246], b=[0,63,94]; return `rgb(${a.map((x,k)=>Math.round(x+(b[k]-x)*t)).join(",")})`; };
+  const ncMes=k=>disc.reduce((s,d)=>s+(nc[d+"|"+k]||0),0);
+  const mxv=Math.max(1,...cols.map(k=>ver[k]||0)), mxr=Math.max(1,...cols.map(k=>rn[k]||0));
+  const cinza=(v,m)=>v?`rgb(${[232,240,232].map((x,j)=>Math.round(x+([46,125,50][j]-x)*Math.sqrt(v/m)*.85)).join(",")})`:"transparent";
+  const th=cols.map(k=>{ const n=oid?mesDaObra(oid,k+"-01"):null; return `<th><span class="mh-m">${mkRot(k)}</span>${n?`<span class="mh-n">M${n}</span>`:""}</th>`; }).join("");
+  const sep=`<tr class="mh-sep"><th colspan="${cols.length+1}">Atuação da gerência no mês</th></tr>`;
+  const linha=(rot,fn)=>`<tr><th>${rot}</th>${cols.map(fn).join("")}</tr>`;
+  return `<div class="pscroll"><table class="pheat"><thead><tr><th></th>${th}</tr></thead><tbody>
+    ${lin.map(d=>`<tr><th>${esc(DISC_CURTO(d))}</th>${cols.map(k=>{ const v=nc[d+"|"+k]||0; return `<td style="background:${cor(v)};color:${v&&Math.sqrt(v/mx)>.55?"#fff":"var(--fg)"}" ${v?`data-tip="<b>${esc(d)}</b><br>${mkRot(k)}: ${v} NC"`:""}>${v||""}</td>`; }).join("")}</tr>`).join("")}
+    ${linha("<b>Total de NC</b>",k=>{ const v=ncMes(k); return `<td class="mh-tot">${v||""}</td>`; })}
+    ${sep}
+    ${linha("Itens verificados",k=>{ const v=ver[k]||0; return `<td style="background:${cinza(v,mxv)}" ${v?`data-tip="${mkRot(k)}: ${v} item(ns) verificado(s)${cf[k]?"":" (só NC listadas)"}"`:""}>${v?v+(cf[k]?"":"*"):""}</td>`; })}
+    ${linha("RNC / relatórios",k=>{ const v=rn[k]||0; return `<td style="background:${cinza(v,mxr)}" ${v?`data-tip="${mkRot(k)}: ${v} registro(s)"`:""}>${v||""}</td>`; })}
+    ${linha("% de NC",k=>{ const v=ver[k]||0, n=ncMes(k); return `<td class="mh-pct" ${v&&cf[k]?`data-tip="${mkRot(k)}: ${n} NC em ${v} item(ns)"`:""}>${v?(cf[k]?Math.round(n/v*100)+"%":"n/d"):""}</td>`; })}
+  </tbody></table></div>
+  ${cols.some(k=>ver[k]&&!cf[k])?`<p class="muted small">* Mês cujo registro histórico lista só as NC (itens conformes não extraídos): sem taxa de NC (n/d).</p>`:""}${semData?`<p class="muted small">${semData} RNC sem data no histórico não aparecem no mapa.</p>`:""}
+  <p class="muted small">Meses do calendário, pela data de cada RNC/relatório registrado. As linhas inferiores mostram onde a gerência concentrou verificação: mês com muito item verificado e pouca NC é frente controlada; mês sem verificação é janela sem cobertura.${oid?" M# = mês desde o início da obra (data de início a validar).":""}</p>`; };
 
 (async function iniciar(){ $("#logo").src=LOGO_DARK; rede(); await openDB(); S=(await kvGet("state2"))||estadoInicial(); if(!S.rfs){ S.rfs=[]; } S.seqAV=S.seqAV||1;
   migrar(); purgarModelo(); await carregarIndiceFotosHist(); lastJSON=snapJSON(); kvSet("state2",S); UI.oid=(S.obras[0]||{}).id||null; render(); })();
