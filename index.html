@@ -4988,18 +4988,19 @@ async function odToken(){
   }catch(_){ return null; }
 }
 const odCaminho=arr=>"/me/drive/root:/"+arr.map(x=>encodeURIComponent(odLimpa(x))).join("/");
-async function odEnviar(pasta,nome,blob){
+async function odEnviarX(pasta,nome,blob,opt){
   const tk=await odToken(); if(!tk){ const e=new Error("Sessão do OneDrive expirada: toque em Conectar."); e.cod="sessao"; throw e; }
   const base="https://graph.microsoft.com/v1.0"+odCaminho([...pasta])+"/"+encodeURIComponent(odLimpa(nome));
-  const H={Authorization:"Bearer "+tk};
-  if(blob.size<=3900000){ const r=await fetch(base+":/content?@microsoft.graph.conflictBehavior=rename",{method:"PUT",headers:{...H,"Content-Type":blob.type||"application/octet-stream"},body:blob});
-    if(!r.ok) throw new Error("OneDrive recusou o envio (HTTP "+r.status+")"); return (await r.json()).webUrl||""; }
-  const rs=await fetch(base+":/createUploadSession",{method:"POST",headers:{...H,"Content-Type":"application/json"},body:JSON.stringify({item:{"@microsoft.graph.conflictBehavior":"rename"}})});
+  const H={Authorization:"Bearer "+tk}; const cb=(opt&&opt.substituir)?"replace":"rename";
+  if(blob.size<=3900000){ const r=await fetch(base+":/content?@microsoft.graph.conflictBehavior="+cb,{method:"PUT",headers:{...H,"Content-Type":blob.type||"application/octet-stream"},body:blob});
+    if(!r.ok) throw new Error("OneDrive recusou o envio (HTTP "+r.status+")"); return await r.json(); }
+  const rs=await fetch(base+":/createUploadSession",{method:"POST",headers:{...H,"Content-Type":"application/json"},body:JSON.stringify({item:{"@microsoft.graph.conflictBehavior":cb}})});
   if(!rs.ok) throw new Error("OneDrive recusou o envio (HTTP "+rs.status+")"); const up=(await rs.json()).uploadUrl; const CH=3276800; let ini=0, fim=null;
   while(ini<blob.size){ const f=Math.min(ini+CH,blob.size); const r=await fetch(up,{method:"PUT",headers:{"Content-Range":`bytes ${ini}-${f-1}/${blob.size}`},body:blob.slice(ini,f)});
     if(!r.ok&&r.status!==202) throw new Error("Falha no envio em partes (HTTP "+r.status+")"); if(r.status!==202) fim=await r.json(); ini=f; }
-  return (fim&&fim.webUrl)||"";
+  return fim||{};
 }
+async function odEnviar(pasta,nome,blob,opt){ const j=await odEnviarX(pasta,nome,blob,opt); return (j&&j.webUrl)||""; }
 /* PDFs, Word e Excel: o botão Baixar envia para o OneDrive quando conectado */
 MSG_DL.onedrive="não foi possível enviar ao OneDrive (sem sinal ou sessão expirada). Toque em Conectar em “Dados deste aparelho” e tente de novo, ou use “Abrir pelo navegador”";
 { const _ts=tentarSalvar; tentarSalvar=async function(nome,blob){ if(!odAtivo()) return _ts(nome,blob);
@@ -5023,8 +5024,8 @@ async function odProcessar(){ if(odBusy||!odAtivo()||(typeof navigator!=="undefi
   try{ let F=odFila(); while(F.length){ const it=F[0]; const rec=await fotoGet(it.id);
       if(!rec||!rec.blob){ F=odFila().filter(x=>x.id!==it.id); odSet("cte_od_fila",F); continue; }
       try{ const nome=`${odLimpa(it.cod||"OBRA")}_${it.dia.replace(/-/g,"")}_${it.hora}_${String(it.id).slice(-5)}.jpg`;
-        await odEnviar([...OD.pastaFotos,it.obra,it.dia],nome,rec.blob.type?rec.blob:new Blob([rec.blob],{type:"image/jpeg"}));
-        const ok=odOk(); ok[it.id]=1; odSet("cte_od_ok",ok); F=odFila().filter(x=>x.id!==it.id); odSet("cte_od_fila",F);
+        const jj=await odEnviarX([...OD.pastaFotos,it.obra,it.dia],nome,rec.blob.type?rec.blob:new Blob([rec.blob],{type:"image/jpeg"}));
+        const ok=odOk(); ok[it.id]={i:(jj&&jj.id)||1,em:rec.em||0}; odSet("cte_od_ok",ok); F=odFila().filter(x=>x.id!==it.id); odSet("cte_od_fila",F);
       }catch(e){ console.error("foto→OneDrive",e); break; } }
   } finally { odBusy=false; if(document.querySelector("#od-st")) odAtualizaSt(); } }
 window.addEventListener("online",()=>setTimeout(odProcessar,1000));
@@ -5080,6 +5081,80 @@ odTratarRetorno().then(()=>setTimeout(odProcessar,4000));
   const _hp=histPainel; histPainel=function(o){ return tr(_hp(o),t=>KH[t]?`data-act="d12rnc" data-o="${esc(o.id)}" data-k="${KH[t]}"`:""); }; }
 /* "Falta foto deste item" abre a câmera */
 document.addEventListener("click",e=>{ const s=e.target.closest(".ck-extra .row .txt-nc"); if(!s||!/Falta foto/.test(s.textContent)) return; const inp=s.closest(".row").querySelector('input[type=file]'); if(inp){ e.stopImmediatePropagation(); inp.click(); } },true);
+
+/* ================= ONDA 20: sincronização entre aparelhos pelo OneDrive (registros + fotos) =================
+   Cada aparelho grava só o seu arquivo (registros_<nome>_<aparelho>.json) e lê os dos outros; a mescla usa a regra
+   já existente (vale o registro alterado por último). Nada é apagado na rede; só se cria/substitui o arquivo do próprio aparelho. */
+const SY={pasta:["RETROFIT","00 - Padrões","Sincronizacao App Vistorias Cte"],pastaFotos:["RETROFIT","00 - Padrões","Sincronizacao App Vistorias Cte","fotos"]};
+const syDev=()=>{ let d=""; try{ d=localStorage.getItem("cte_od_dev")||""; if(!d){ d=Math.random().toString(36).slice(2,8); localStorage.setItem("cte_od_dev",d); } }catch(_){ d="sem"+Date.now().toString(36).slice(-3); } return d; };
+const syNome=()=>{ const t=odTok()||{}; return odLimpa(((t.upn||"").split("@")[0])||S.engNome||"aparelho").replace(/\s+/g,"_"); };
+const syArq=()=>`registros_${syNome()}_${syDev()}.json`;
+const syIdx=()=>odLS("cte_od_idx",{});
+let syBusy=false, syT=null, syUlt=0, syMsg="";
+async function syGraph(url,tk,txt){ const r=await fetch(url,{headers:{Authorization:"Bearer "+tk}}); if(!r.ok){ const e=new Error("HTTP "+r.status); e.status=r.status; throw e; } return txt?r.text():r.json(); }
+async function syBaixar(id,tk){ /* conteúdo de um item do OneDrive (Graph redireciona para o endereço de download) */
+  try{ const r=await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${id}/content`,{headers:{Authorization:"Bearer "+tk}}); if(r.ok) return await r.blob(); }catch(_){}
+  const j=await syGraph(`https://graph.microsoft.com/v1.0/me/drive/items/${id}?$select=id,@microsoft.graph.downloadUrl`,tk);
+  const u=j["@microsoft.graph.downloadUrl"]; if(!u) throw new Error("sem endereço de download"); const r=await fetch(u); if(!r.ok) throw new Error("HTTP "+r.status); return await r.blob(); }
+function syRehash(){ let H={}; try{ H=JSON.parse(localStorage.getItem("cte_hashes")||"{}"); }catch(_){}
+  for(const r of [...(S.vistorias||[]),...(S.rfs||[]),...(S.cls||[])]){ if(!r||r.modelo||!r.id) continue; const c={...r}; delete c.mod; H[r.id]=hashStr(JSON.stringify(c)); }
+  try{ localStorage.setItem("cte_hashes",JSON.stringify(H)); }catch(_){} }
+function syIdsUsados(){ const s=new Set(); const w=o=>{ if(typeof o==="string") s.add(o); else if(Array.isArray(o)) o.forEach(w); else if(o&&typeof o==="object") for(const k in o) w(o[k]); }; w(S.vistorias); w(S.rfs); w(S.cls); return s; }
+async function syTemFoto(id){ try{ if(idb){ const k=await tx("fotos","readonly",s=>s.getKey(id)); if(k!==undefined&&k!==null) return true; return false; } return mem.fotos.has(id); }catch(_){ return !!(await fotoGet(id)); } }
+async function syFaltam(){ const idx=syIdx(), usados=syIdsUsados(), L=[]; for(const id of Object.keys(idx)){ if(!usados.has(id)) continue; if(!(await syTemFoto(id))) L.push(id); } return L; }
+function syDim(blob){ return new Promise(res=>{ const u=URL.createObjectURL(blob), im=new Image(); im.onload=()=>{ res({w:im.naturalWidth,h:im.naturalHeight}); URL.revokeObjectURL(u); }; im.onerror=()=>{ res({w:0,h:0}); URL.revokeObjectURL(u); }; im.src=u; }); }
+async function syBuscarFotos(max){ const tk=await odToken(); if(!tk) return 0; const idx=syIdx(); const L=(await syFaltam()).slice(0,max||20); let n=0;
+  for(const id of L){ try{ const b=await syBaixar(idx[id].i,tk); const d=await syDim(b); await window.odFotoSetRaw(id,{blob:b,w:d.w,h:d.h,em:idx[id].em||Date.now(),sync:1}); const ok=odOk(); ok[id]={i:idx[id].i,em:idx[id].em||0}; odSet("cte_od_ok",ok); n++; }catch(_){} }
+  return n; }
+/* fotos antigas (enviadas antes da sincronização) não têm endereço registrado: sobem para a pasta de sincronização */
+async function syIndexarAntigas(){ const ok=odOk(); let n=0; for(const id of Object.keys(ok)){ if(typeof ok[id]==="object"&&ok[id].i) continue; if(String(id).startsWith("h:")) continue; const rec=await fotoGet(id); if(!rec||!rec.blob) continue;
+    try{ const j=await odEnviarX(SY.pastaFotos,id.replace(/[^\w.-]/g,"_")+".jpg",rec.blob.type?rec.blob:new Blob([rec.blob],{type:"image/jpeg"}),{substituir:true}); ok[id]={i:j.id||1,em:rec.em||0}; n++; }catch(e){ if(e.cod==="sessao") break; } }
+  odSet("cte_od_ok",ok); return n; }
+async function sySincronizar(manual){
+  if(syBusy||!odAtivo()) return null; if(typeof navigator!=="undefined"&&navigator.onLine===false){ syMsg="Sem sinal."; return null; }
+  syBusy=true; const R={baixados:0,mesclados:0,enviou:false,fotos:0,erro:""};
+  try{
+    const tk=await odToken(); if(!tk) throw new Error("Sessão do OneDrive expirada: toque em Conectar.");
+    carimbarMods();
+    /* 1. ler os arquivos dos outros aparelhos */
+    let lista=[]; try{ const j=await syGraph("https://graph.microsoft.com/v1.0"+odCaminho(SY.pasta)+":/children?$select=id,name,lastModifiedDateTime,size&$top=200",tk); lista=j.value||[]; }catch(e){ if(e.status!==404) throw e; }
+    const vis=odLS("cte_od_sync_vis",{}); const meu=syArq(); let mudou=false; const idx=syIdx();
+    for(const f of lista){ if(!/^registros_.*\.json$/.test(f.name)||f.name===meu||/_(\w+)\.json$/.exec(f.name)?.[1]===syDev()) continue; if(vis[f.name]===f.lastModifiedDateTime) continue;
+      try{ const d=JSON.parse(await (await syBaixar(f.id,tk)).text()); if(d.tipo!=="cte-vistoria-sync"||!d.estado) continue;
+        for(const [k,v] of Object.entries(d.fotosIdx||{})) if(v&&v.i&&v.i!==1) idx[k]=v;
+        const cont={obras:0,vistorias:0,rfs:0,usuarios:0,fotos:0,atualizados:0}; await mesclarBackup({estado:d.estado,fotos:{}},cont);
+        const t=cont.obras+cont.vistorias+cont.rfs+cont.usuarios+cont.atualizados+(cont.cls||0)+(cont.clModelos||0); if(t) mudou=true; R.mesclados+=t; R.baixados++; vis[f.name]=f.lastModifiedDateTime; }catch(_){ }
+    }
+    odSet("cte_od_idx",idx); odSet("cte_od_sync_vis",vis);
+    if(mudou){ try{ acertarNumeracao(); }catch(_){} syRehash(); save(); try{ render(); }catch(_){} }
+    /* 2. publicar o próprio arquivo, se mudou */
+    const est=JSON.parse(snapJSON()); delete est.role; const fi={}; const ok=odOk(); for(const [k,v] of Object.entries(ok)) if(v&&typeof v==="object"&&v.i&&v.i!==1) fi[k]=v;
+    const corpo=JSON.stringify({tipo:"cte-vistoria-sync",versao:1,geradoEm:new Date().toISOString(),dev:syDev(),autor:(odTok()||{}).upn||"",estado:est,fotosIdx:fi});
+    const h=hashStr(corpo.replace(/"geradoEm":"[^"]*",/,""));
+    if(odLS("cte_od_sync_h","")!==h||manual&&!lista.some(f=>f.name===meu)){ await odEnviarX(SY.pasta,meu,new Blob([corpo],{type:"application/json"}),{substituir:true}); odSet("cte_od_sync_h",h); R.enviou=true; }
+    /* 3. fotos que faltam neste aparelho */
+    R.fotos=await syBuscarFotos(manual?60:20);
+    syUlt=Date.now(); try{ localStorage.setItem("cte_od_sync_ult",String(syUlt)); }catch(_){}
+    syMsg=`Última sincronização: ${new Date(syUlt).toLocaleString("pt-BR")}.`;
+  }catch(e){ R.erro=e.message||String(e); syMsg="Falha na sincronização: "+R.erro; }
+  syBusy=false; syAtualizaSt(); return R; }
+function syAgenda(ms){ if(!odAtivo()) return; clearTimeout(syT); syT=setTimeout(()=>sySincronizar(false),ms||30000); }
+{ const _sv=save; save=function(){ const r=_sv.apply(this,arguments); try{ syAgenda(30000); }catch(_){} return r; }; }
+document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible"&&odAtivo()&&Date.now()-syUlt>90000) sySincronizar(false); });
+window.addEventListener("online",()=>syAgenda(3000));
+async function syAtualizaSt(){ const el=document.getElementById("sy-st"); if(!el) return; let f=0; try{ f=(await syFaltam()).length; }catch(_){}
+  el.innerHTML=`${esc(syMsg||"Ainda não sincronizado neste aparelho.")}<br>Aparelho: <b>${esc(syDev())}</b> · fotos de outros aparelhos que faltam aqui: <b>${f}</b>.`; const b=document.getElementById("sy-fb"); if(b) b.textContent=`Baixar fotos que faltam (${f})`; }
+{ const _sd2=sheetDados; sheetDados=function(){ _sd2(); const p=document.getElementById("od-st"); if(!p||!odAtivo()) return;
+    p.insertAdjacentHTML("afterend",`<h3>Sincronização entre aparelhos</h3><p class="small">Grava as suas alterações no OneDrive e traz as feitas em outros aparelhos (celular e computador), com as fotos. Pasta: <b>… › Sincronizacao App Vistorias Cte</b>.</p><p class="small" id="sy-st"></p>
+      <button class="btn primary block" data-sy="sync">Sincronizar agora</button><button class="btn block" id="sy-fb" data-sy="fotos">Baixar fotos que faltam</button><button class="btn block" data-sy="idx">Registrar fotos antigas para os outros aparelhos</button>`);
+    syAtualizaSt(); }; }
+document.addEventListener("click",async e=>{ const b=e.target.closest("#sheet [data-sy]"); if(!b) return; e.stopImmediatePropagation(); const a=b.dataset.sy; b.disabled=true;
+  if(a==="sync"){ syMsg="Sincronizando…"; syAtualizaSt(); const r=await sySincronizar(true); if(r){ toast(r.erro?("Não sincronizou: "+r.erro):`Sincronizado. ${r.baixados} arquivo(s) lido(s), ${r.mesclados} registro(s) atualizado(s), ${r.fotos} foto(s) baixada(s).`); } }
+  else if(a==="fotos"){ const n=await syBuscarFotos(80); toast(n?`${n} foto(s) baixadas.`:"Nenhuma foto para baixar."); try{ render(); }catch(_){} }
+  else if(a==="idx"){ const n=await syIndexarAntigas(); toast(n?`${n} foto(s) registradas para sincronização.`:"Nada a registrar."); }
+  b.disabled=false; syAtualizaSt(); },true);
+try{ syUlt=+localStorage.getItem("cte_od_sync_ult")||0; }catch(_){}
+setTimeout(()=>{ if(odAtivo()) sySincronizar(false); },7000);
 
 (async function iniciar(){ $("#logo").src=LOGO_DARK; rede(); await openDB(); S=(await kvGet("state2"))||estadoInicial(); if(!S.rfs){ S.rfs=[]; } S.seqAV=S.seqAV||1;
   migrar(); purgarModelo(); await carregarIndiceFotosHist(); lastJSON=snapJSON(); kvSet("state2",S); UI.oid=(S.obras[0]||{}).id||null; render(); })();
