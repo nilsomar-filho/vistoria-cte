@@ -767,6 +767,8 @@ body.rep .fab-mais{bottom:calc(156px + env(safe-area-inset-bottom,0px))!importan
 .flash12{animation:fl12 2.4s ease-out}
 @keyframes fl12{0%,60%{box-shadow:0 0 0 3px #009cd7;background:#e3f1f8}100%{box-shadow:0 0 0 0 transparent}}
 .rr-card .cl-chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+button.kpi-b{border:0;font:inherit;color:inherit;cursor:pointer;width:100%;text-align:center}button.kpi-b:active{filter:brightness(.95)}
+.ck-extra .row .txt-nc{cursor:pointer;text-decoration:underline}
 </style>
 
 <header class="top">
@@ -4223,7 +4225,8 @@ function vRel11(){
   return `<div><p class="eyebrow">CTE Gerenciamento · Análise da obra</p><h1>Relatório por disciplina</h1><p class="muted small">RNC e checklists juntos, por disciplina. Disciplina definida item a item; pode ser alterada a qualquer momento.</p></div>
   <section class="card rl-f"><label class="f"><span>Obra</span><select id="r11-o">${obras.map(x=>`<option value="${esc(x.id)}" ${x.id===f.oid?"selected":""}>${esc(x.nome)}</option>`).join("")}</select></label>
    <label class="f"><span>Origem</span><select id="r11-s"><option value="todos">RNC e checklists</option><option value="RNC" ${f.orig==="RNC"?"selected":""}>Somente RNC</option><option value="CL" ${f.orig==="CL"?"selected":""}>Todos os checklists</option>${cls.map(c=>`<option value="CL:${esc(c.id)}" ${f.orig==="CL:"+c.id?"selected":""}>${esc(c.numero)} · ${esc(clTxt(c.titulo,46))}</option>`).join("")}</select></label>
-   <label class="f"><span>Local</span><select id="r11-g"><option value="">Todos</option>${grupos.map(g=>`<option ${f.grupo===g?"selected":""}>${esc(g)}</option>`).join("")}</select></label></section>
+   <label class="f"><span>Local</span><select id="r11-g"><option value="">Todos</option>${grupos.map(g=>`<option ${f.grupo===g?"selected":""}>${esc(g)}</option>`).join("")}</select></label>
+   <label class="f"><span>PDF com fotos: itens incluídos</span><select id="r11-i"><option value="todos">Todos os itens (abertos e pendentes primeiro)</option><option value="sel" ${f.inc==="sel"?"selected":""}>Somente a seleção atual (situação ou disciplina tocada acima)</option></select></label></section>
   <section class="card cl-ind"><div class="cl-kp">${kp(T.t,"itens","","todos")}${kp(T.Aberto,"em aberto","nc","Aberto")}${kp(T.Fechado,"fechados","ok","Fechado")}${kp(T.Conforme,"conformes","ok","Conforme")}${kp(T.sv,"sem verificação / NV","","sv")}${kp(T.fp,"foto pendente","","fp")}</div>
    <p class="muted small">${sem?`<b class="txt-nc">${sem} item(ns) sem disciplina.</b> `:""}${T.sug?`${T.sug} disciplina(s) sugerida(s) automaticamente: confirme item a item. `:""}Fechado = corrigido e verificado (checklist) ou NC encerrada / RNC corrigida.</p></section>
   <section class="card"><h2>Por disciplina</h2><div class="rl-leg"><span class="ab">Aberto</span><span class="fe">Fechado</span><span class="co">Conforme</span><span class="sv">Sem verif./NV</span></div><div class="rl-tab">${linhas||'<p class="muted">Nenhum item nesta seleção.</p>'}</div></section>${det}
@@ -4242,7 +4245,7 @@ document.addEventListener("click",e=>{ if(e.target.closest("#sheet")) return; co
   else if(act==="r11pdff"){ e.stopImmediatePropagation(); relPDF(true); }
   else if(act==="r11xls"){ e.stopImmediatePropagation(); relXLS(); } },true);
 document.addEventListener("change",e=>{ const t=e.target; if(!t.id||!t.id.startsWith("r11-")||UI.view!=="rel11") return; e.stopImmediatePropagation();
-  if(t.id==="r11-o") UI.r11={oid:t.value,orig:"todos",grupo:"",disc:null}; else if(t.id==="r11-s"){ UI.r11.orig=t.value; UI.r11.disc=null; } else if(t.id==="r11-g"){ UI.r11.grupo=t.value; UI.r11.disc=null; }
+  if(t.id==="r11-o") UI.r11={oid:t.value,orig:"todos",grupo:"",disc:null}; else if(t.id==="r11-s"){ UI.r11.orig=t.value; UI.r11.disc=null; } else if(t.id==="r11-g"){ UI.r11.grupo=t.value; UI.r11.disc=null; } else if(t.id==="r11-i"){ UI.r11.inc=t.value; }
   render(); },true);
 /* acessos: menu lateral e bloco da obra */
 { const _rn=renderNav; renderNav=function(){ _rn(); const n=document.getElementById("nav"); if(!n||n.querySelector('[data-act="rel11"]')) return;
@@ -4916,8 +4919,8 @@ async function relFotosDesenhar(d,o,num,chunk,rot){
 }
 /* gera todas as partes: abertos e pendentes primeiro; fechados e conformes ao final */
 async function relFotosPartes(d1,L,A,f,o,num){
-  const sit=f.sit||"todos"; const ordem=A.map(a=>a.disc);
-  const D=L.filter(x=>(f.disc==null||(x.disc||"")===f.disc)&&relSitOk(x,sit)).sort((a,b)=>relRank(a)-relRank(b)||ordem.indexOf(a.disc)-ordem.indexOf(b.disc)||String(a.doc).localeCompare(String(b.doc),"pt",{numeric:true}));
+  const sel=f.inc==="sel"; const sit=sel?(f.sit||"todos"):"todos"; const ordem=A.map(a=>a.disc);
+  const D=L.filter(x=>(!sel||f.disc==null||(x.disc||"")===f.disc)&&relSitOk(x,sit)).sort((a,b)=>relRank(a)-relRank(b)||ordem.indexOf(a.disc)-ordem.indexOf(b.disc)||String(a.doc).localeCompare(String(b.doc),"pt",{numeric:true}));
   const P=Math.max(1,Math.ceil(D.length/REL_PARTE)); const W=297,H=210,m=10; const partes=[];
   const fim=async(d,p)=>{ const tot=d.pages.length; d.pages.forEach((ops,k)=>{ d.ops=ops; d.text("CTE Gerenciamento · Relatório de acompanhamento; não constitui aceite de serviços.",m,H-5,6.5,false,GR); d.text(`${P>1?`parte ${p} de ${P} · `:""}página ${k+1} de ${tot}`,W-m,H-5,7,false,GR,"r"); });
     const nome=P>1?`${num}-parte-${String(p).padStart(2,"0")}-de-${String(P).padStart(2,"0")}`:num; const blob=await finalizarPDF(d,[],nome); partes.push({nome:nome+".pdf",blob,n:0}); };
@@ -4925,7 +4928,7 @@ async function relFotosPartes(d1,L,A,f,o,num){
     if(!D.length){ d1.addPage(); relCabF(d1,o,num); d1.text("Nenhum item na seleção.",m,30,10,true,GR); await fim(d1,1); }
     for(let p=1;p<=D.length/REL_PARTE+1&&(p-1)*REL_PARTE<D.length;p++){
       progresso(`Gerando parte ${p} de ${P}…`); await new Promise(r=>setTimeout(r,60));
-      const chunk=D.slice((p-1)*REL_PARTE,p*REL_PARTE); const d=p===1?d1:new PDF(); const rot=P>1?`parte ${p} de ${P}`:`${D.length} itens`;
+      const chunk=D.slice((p-1)*REL_PARTE,p*REL_PARTE); const d=p===1?d1:new PDF(); const rot=`${P>1?`parte ${p} de ${P} · `:""}itens ${(p-1)*REL_PARTE+1} a ${(p-1)*REL_PARTE+chunk.length} de ${D.length}`;
       await relFotosDesenhar(d,o,num,chunk,rot); await fim(d,p); partes[partes.length-1].n=chunk.length; }
     if($("#sheet .prog")) fechar();
     if(partes.length===1){ await entregarArquivo(partes[0].nome,partes[0].blob); return; }
@@ -4934,12 +4937,12 @@ async function relFotosPartes(d1,L,A,f,o,num){
 function sheetPartes(partes,total){
   const mb=b=>(b.size/1048576).toFixed(1), soma=partes.reduce((a,p)=>a+p.blob.size,0);
   abrirSheet(`<h2>PDF com fotos · ${partes.length} partes</h2><p class="muted small">${total} itens, em ${partes.length} arquivos (${mb({size:soma})} MB no total). Em aberto e pendentes primeiro; fechados e conformes ao final. Cada arquivo cabe com folga no limite do WhatsApp (2 GB).</p>
-    <button class="btn primary block" data-dlall="1">Baixar todas as partes</button>
-    ${partes.map((p,i)=>`<div class="row between" style="gap:8px;margin:8px 0"><span><b>Parte ${i+1}</b> <span class="muted small">${p.n} itens · ${mb(p.blob)} MB</span></span><button class="btn" data-dlp="${i}">Baixar</button></div>`).join("")}
+    <button class="btn primary block" data-dlall="1">${odAtivo()?"Salvar todas as partes no OneDrive":"Baixar todas as partes"}</button>
+    ${partes.map((p,i)=>`<div class="row between" style="gap:8px;margin:8px 0"><span><b>Parte ${i+1}</b> <span class="muted small">${p.n} itens · ${mb(p.blob)} MB</span></span><button class="btn" data-dlp="${i}">${odAtivo()?"Salvar no OneDrive":"Baixar"}</button></div>`).join("")}
     <p class="muted small">Se o navegador pedir, permita baixar vários arquivos. Os arquivos vão para a pasta de downloads do aparelho.</p><button class="btn block" data-x="1">Fechar</button>`,
     async e=>{ const t=e.target.closest("[data-dlp],[data-dlall]"); if(!t) return; t.disabled=true;
       const lista=t.dataset.dlall?partes.map((p,i)=>i):[+t.dataset.dlp];
-      for(const i of lista){ const r=await tentarSalvar(partes[i].nome,partes[i].blob); if(!r.ok){ toast(r.cod==="declined"?"Download cancelado.":"Não foi possível baixar a parte "+(i+1)+"."); break; } await new Promise(z=>setTimeout(z,400)); }
+      for(const i of lista){ const r=await tentarSalvar(partes[i].nome,partes[i].blob); if(!r.ok){ toast(r.cod==="declined"?"Download cancelado.":"Não foi possível salvar a parte "+(i+1)+(r.msg?": "+r.msg:".")); break; } const bi=document.querySelector(`#sheet [data-dlp="${i}"]`); if(bi){ bi.textContent="Salvo ✓"; } await new Promise(z=>setTimeout(z,400)); }
       t.disabled=false; });
 }
 
@@ -5055,6 +5058,28 @@ document.addEventListener("click",async e=>{ const b=e.target.closest("#sheet [d
   else if(a==="var"){ b.disabled=true; const n=await odVarrer(); toast(n?`${n} foto(s) colocadas na fila.`:"Nenhuma foto nova para enviar."); odProcessar(); b.disabled=false; odAtualizaSt(); }
   else if(a==="lib"){ menuSheet("Liberar espaço do aparelho?",[["Sim, reduzir as fotos já enviadas",async()=>{ progresso("Reduzindo fotos…"); const r=await odLiberar(); fechar(); aviso("Espaço liberado",`${r.k} foto(s) reduzidas (cerca de ${r.mb} MB). Os originais continuam no OneDrive; os relatórios passam a usar a versão reduzida.`); }]]); } },true);
 odTratarRetorno().then(()=>setTimeout(odProcessar,4000));
+
+/* ================= ONDA 19: todo arquivo baixado vai para o OneDrive; números do painel tocáveis; "Falta foto" tocável ================= */
+/* PDF/Word/Excel: com OneDrive conectado, sem atalho para salvar no aparelho (só aparece se o envio falhar) */
+{ const _ts2=tentarSalvar; tentarSalvar=async function(nome,blob){ const r=await _ts2(nome,blob);
+    if(!r.ok&&odAtivo()&&r.cod==="onedrive"){ const sh=document.querySelector("#sheet .sheet"); if(sh&&!sh.querySelector("[data-fb]")){ const u=URL.createObjectURL(blob);
+        const a=document.createElement("a"); a.dataset.fb="1"; a.className="btn block"; a.href=u; a.download=nome; a.target="_blank"; a.rel="noopener"; a.textContent="Alternativa: abrir pelo navegador (não vai para o OneDrive)"; (sh.querySelector("#dl-err")||sh.lastElementChild).insertAdjacentElement("afterend",a); setTimeout(()=>URL.revokeObjectURL(u),600000); } }
+    return r; }; }
+{ const _sa3=sheetArquivo; sheetArquivo=function(nome,blob,r){ _sa3(nome,blob,r); if(!odAtivo()) return; const sh=document.querySelector("#sheet .sheet"); if(!sh) return;
+    sh.querySelectorAll('a[download]').forEach(a=>a.remove()); [...sh.querySelectorAll("p.muted.small")].filter(p=>/Se o botão Baixar/.test(p.textContent)).forEach(p=>p.remove()); const b=sh.querySelector("[data-dl]"); if(b) b.textContent=b.textContent.replace(/^Baixar/,"Salvar no OneDrive"); }; }
+/* backups e arquivos de equipe (.json) também vão para o OneDrive */
+{ const _ej=entregarJSON; entregarJSON=function(nome,blob,titulo,dica){ _ej(nome,blob,titulo,dica); if(!odAtivo()) return; const sh=document.querySelector("#sheet .sheet"); if(!sh) return;
+    sh.querySelectorAll("[data-sh], a[download]").forEach(x=>x.remove());
+    const x=sh.querySelector("[data-x]"); if(!x) return; const b=document.createElement("button"); b.className="btn primary block"; b.textContent="Salvar no OneDrive"; x.insertAdjacentElement("beforebegin",b);
+    b.addEventListener("click",async ev=>{ ev.stopImmediatePropagation(); b.disabled=true; b.textContent="Enviando…"; const r=await tentarSalvar(nome,blob); if(r.ok){ fechar(); toast(nome+" salvo no OneDrive."); } else { b.disabled=false; b.textContent="Tentar de novo (OneDrive)"; toast("Não foi possível enviar: "+(r.msg||r.cod)); } },true); }; }
+/* números do painel da obra e das RNC anteriores ao app abrem a lista */
+{ const KP={"NC abertas":["rel11","RNC","Aberto"],"Correções a verificar":["rel11","RNC","Aberto"],"NC encerradas":["rel11","RNC","Fechado"],"PV em aberto":["rel11","RNC","Aberto"],"Não OK a validar":["rel11","RNC","Aberto"],"Aguardando aprovação":["d12aprov"]};
+  const KH={"Registradas":"emit","Pendentes":"aberta","Situação a verificar":"aberta","Corrigidas":"corr","Canceladas":"canc"};
+  const tr=(h,fn)=>h.replace(/<div class="kpi ([^"]*)"><b>([^<]*)<\/b><span>([^<]*)<\/span><\/div>/g,(m,c,n,t)=>{ const at=fn(t); return at?`<button type="button" class="kpi kpi-b ${c}" ${at}><b>${n}</b><span>${t}</span></button>`:m; });
+  const _ph=painelHTML; painelHTML=function(o){ return tr(_ph(o),t=>{ const k=KP[t]; if(!k) return ""; return k[0]==="rel11"?`data-act="rel11" data-o="${esc(o.id)}" data-s="${k[1]}" data-k="${k[2]}"`:`data-act="d12aprov" data-o="${esc(o.id)}"`; }); };
+  const _hp=histPainel; histPainel=function(o){ return tr(_hp(o),t=>KH[t]?`data-act="d12rnc" data-o="${esc(o.id)}" data-k="${KH[t]}"`:""); }; }
+/* "Falta foto deste item" abre a câmera */
+document.addEventListener("click",e=>{ const s=e.target.closest(".ck-extra .row .txt-nc"); if(!s||!/Falta foto/.test(s.textContent)) return; const inp=s.closest(".row").querySelector('input[type=file]'); if(inp){ e.stopImmediatePropagation(); inp.click(); } },true);
 
 (async function iniciar(){ $("#logo").src=LOGO_DARK; rede(); await openDB(); S=(await kvGet("state2"))||estadoInicial(); if(!S.rfs){ S.rfs=[]; } S.seqAV=S.seqAV||1;
   migrar(); purgarModelo(); await carregarIndiceFotosHist(); lastJSON=snapJSON(); kvSet("state2",S); UI.oid=(S.obras[0]||{}).id||null; render(); })();
