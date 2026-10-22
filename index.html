@@ -769,6 +769,7 @@ body.rep .fab-mais{bottom:calc(156px + env(safe-area-inset-bottom,0px))!importan
 .rr-card .cl-chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
 button.kpi-b{border:0;font:inherit;color:inherit;cursor:pointer;width:100%;text-align:center}button.kpi-b:active{filter:brightness(.95)}
 .ck-extra .row .txt-nc{cursor:pointer;text-decoration:underline}
+.vcard[data-act="abrir"],.vcard[data-act="abrirrf"],.rr-card[data-act="clabrir"]{ -webkit-touch-callout:none; -webkit-user-select:none; user-select:none; }
 </style>
 
 <header class="top">
@@ -5157,7 +5158,7 @@ try{ syUlt=+localStorage.getItem("cte_od_sync_ult")||0; }catch(_){}
 setTimeout(()=>{ if(odAtivo()) sySincronizar(false); },7000);
 
 /* ================= ONDA 21: "Versões e arquivos em uso" na tela Dados deste aparelho ================= */
-const APP_VER="v25";
+const APP_VER="v26";
 const vaFmt=t=>{ try{ return new Date(t).toLocaleString("pt-BR",{dateStyle:"short",timeStyle:"short"}); }catch(_){ return "—"; } };
 const vaGet=k=>odLS(k,null);
 { const _ej=entregarJSON; entregarJSON=function(nome){ try{ if(/^registros_/.test(nome)) odSet("cte_va_exp",{n:nome,t:Date.now()}); }catch(_){} return _ej.apply(this,arguments); }; }
@@ -5172,6 +5173,33 @@ const vaGet=k=>odLS(k,null);
       <b>Último arquivo importado/consolidado:</b> ${im?esc(im.n)+" · "+esc(vaFmt(im.t)):"nenhum"}<br>
       <b>Sincronização OneDrive:</b> ${su?"última em "+esc(vaFmt(su))+" · arquivo deste aparelho: "+esc(syArq()):(odAtivo()?"ainda não sincronizado":"OneDrive não conectado")}
       </div><p class="muted small">Com o OneDrive conectado, a versão válida dos registros é a mais recente na pasta “Sincronizacao App Vistorias Cte”; não é preciso importar arquivos à mão.</p>`); }; }
+
+/* ================= ONDA 22: tocar e segurar em RNC, relatório ou checklist abre a opção de excluir ================= */
+/* A exclusão fica registrada em S.excl (id → data) para não "voltar" quando outro aparelho sincronizar. */
+function lpAlvo(el){ const id=el.dataset.v, a=el.dataset.act;
+  if(a==="abrir"){ const v=(S.vistorias||[]).find(x=>x.id===id); if(!v||v.modelo) return null; return {tipo:"RNC",id,nome:`a RNC ${numDoc(v)}${v.amb?" ("+v.amb+")":""}`,ok:isCoord(),ap:v.aprov&&v.aprov.st==="aprovado",lista:"vistorias"}; }
+  if(a==="abrirrf"){ const r=(S.rfs||[]).find(x=>x.id===id); if(!r||r.modelo) return null; return {tipo:"relatório",id,nome:`o relatório ${numRF(r)}`,ok:isCoord(),ap:r.aprov&&r.aprov.st==="aprovado",lista:"rfs"}; }
+  if(a==="clabrir"){ const c=(S.cls||[]).find(x=>x.id===id); if(!c) return null; return {tipo:"checklist",id,nome:`o checklist ${c.numero}${c.titulo?" · "+c.titulo:""}`,ok:isEngOuCoord(),ap:false,lista:"cls"}; }
+  return null; }
+function lpExcluir(t){ S.excl=S.excl||{}; S.excl[t.id]=Date.now(); S[t.lista]=(S[t.lista]||[]).filter(x=>x.id!==t.id);
+  if(UI.vid===t.id||UI.rid===t.id||UI.clid===t.id){ UI.view="obra"; }
+  save(); render(); toast(`${t.tipo[0].toUpperCase()+t.tipo.slice(1)} excluído. Use Desfazer (no topo) para recuperar.`); }
+function lpMenu(el){ const t=lpAlvo(el); if(!t) return false;
+  if(!t.ok){ toast(t.tipo==="checklist"?"Somente engenheiro ou coordenador pode excluir.":"Somente o coordenador pode excluir."); return true; }
+  menuSheet(`Excluir ${t.nome}?${t.ap?" Está APROVADO.":""}`,[["Sim, excluir",()=>lpExcluir(t),true]]); return true; }
+let lpT=null, lpX=0, lpY=0, lpUlt=0;
+const LP_SEL='[data-act="abrir"]:not(tr),[data-act="abrirrf"],[data-act="clabrir"]';
+document.addEventListener("pointerdown",e=>{ if(e.button>0) return; const el=e.target.closest&&e.target.closest(LP_SEL); if(!el||el.closest("#sheet")) return;
+  lpX=e.clientX; lpY=e.clientY; clearTimeout(lpT); lpT=setTimeout(()=>{ lpT=null; if(lpMenu(el)){ lpUlt=Date.now(); try{ navigator.vibrate&&navigator.vibrate(30); }catch(_){} } },600); },true);
+for(const ev of ["pointerup","pointercancel","pointerleave"]) document.addEventListener(ev,()=>{ clearTimeout(lpT); lpT=null; },true);
+document.addEventListener("pointermove",e=>{ if(lpT&&(Math.abs(e.clientX-lpX)>10||Math.abs(e.clientY-lpY)>10)){ clearTimeout(lpT); lpT=null; } },true);
+document.addEventListener("scroll",()=>{ clearTimeout(lpT); lpT=null; },true);
+window.addEventListener("click",e=>{ if(Date.now()-lpUlt<900){ e.stopImmediatePropagation(); e.preventDefault(); lpUlt=0; } },true);
+document.addEventListener("contextmenu",e=>{ const el=e.target.closest&&e.target.closest(LP_SEL); if(el&&!el.closest("#sheet")&&lpAlvo(el)) e.preventDefault(); },true);
+/* sincronização: respeitar exclusões */
+{ const _mb=mesclarBackup; mesclarBackup=async function(d){ const e=(d&&d.estado)||{};
+    S.excl=S.excl||{}; for(const [k,v] of Object.entries(e.excl||{})) if(!S.excl[k]||v>S.excl[k]) S.excl[k]=v;
+    const r=await _mb.apply(this,arguments); const x=S.excl; for(const l of ["vistorias","rfs","cls"]) if(Array.isArray(S[l])) S[l]=S[l].filter(i=>!x[i.id]); return r; }; }
 
 (async function iniciar(){ $("#logo").src=LOGO_DARK; rede(); await openDB(); S=(await kvGet("state2"))||estadoInicial(); if(!S.rfs){ S.rfs=[]; } S.seqAV=S.seqAV||1;
   migrar(); purgarModelo(); await carregarIndiceFotosHist(); lastJSON=snapJSON(); kvSet("state2",S); UI.oid=(S.obras[0]||{}).id||null; render(); })();
