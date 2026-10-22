@@ -4228,7 +4228,7 @@ function vRel11(){
    <p class="muted small">${sem?`<b class="txt-nc">${sem} item(ns) sem disciplina.</b> `:""}${T.sug?`${T.sug} disciplina(s) sugerida(s) automaticamente: confirme item a item. `:""}Fechado = corrigido e verificado (checklist) ou NC encerrada / RNC corrigida.</p></section>
   <section class="card"><h2>Por disciplina</h2><div class="rl-leg"><span class="ab">Aberto</span><span class="fe">Fechado</span><span class="co">Conforme</span><span class="sv">Sem verif./NV</span></div><div class="rl-tab">${linhas||'<p class="muted">Nenhum item nesta seleção.</p>'}</div></section>${det}
   <div class="cl-acoes"><button class="btn" data-act="r11sug">Sugerir disciplinas (${sem} sem)</button><button class="btn" data-act="r11xls">Gerar Excel</button><button class="btn primary" data-act="r11pdf">PDF sem fotos</button><button class="btn primary" data-act="r11pdff">PDF com fotos</button></div>
-  <p class="muted small"><b>Sem fotos:</b> resumo por disciplina e lista dos itens em aberto. <b>Com fotos:</b> resumo e, por disciplina, cada item com as fotos registradas (antes/depois); sem filtro de situação traz os itens em aberto, e com filtro (ex.: “fechados”) traz a situação escolhida. Os dois PDFs seguem a origem, o local e a disciplina selecionados. O Excel traz todos os itens da obra, sem fotos.</p>`;
+  <p class="muted small"><b>Sem fotos:</b> resumo por disciplina e lista dos itens em aberto. <b>Com fotos:</b> resumo e todos os itens, cada um com suas fotos (antes/depois): primeiro os em aberto e os pendentes, e por último os fechados e conformes. Se passar de 150 itens, o PDF é dividido em partes (parte 01, 02…), cada uma bem abaixo do limite de 2 GB do WhatsApp. Tocar num número do topo (ex.: “em aberto”) ou escolher uma disciplina gera só essa seleção. Os dois PDFs seguem a origem e o local escolhidos. O Excel traz todos os itens, sem fotos.</p>`;
 }
 { const _vI=vInicio; vInicio=function(){ return UI.view==="rel11"?vRel11():_vI(); }; }
 document.addEventListener("click",e=>{ if(e.target.closest("#sheet")) return; const a=e.target.closest("[data-act]"); if(!a) return; const act=a.dataset.act, v=a.dataset.v;
@@ -4309,7 +4309,7 @@ async function relPDF(fotos){
     if(T.sug||A.some(a=>a.disc==="")){ y+=5; d.text(`${(A.find(a=>a.disc===""))?(A.find(a=>a.disc==="").t)+" item(ns) sem disciplina. ":""}${T.sug?T.sug+" disciplina(s) sugerida(s) por palavras-chave, a confirmar.":""}`,m,y,7.2,true,RED); }
     /* itens em aberto por disciplina */
     const ab=L.filter(x=>x.st==="Aberto"); const CAP=700; let pg=null, yy=0; const novaPg=(tit)=>{ d.addPage(); cab(); d.text(tit,m,26,10,true,NAVY); yy=33; };
-    if(fotos) await relFotosPDF(d,cab,L,A,f,m,W,H);
+    if(fotos){ await relFotosPartes(d,L,A,f,o,num); return; }
     if(ab.length&&!fotos){ novaPg(`Itens em aberto (${ab.length})`); const grp=new Map(); for(const x of ab){ const k=x.disc||""; (grp.get(k)||grp.set(k,[]).get(k)).push(x); }
       let cont=0; for(const a of A){ const g=grp.get(a.disc); if(!g) continue; if(yy>H-30) novaPg("Itens em aberto (continuação)"); d.rect(m,yy-3.6,W-2*m,5.4,[236,241,245]); d.text(`${discTxt(a.disc)} · ${g.length}`,m+2,yy,8.5,true,NAVY); yy+=6;
         for(const x of g){ if(cont>=CAP) break; if(yy>H-14){ novaPg("Itens em aberto (continuação)"); } const t=d.wrap(`${x.txt}`,150,7.3,false)[0]||""; d.text(x.doc,m+2,yy,7,true,PET); d.text(t,m+30,yy,7.3,false,[20,35,45]); d.text(clTxt(x.loc,62),m+186,yy,6.5,false,GR); yy+=4.4; cont++; }
@@ -4892,26 +4892,55 @@ async function relFotosItem(x){
   else if(x.hist){ const key=chaveFH(x.hist.o,x.hist.n,x.n); const q=Math.min(2,FOTOS_HIST[key]||0); for(let j=0;j<q;j++) await add(key+"#"+j,"FOTO "+(j+1),"h:"); }
   return out;
 }
-async function relFotosPDF(d,cab,L,A,f,m,W,H){
-  const sit=f.sit||"Aberto"; const ordem=A.map(a=>a.disc);
-  let D=L.filter(x=>(f.disc==null||(x.disc||"")===f.disc)&&relSitOk(x,sit)).sort((a,b)=>ordem.indexOf(a.disc)-ordem.indexOf(b.disc)||String(a.doc).localeCompare(String(b.doc),"pt",{numeric:true}));
-  const CAP=90, tot=D.length; D=D.slice(0,CAP);
-  const rotSit={Aberto:"em aberto",Fechado:"fechados",Conforme:"conformes",sv:"sem verificação / NV",fp:"com foto pendente",todos:"todos"}[sit]||sit;
-  if(!D.length){ d.addPage(); cab(); d.text(`Nenhum item ${rotSit} na seleção.`,m,30,10,true,GR); return; }
+const REL_PARTE=150; /* itens por arquivo (~10 MB cada) */
+const relRank=x=>x.st==="Aberto"?0:(x.st==="Não verificado"||x.st==="Sem verificação")?1:x.st==="Fechado"?2:3;
+const relGrpRot=["EM ABERTO","PENDENTES (não verificados / sem verificação)","FECHADOS (corrigidos)","CONFORMES"];
+function relCabF(d,o,num){ const W=297,m=10,LOGO=logoBytes(); d.rect(0,0,W,16,NAVY); d.image(LOGO,LOGO_JPG_W,LOGO_JPG_H,m,3,10*LOGO_JPG_W/LOGO_JPG_H,10); d.text("RELATÓRIO POR DISCIPLINA",W/2,8.3,9.5,true,[255,255,255],"c"); d.text(o.nome||"",W/2,12.6,7.5,false,[200,214,222],"c"); d.text(num,W-m,10,8,true,[255,255,255],"r"); }
+async function relFotosDesenhar(d,o,num,chunk,rot){
+  const W=297,H=210,m=10;
   const foto=(x,y,w,h,ft,rotFallback)=>{ d.rect(x,y,w,h,[244,246,248],LINE);
     if(ft){ let iw=w,ih=w*ft.h/ft.w; if(ih>h){ ih=h; iw=h*ft.w/ft.h; } d.image(ft.bytes,ft.w,ft.h,x+(w-iw)/2,y+(h-ih)/2,iw,ih); d.text(ft.rot+(ft.dh?` · ${ft.dh}`:""),x,y+h+3.6,7,true,PET); }
     else { d.text("sem foto registrada",x+w/2,y+h/2+1,8,false,GR,"c"); d.text(rotFallback,x,y+h+3.6,7,true,GR); } };
   const corSit={Aberto:RED,Fechado:[140,190,120],Conforme:[63,143,42]};
-  for(let idx=0;idx<D.length;idx++){ const x=D[idx];
-    if(idx%3===0){ d.addPage(); cab(); d.text(`Itens ${rotSit} com fotos · ${Math.min(tot,CAP)} de ${tot}`,m,22.5,8,true,NAVY); }
-    const y=26+(idx%3)*57, fs=await relFotosItem(x); d.rect(m,y,W-2*m,54,null,LINE);
+  let slot=0, grpAnt=-1;
+  for(const x of chunk){ const g=relRank(x);
+    if(slot===0||slot===3||g!==grpAnt){ d.addPage(); relCabF(d,o,num); d.text(`${relGrpRot[g]} · ${rot}`,m,22.5,8,true,g===0?RED:NAVY); slot=0; }
+    grpAnt=g; const y=26+slot*57; slot++;
+    const fs=await relFotosItem(x); d.rect(m,y,W-2*m,54,null,LINE);
     const tx=m+3, tw=100; d.text(discTxt(x.disc),tx,y+5,7.5,true,PET);
     const dl=d.wrap(`${x.n}. ${x.txt}`,tw,9,true).slice(0,3); d.lines(dl,tx,y+10,9,true,NAVY,4.2); let ty=y+10+4.2*dl.length+1;
     d.text(`${x.doc}${x.loc?" · "+clTxt(x.loc,40):""}`,tx,ty,7,false,GR); ty+=4.6;
-    const col=corSit[x.st]||[200,206,212]; d.rect(tx,ty-3,Math.max(18,x.st.length*2.4+6),4.8,col); d.text(x.st.toUpperCase(),tx+Math.max(18,x.st.length*2.4+6)/2,ty+0.5,6.6,true,[255,255,255],"c"); ty+=6;
+    const col=corSit[x.st]||[200,206,212], bw=Math.max(18,x.st.length*2.4+6); d.rect(tx,ty-3,bw,4.8,col); d.text(x.st.toUpperCase(),tx+bw/2,ty+0.5,6.6,true,[255,255,255],"c"); ty+=6;
     if(x.obs){ for(const t of d.wrap(x.obs,tw,7.3,false).slice(0,3)){ d.text(t,tx,ty,7.3,false,[20,35,45]); ty+=3.5; } }
     const par=x.orig==="Checklist"; foto(m+106,y+2,82,46,fs[0]||null,par?"ANTES":"FOTO 1"); foto(m+106+86,y+2,82,46,fs[1]||null,par?"DEPOIS":"FOTO 2"); }
-  if(tot>CAP){ d.addPage(); cab(); d.text(`Mostrando ${CAP} de ${tot} itens (limite para manter o PDF leve).`,m,30,10,true,RED); d.text("Para ver os demais, filtre por disciplina ou por local e gere novamente, ou use o Excel (lista completa).",m,37,8.5,false,GR); }
+}
+/* gera todas as partes: abertos e pendentes primeiro; fechados e conformes ao final */
+async function relFotosPartes(d1,L,A,f,o,num){
+  const sit=f.sit||"todos"; const ordem=A.map(a=>a.disc);
+  const D=L.filter(x=>(f.disc==null||(x.disc||"")===f.disc)&&relSitOk(x,sit)).sort((a,b)=>relRank(a)-relRank(b)||ordem.indexOf(a.disc)-ordem.indexOf(b.disc)||String(a.doc).localeCompare(String(b.doc),"pt",{numeric:true}));
+  const P=Math.max(1,Math.ceil(D.length/REL_PARTE)); const W=297,H=210,m=10; const partes=[];
+  const fim=async(d,p)=>{ const tot=d.pages.length; d.pages.forEach((ops,k)=>{ d.ops=ops; d.text("CTE Gerenciamento · Relatório de acompanhamento; não constitui aceite de serviços.",m,H-5,6.5,false,GR); d.text(`${P>1?`parte ${p} de ${P} · `:""}página ${k+1} de ${tot}`,W-m,H-5,7,false,GR,"r"); });
+    const nome=P>1?`${num}-parte-${String(p).padStart(2,"0")}-de-${String(P).padStart(2,"0")}`:num; const blob=await finalizarPDF(d,[],nome); partes.push({nome:nome+".pdf",blob,n:0}); };
+  try{
+    if(!D.length){ d1.addPage(); relCabF(d1,o,num); d1.text("Nenhum item na seleção.",m,30,10,true,GR); await fim(d1,1); }
+    for(let p=1;p<=D.length/REL_PARTE+1&&(p-1)*REL_PARTE<D.length;p++){
+      progresso(`Gerando parte ${p} de ${P}…`); await new Promise(r=>setTimeout(r,60));
+      const chunk=D.slice((p-1)*REL_PARTE,p*REL_PARTE); const d=p===1?d1:new PDF(); const rot=P>1?`parte ${p} de ${P}`:`${D.length} itens`;
+      await relFotosDesenhar(d,o,num,chunk,rot); await fim(d,p); partes[partes.length-1].n=chunk.length; }
+    if($("#sheet .prog")) fechar();
+    if(partes.length===1){ await entregarArquivo(partes[0].nome,partes[0].blob); return; }
+    sheetPartes(partes,D.length);
+  }catch(err){ console.error(err); aviso("Erro ao gerar o PDF",String(err&&err.message||err)); } }
+function sheetPartes(partes,total){
+  const mb=b=>(b.size/1048576).toFixed(1), soma=partes.reduce((a,p)=>a+p.blob.size,0);
+  abrirSheet(`<h2>PDF com fotos · ${partes.length} partes</h2><p class="muted small">${total} itens, em ${partes.length} arquivos (${mb({size:soma})} MB no total). Em aberto e pendentes primeiro; fechados e conformes ao final. Cada arquivo cabe com folga no limite do WhatsApp (2 GB).</p>
+    <button class="btn primary block" data-dlall="1">Baixar todas as partes</button>
+    ${partes.map((p,i)=>`<div class="row between" style="gap:8px;margin:8px 0"><span><b>Parte ${i+1}</b> <span class="muted small">${p.n} itens · ${mb(p.blob)} MB</span></span><button class="btn" data-dlp="${i}">Baixar</button></div>`).join("")}
+    <p class="muted small">Se o navegador pedir, permita baixar vários arquivos. Os arquivos vão para a pasta de downloads do aparelho.</p><button class="btn block" data-x="1">Fechar</button>`,
+    async e=>{ const t=e.target.closest("[data-dlp],[data-dlall]"); if(!t) return; t.disabled=true;
+      const lista=t.dataset.dlall?partes.map((p,i)=>i):[+t.dataset.dlp];
+      for(const i of lista){ const r=await tentarSalvar(partes[i].nome,partes[i].blob); if(!r.ok){ toast(r.cod==="declined"?"Download cancelado.":"Não foi possível baixar a parte "+(i+1)+"."); break; } await new Promise(z=>setTimeout(z,400)); }
+      t.disabled=false; });
 }
 
 (async function iniciar(){ $("#logo").src=LOGO_DARK; rede(); await openDB(); S=(await kvGet("state2"))||estadoInicial(); if(!S.rfs){ S.rfs=[]; } S.seqAV=S.seqAV||1;
