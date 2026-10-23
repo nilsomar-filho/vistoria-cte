@@ -5188,7 +5188,7 @@ try{ syUlt=+localStorage.getItem("cte_od_sync_ult")||0; }catch(_){}
 setTimeout(()=>{ if(odAtivo()) sySincronizar(false); },7000);
 
 /* ================= ONDA 21: "Versões e arquivos em uso" na tela Dados deste aparelho ================= */
-const APP_VER="v30";
+const APP_VER="v31";
 const vaFmt=t=>{ try{ return new Date(t).toLocaleString("pt-BR",{dateStyle:"short",timeStyle:"short"}); }catch(_){ return "—"; } };
 const vaGet=k=>odLS(k,null);
 { const _ej=entregarJSON; entregarJSON=function(nome){ try{ if(/^registros_/.test(nome)) odSet("cte_va_exp",{n:nome,t:Date.now()}); }catch(_){} return _ej.apply(this,arguments); }; }
@@ -5288,7 +5288,7 @@ function guiaHTML(){ return `
   ${GD("3. Configurar o aparelho (primeiro acesso)",`<ol>
    <li>Toque na <b>faixa do topo</b> (“Salvo neste aparelho…”) para abrir <b>Dados deste aparelho</b> › <b>Importar equipe (.json)</b>. Escolha o arquivo <b>equipe-cte_…json</b> que o Coordenador enviou (pasta “1 - Equipe e pacotes” do OneDrive).</li>
    <li>Quando o Coordenador indicar, <b>Importar pacote de obra (.json)</b> (histórico e checklists das obras).</li>
-   <li>No canto superior direito, ao abrir o app, entre com seu <b>usuário</b> (nome.sobrenome ou e-mail) e sua <b>senha</b>. No primeiro acesso use a senha provisória que o Coordenador entregou em particular e crie a sua (mínimo 10 caracteres, letras e números). A sessão dura 12 h sem uso; para sair, use o menu › Sair.</li>
+   <li>No canto superior direito, ao abrir o app, entre com seu <b>usuário</b> (nome.sobrenome ou e-mail) e sua <b>senha</b>. No primeiro acesso use a senha padrão informada pelo Coordenador; o app pede na hora para você criar a sua (mínimo 10 caracteres, letras e números). A sessão dura 12 h sem uso; para sair, use o menu › Sair.</li>
    <li>Em Dados deste aparelho › <b>OneDrive da CTE</b> › <b>Conectar ao OneDrive</b>. Entre com a conta da CTE e aceite as permissões.</li><li>Ainda em Dados deste aparelho › <b>Ativar avisos por e-mail</b>, e aceite a permissão de envio de e-mail.</li>
    <li>Toque em <b>Sincronizar agora</b>. Pronto: as obras, registros e fotos da equipe aparecem.</li></ol>
    <p class="warn-s">Os arquivos de equipe e de pacote têm dados internos: não encaminhe por WhatsApp ou e-mail pessoal.</p>`)}
@@ -5377,7 +5377,7 @@ document.addEventListener("click",e=>{ const b=e.target.closest&&e.target.closes
   else { try{ localStorage.removeItem("cte_mail_on"); }catch(_){} toast("Avisos por e-mail desativados neste aparelho."); sheetDados(); } },true);
 
 /* ================= ONDA 26: login com usuário e senha ================= */
-const LG={ITER:600000, SESS:12*3600*1000, MIN:10, claro:{}};
+const LG={DEF:"retrofitcte",ITER:600000, SESS:12*3600*1000, MIN:10, claro:{}};
 const lgAtivo=()=>!!(S&&S.equipeAtiva&&S.usuarios&&S.usuarios.length);
 const lgNorm=s=>(s||"").trim().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"");
 const lgLogin=u=>lgNorm((u.email||"").split("@")[0]);
@@ -5409,7 +5409,7 @@ function lgTela(msg){ let el=document.getElementById("lg"); if(!el){ el=document
   const topo=`<div class="lg-top"><b>CTE Vistorias</b><span>Acesso restrito à equipe autorizada</span></div>`;
   if(m==="nova"){
     el.innerHTML=`${topo}<form class="lg-box" id="lg-f" autocomplete="on"><h2>${lgModo.boot?"Crie sua senha":"Defina sua nova senha"}</h2>
-      <p class="small">Olá, <b>${esc(u?.nome||"")}</b>. ${lgModo.boot?"Este é o seu primeiro acesso com senha.":"A senha provisória vale apenas para este primeiro acesso."} Escolha uma senha pessoal com no mínimo ${LG.MIN} caracteres, com letras e números. Não compartilhe.</p>
+      <p class="small">Olá, <b>${esc(u?.nome||"")}</b>. ${lgModo.boot?"Este é o seu primeiro acesso com senha.":"A senha padrão ou provisória vale apenas para este primeiro acesso."} Escolha uma senha pessoal com no mínimo ${LG.MIN} caracteres, com letras e números. Não compartilhe.</p>
       <input type="text" name="username" value="${esc(u?lgLogin(u):"")}" autocomplete="username" hidden>
       <label class="f"><span>Nova senha</span><input id="lg-n1" type="password" autocomplete="new-password" autocapitalize="off" required></label>
       <label class="f"><span>Repita a nova senha</span><input id="lg-n2" type="password" autocomplete="new-password" autocapitalize="off" required></label>
@@ -5420,7 +5420,7 @@ function lgTela(msg){ let el=document.getElementById("lg"); if(!el){ el=document
       <label class="f"><span>Usuário ou e-mail</span><input id="lg-u" name="username" type="text" inputmode="email" autocomplete="username" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="nome.sobrenome" value="${esc(lgModo.ult||"")}" required></label>
       <label class="f"><span>Senha</span><input id="lg-p" name="password" type="password" autocomplete="current-password" autocapitalize="off" required></label>
       <p id="lg-e" class="warn" ${msg?"":"hidden"}>${esc(msg||"")}</p><button class="btn primary block" type="submit">Entrar</button>
-      <p class="muted small">Primeiro acesso ou senha esquecida? Peça ao Coordenador uma senha provisória. Se o app informar que a equipe é antiga, importe o arquivo de equipe mais recente abaixo.</p>
+      <p class="muted small">Primeiro acesso: use a senha padrão informada pelo Coordenador e, em seguida, crie a sua. Senha esquecida: peça ao Coordenador para redefinir. Se o app informar que a equipe é antiga, importe o arquivo de equipe mais recente abaixo.</p>
       <button class="link" type="button" id="lg-eq">Importar arquivo de equipe (.json)</button></form>`;
   }
   const f=el.querySelector("#lg-f"); f.onsubmit=e=>{ e.preventDefault(); lgEnviar(); };
@@ -5434,14 +5434,16 @@ function lgEntrar(u){ S.userId=u.id; try{ localStorage.setItem("cte_ses",JSON.st
 let lgOcupado=false;
 async function lgEnviar(){ if(lgOcupado) return; lgOcupado=true; try{
   if(lgModo.m==="nova"){ const u=S.usuarios.find(x=>x.id===lgModo.uid); const a=document.getElementById("lg-n1").value, b=document.getElementById("lg-n2").value;
+    if(lgNorm(a).replace(/\s/g,"")===LG.DEF) return lgTela("Escolha uma senha diferente da senha padrão.");
     const er=lgRegraSenha(a,u); if(er) return lgTela(er); if(a!==b) return lgTela("As duas senhas não conferem.");
     const antigo=(S.cred||{})[u.id]; if(antigo&&await lgConfere(antigo,a)) return lgTela("Escolha uma senha diferente da provisória.");
     S.cred=S.cred||{}; S.cred[u.id]=await lgCriar(a,false); return lgEntrar(u); }
   const w=lgEspera(); if(w) return lgTela(`Muitas tentativas. Aguarde ${w} s e tente de novo.`);
   const txt=document.getElementById("lg-u").value, sen=document.getElementById("lg-p").value; lgModo.ult=txt;
   const u=lgAcha(txt); const c=u&&(S.cred||{})[u.id];
+  if(u&&!c&&lgNorm(sen).replace(/\s/g,"")===LG.DEF){ lgModo={m:"nova",uid:u.id,padrao:true}; return lgTela(); }
   if(u&&!c&&u.perfil==="coord"&&S.userId===u.id){ lgModo={m:"nova",uid:u.id,boot:true}; return lgTela(); }
-  if(!u||!c||!(await lgConfere(c,sen))){ lgFalhou(); const w2=lgEspera(); return lgTela(w2?`Muitas tentativas. Aguarde ${w2} s.`:"Usuário ou senha inválidos, ou senha ainda não definida. Peça ao Coordenador uma senha provisória."); }
+  if(!u||!c||!(await lgConfere(c,sen))){ lgFalhou(); const w2=lgEspera(); return lgTela(w2?`Muitas tentativas. Aguarde ${w2} s.`:"Usuário ou senha inválidos. No primeiro acesso, use a senha padrão informada pelo Coordenador."); }
   if(c.prov){ lgModo={m:"nova",uid:u.id}; return lgTela(); }
   lgEntrar(u);
 } finally { lgOcupado=false; } }
