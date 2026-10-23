@@ -1,0 +1,9 @@
+CTE Vistorias (Vistoria de Campo CTE)
+© 2026 Nilsomar Brandão Pires Filho. Todos os direitos reservados.
+
+Aplicativo, código-fonte, metodologia, checklists, textos e instruções de uso são de uso restrito
+à equipe autorizada pela Coordenação. É vedada a cópia, a reprodução, o compartilhamento, a
+modificação ou a divulgação, total ou parcial, fora da equipe, sem autorização expressa e por escrito.
+
+Este endereço contém somente o programa. Dados de obras e da equipe são confidenciais e não
+fazem parte deste repositório.

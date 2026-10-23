@@ -1,5 +1,5 @@
 /* Vistoria de Campo CTE – funciona sem internet na obra. Atualiza sozinho quando houver conexão. */
-const CACHE="vistoria-cte-v27";
+const CACHE="vistoria-cte-v28";
 const ARQ=["./","index.html","manifest.webmanifest","icone-192.png","icone-512.png"];
 self.addEventListener("install",e=>{ e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ARQ)).then(()=>self.skipWaiting())); });
 self.addEventListener("activate",e=>{ e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())); });

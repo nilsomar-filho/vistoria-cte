@@ -776,6 +776,22 @@ button.kpi-b{border:0;font:inherit;color:inherit;cursor:pointer;width:100%;text-
 .pheat .mh-sep th{padding:10px 6px 2px;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--fg2);text-align:left}
 .pheat .mh-tot{background:transparent;border-top:1px solid var(--line,#cfd8dc);border-radius:0}
 .pheat .mh-pct{background:transparent;font-weight:600;color:var(--fg2)}
+.gd{border:1px solid var(--line,#d5dde3);border-radius:10px;margin:8px 0;background:#fff}
+.gd summary{padding:12px 14px;font-weight:700;cursor:pointer;list-style:none;color:var(--fg)}
+.gd summary::-webkit-details-marker{display:none}
+.gd summary::after{content:"+";float:right;font-weight:700;color:var(--fg2)}
+.gd[open] summary::after{content:"–"}
+.gd-b{padding:0 14px 12px;font-size:14px;line-height:1.45}
+.gd-b ul,.gd-b ol{padding-left:20px;margin:6px 0}
+.gd-b li{margin:5px 0}
+.gd-t{width:100%;border-collapse:collapse;font-size:13px}
+.gd-t th,.gd-t td{border:1px solid var(--line,#d5dde3);padding:6px 8px;text-align:left;vertical-align:top}
+.gd-t th{background:#eef3f6}
+.warn-s{background:#fff6e0;border-left:4px solid #b06e00;padding:8px 10px;border-radius:6px;font-size:13px}
+.gd-dir{margin-top:14px;font-size:11px}
+.gd-ic{display:block;margin:0 auto 2px;width:22px;height:22px;line-height:20px;border:2px solid currentColor;border-radius:50%;font-weight:700;font-size:13px;text-align:center}
+.strip-warn{background:#fff1d6 !important}
+#net-dot.warn{background:#d98200 !important}
 </style>
 
 <header class="top">
@@ -5164,7 +5180,7 @@ try{ syUlt=+localStorage.getItem("cte_od_sync_ult")||0; }catch(_){}
 setTimeout(()=>{ if(odAtivo()) sySincronizar(false); },7000);
 
 /* ================= ONDA 21: "Versões e arquivos em uso" na tela Dados deste aparelho ================= */
-const APP_VER="v27";
+const APP_VER="v28";
 const vaFmt=t=>{ try{ return new Date(t).toLocaleString("pt-BR",{dateStyle:"short",timeStyle:"short"}); }catch(_){ return "—"; } };
 const vaGet=k=>odLS(k,null);
 { const _ej=entregarJSON; entregarJSON=function(nome){ try{ if(/^registros_/.test(nome)) odSet("cte_va_exp",{n:nome,t:Date.now()}); }catch(_){} return _ej.apply(this,arguments); }; }
@@ -5236,6 +5252,75 @@ heatmap=function(B,oid){
   </tbody></table></div>
   ${cols.some(k=>ver[k]&&!cf[k])?`<p class="muted small">* Mês cujo registro histórico lista só as NC (itens conformes não extraídos): sem taxa de NC (n/d).</p>`:""}${semData?`<p class="muted small">${semData} RNC sem data no histórico não aparecem no mapa.</p>`:""}
   <p class="muted small">Meses do calendário, pela data de cada RNC/relatório registrado. As linhas inferiores mostram onde a gerência concentrou verificação: mês com muito item verificado e pouca NC é frente controlada; mês sem verificação é janela sem cobertura.${oid?" M# = mês desde o início da obra (data de início a validar).":""}</p>`; };
+
+/* ================= ONDA 24: guia de uso, indicador de sincronização no topo e aviso de propriedade ================= */
+const DIREITOS="© 2026 Nilsomar Brandão Pires Filho. Todos os direitos reservados. Aplicativo, código, metodologia, checklists, textos e instruções de uso são de uso restrito à equipe autorizada pela Coordenação. É vedada a cópia, o compartilhamento ou a divulgação fora da equipe sem autorização expressa.";
+/* ---- indicador de sincronização na faixa do topo ---- */
+function syEstadoTopo(){ const t=odTok(); let ult=0; try{ ult=+localStorage.getItem("cte_od_sync_ult")||0; }catch(_){}
+  if(!t||(!t.rt&&!t.upn)) return {k:"off",txt:"OneDrive: não conectado"};
+  if(!t.rt||(t.em&&Date.now()-t.em>23.5*3600000)) return {k:"exp",txt:"⚠ OneDrive: reconectar"};
+  if(typeof syBusy!=="undefined"&&syBusy) return {k:"ok",txt:"sincronizando…"};
+  if(/^Falha/.test(syMsg||"")) return {k:"exp",txt:"⚠ falha ao sincronizar"};
+  if(ult){ const h=new Date(ult); return {k:"ok",txt:"☁ sincronizado "+(new Date().toDateString()===h.toDateString()?h.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"}):h.toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"}))}; }
+  return {k:"ok",txt:"☁ OneDrive conectado"}; }
+{ const _r=rede; rede=function(){ _r.apply(this,arguments); try{ const s=syEstadoTopo(); const el=document.getElementById("net-txt"); if(el&&navigator.onLine!==false) el.textContent="Salvo neste aparelho · "+s.txt; const d=document.getElementById("net-dot"); if(d) d.classList.toggle("warn",s.k==="exp"||s.k==="off"); const st=document.querySelector(".strip"); if(st) st.classList.toggle("strip-warn",s.k==="exp"); }catch(_){} }; }
+{ const _a=syAtualizaSt; syAtualizaSt=function(){ const r=_a.apply(this,arguments); try{ rede(); }catch(_){} return r; }; }
+setInterval(()=>{ try{ rede(); }catch(_){} },30000);
+document.addEventListener("click",e=>{ if(e.target.closest&&e.target.closest(".strip")){ e.stopImmediatePropagation(); sheetDados(); } },true);
+setTimeout(()=>{ try{ rede(); const s=syEstadoTopo(); if(s.k==="exp") toast("Sessão do OneDrive vencida. Toque na faixa do topo e depois em Conectar."); }catch(_){} },3500);
+/* ---- guia de uso ---- */
+const GD=(t,h,aberto)=>`<details class="gd"${aberto?" open":""}><summary>${t}</summary><div class="gd-b">${h}</div></details>`;
+function guiaHTML(){ return `
+  <p class="small">Guia do piloto. Versão do app: <b>${typeof APP_VER!=="undefined"?APP_VER:""}</b>. Toque em cada título para abrir.</p>
+  ${GD("1. O que é o app e como funciona",`<p>O <b>CTE Vistorias</b> registra, em campo, <b>RNC</b> (relatório de não conformidade), <b>relatórios fotográficos</b>, <b>checklists</b> e fotos, e mostra o Dashboard por obra. Funciona <b>sem sinal</b>: tudo é gravado primeiro no aparelho e sobe para o OneDrive quando houver sinal.</p>
+   <p>Onde roda: é uma página da internet (<b>nilsomar-filho.github.io/vistoria-cte</b>) que você instala na tela inicial do celular ou do computador. O endereço guarda <b>só o programa</b>, nunca dados de obra. Os dados ficam <b>no seu aparelho</b> e na <b>pasta do OneDrive da CTE</b>, com o seu login.</p>`,true)}
+  ${GD("2. Instalar o app (uma vez por aparelho)",`<p><b>iPhone:</b> abra o link no <b>Safari</b> (não dentro do WhatsApp ou do Outlook) › botão <b>Compartilhar</b> › <b>Adicionar à Tela de Início</b> › Adicionar. Abra sempre pelo ícone.</p>
+   <p><b>Android:</b> abra no Chrome › menu ⋮ › <b>Instalar app</b> (ou Adicionar à tela inicial).</p>
+   <p><b>Computador:</b> abra no Edge ou Chrome › ícone de instalar na barra de endereço (ou use direto no navegador).</p>`)}
+  ${GD("3. Configurar o aparelho (primeiro acesso)",`<ol>
+   <li>Toque na <b>faixa do topo</b> (“Salvo neste aparelho…”) para abrir <b>Dados deste aparelho</b> › <b>Importar equipe (.json)</b>. Escolha o arquivo <b>equipe-cte_…json</b> que o Coordenador enviou (pasta “1 - Equipe e pacotes” do OneDrive).</li>
+   <li>Quando o Coordenador indicar, <b>Importar pacote de obra (.json)</b> (histórico e checklists das obras).</li>
+   <li>No canto superior direito, toque no seu nome › digite seu <b>e-mail corporativo</b> › Identificar-me.</li>
+   <li>Em Dados deste aparelho › <b>OneDrive da CTE</b> › <b>Conectar ao OneDrive</b>. Entre com a conta da CTE e aceite as permissões.</li>
+   <li>Toque em <b>Sincronizar agora</b>. Pronto: as obras, registros e fotos da equipe aparecem.</li></ol>
+   <p class="warn-s">Os arquivos de equipe e de pacote têm dados internos: não encaminhe por WhatsApp ou e-mail pessoal.</p>`)}
+  ${GD("4. Uso no dia a dia",`<ul>
+   <li><b>Criar:</b> dentro da obra, botão <b>+</b>: RNC, relatório fotográfico, relatório avulso ou checklist.</li>
+   <li><b>Fotos:</b> tire pelo próprio app (botão da câmera); assim elas entram no registro e vão para o OneDrive.</li>
+   <li><b>Checklist:</b> marque cada item (OK, NÃO OK, NV, NA), com foto e observação quando houver.</li>
+   <li><b>Aprovação:</b> o registro de engenheiro ou vistoriador vai ao Responsável 02 da obra (se houver) e depois ao Coordenador. Registro criado pelo Coordenador já nasce validado.</li>
+   <li><b>PDF:</b> dentro do registro ou em Relatório por disciplina (com ou sem fotos). Arquivos grandes saem em partes.</li>
+   <li><b>Excluir:</b> toque e segure o card da RNC, relatório ou checklist. Logo depois, o botão <b>Desfazer</b> (topo) recupera.</li></ul>
+   <p class="warn-s">Atenção: os avisos de aprovação “por e-mail e WhatsApp” ainda são <b>simulados</b>. O aprovador vê a pendência em <b>Revisar</b> ou <b>Aprovações</b>.</p>`)}
+  ${GD("5. Para onde vai cada coisa",`<table class="gd-t"><tr><th>O quê</th><th>Onde fica</th></tr>
+   <tr><td>Registros (RNC, relatórios, checklists)</td><td>No aparelho + arquivo <b>registros_nome_aparelho.json</b> em <b>RETROFIT › 00 - Padrões › Sincronizacao App Vistorias Cte</b></td></tr>
+   <tr><td>Fotos tiradas no app</td><td>No aparelho + <b>RETROFIT › 00 - Padrões › Fotos › obra › data</b></td></tr>
+   <tr><td>PDFs e arquivos gerados</td><td>No aparelho (Arquivos/Downloads) + <b>RETROFIT › 00 - Padrões › Download App Vistorias Cte</b></td></tr>
+   <tr><td>Equipe e pacote de obra</td><td>Arquivos privados do Coordenador, na pasta “1 - Equipe e pacotes”</td></tr></table>
+   <p class="small">Esse caminho é no OneDrive da conta que fez o login no app. Nada é apagado do OneDrive pelo app.</p>`)}
+  ${GD("6. Sincronização entre celular e computador",`<p>Com o OneDrive conectado, é <b>automática</b>: ao abrir o app, ao voltar para ele e cerca de 30 segundos depois de cada alteração. A faixa do topo mostra o estado (<b>☁ sincronizado 10:42</b>). Se estiver sem sinal, sobe quando o sinal voltar.</p>
+   <ul><li>A sessão do OneDrive dura cerca de <b>24 horas</b>. Quando a faixa mostrar <b>⚠ reconectar</b>, toque nela › Conectar ao OneDrive (leva segundos). Os dados não se perdem.</li>
+   <li>Se duas pessoas editarem <b>o mesmo registro</b>, vale a edição mais recente. Registros diferentes não se misturam.</li>
+   <li>Fotos de outros aparelhos são baixadas sozinhas (até 20 por vez). Para baixar todas: Dados deste aparelho › <b>Baixar fotos que faltam</b>.</li>
+   <li>O que foi excluído em um aparelho também some nos demais.</li></ul>`)}
+  ${GD("7. Perfis e permissões",`<table class="gd-t"><tr><th>Perfil</th><th>Pode</th></tr>
+   <tr><td>Vistoriador</td><td>Criar e editar os próprios registros, fotos e checklists. Não exclui RNC nem relatório.</td></tr>
+   <tr><td>Engenheiro</td><td>O mesmo, mais excluir checklists e, se for o Responsável 02 da obra, fazer a primeira aprovação.</td></tr>
+   <tr><td>Coordenador</td><td>Tudo: aprovação final, exclusão, usuários, equipe, obras e painel completo.</td></tr></table>`)}
+  ${GD("8. Se algo der errado",`<ul>
+   <li><b>Versão antiga no app:</b> feche o app por completo e abra duas vezes, com sinal. Confira em Dados deste aparelho › “App: v…”.</li>
+   <li><b>Foto de outro aparelho não aparece:</b> Sincronizar agora; depois Baixar fotos que faltam.</li>
+   <li><b>⚠ OneDrive: reconectar:</b> toque na faixa do topo › Conectar ao OneDrive.</li>
+   <li><b>Não consegui me identificar:</b> o e-mail precisa constar do arquivo de equipe. Peça ao Coordenador o arquivo atualizado.</li>
+   <li><b>Não limpe os dados do navegador/Safari:</b> isso apaga o que ainda não foi sincronizado. Antes, toque em Sincronizar agora.</li>
+   <li>Se a dúvida continuar, fale com o Coordenador.</li></ul>`)}
+  ${GD("9. Propriedade e confidencialidade",`<p>${esc(DIREITOS)}</p><p class="small">Os dados das obras e da equipe são confidenciais: ficam apenas nos aparelhos e no OneDrive da CTE, e nunca neste endereço público.</p>`)}
+  <button class="btn primary block" data-x="1">Fechar</button>`; }
+function abrirGuia(){ abrirSheet(`<div class="row between"><h2>Guia de uso</h2><button class="link" data-x="1">Fechar</button></div><div class="gd-w">${guiaHTML()}</div>`); }
+document.addEventListener("click",e=>{ const b=e.target.closest&&e.target.closest("[data-act='guia']"); if(!b) return; e.stopImmediatePropagation(); try{ fecharGaveta(); }catch(_){} abrirGuia(); },true);
+{ const _mg=montarGaveta; montarGaveta=function(){ _mg.apply(this,arguments); const n=document.getElementById("drawer-nav"); if(n&&!n.querySelector("[data-act='guia']")) n.insertAdjacentHTML("beforeend",`<button data-act="guia" type="button"><span class="gd-ic" aria-hidden="true">?</span>Guia de uso</button>`); }; }
+{ const _sd=sheetDados; sheetDados=function(){ _sd.apply(this,arguments); const h=[...document.querySelectorAll("#sheet h3")].find(x=>/^(Versões e arquivos|1\.)/.test(x.textContent)); if(h) h.insertAdjacentHTML("beforebegin",`<button class="btn primary block" data-act="guia">Guia de uso do piloto</button>`);
+    const f=document.querySelector("#sheet .sheet"); if(f) f.insertAdjacentHTML("beforeend",`<p class="muted small gd-dir">${esc(DIREITOS)}</p>`); }; }
 
 (async function iniciar(){ $("#logo").src=LOGO_DARK; rede(); await openDB(); S=(await kvGet("state2"))||estadoInicial(); if(!S.rfs){ S.rfs=[]; } S.seqAV=S.seqAV||1;
   migrar(); purgarModelo(); await carregarIndiceFotosHist(); lastJSON=snapJSON(); kvSet("state2",S); UI.oid=(S.obras[0]||{}).id||null; render(); })();
