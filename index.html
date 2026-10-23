@@ -792,6 +792,14 @@ button.kpi-b{border:0;font:inherit;color:inherit;cursor:pointer;width:100%;text-
 .gd-ic{display:block;margin:0 auto 2px;width:22px;height:22px;line-height:20px;border:2px solid currentColor;border-radius:50%;font-weight:700;font-size:13px;text-align:center}
 .strip-warn{background:#fff1d6 !important}
 #net-dot.warn{background:#d98200 !important}
+#lg{position:fixed;inset:0;z-index:9999;background:#f4f6f8;overflow:auto;display:flex;flex-direction:column}
+.lg-top{background:#0b2a4a;color:#fff;padding:18px 16px;display:flex;flex-direction:column;gap:2px}
+.lg-top b{font-size:20px}.lg-top span{font-size:12px;opacity:.8}
+.lg-box{width:100%;max-width:420px;margin:24px auto;padding:0 16px;display:flex;flex-direction:column;gap:12px}
+.lg-box h2{margin:0}
+body.lg-on{overflow:hidden}
+.lg-r{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #e3e8ec}
+.lg-c{display:inline-block;margin-top:4px;padding:3px 8px;background:#fff7d6;border:1px solid #e6d27a;border-radius:6px;font-size:15px;letter-spacing:1px}
 </style>
 
 <header class="top">
@@ -5180,7 +5188,7 @@ try{ syUlt=+localStorage.getItem("cte_od_sync_ult")||0; }catch(_){}
 setTimeout(()=>{ if(odAtivo()) sySincronizar(false); },7000);
 
 /* ================= ONDA 21: "Versões e arquivos em uso" na tela Dados deste aparelho ================= */
-const APP_VER="v29";
+const APP_VER="v30";
 const vaFmt=t=>{ try{ return new Date(t).toLocaleString("pt-BR",{dateStyle:"short",timeStyle:"short"}); }catch(_){ return "—"; } };
 const vaGet=k=>odLS(k,null);
 { const _ej=entregarJSON; entregarJSON=function(nome){ try{ if(/^registros_/.test(nome)) odSet("cte_va_exp",{n:nome,t:Date.now()}); }catch(_){} return _ej.apply(this,arguments); }; }
@@ -5280,7 +5288,7 @@ function guiaHTML(){ return `
   ${GD("3. Configurar o aparelho (primeiro acesso)",`<ol>
    <li>Toque na <b>faixa do topo</b> (“Salvo neste aparelho…”) para abrir <b>Dados deste aparelho</b> › <b>Importar equipe (.json)</b>. Escolha o arquivo <b>equipe-cte_…json</b> que o Coordenador enviou (pasta “1 - Equipe e pacotes” do OneDrive).</li>
    <li>Quando o Coordenador indicar, <b>Importar pacote de obra (.json)</b> (histórico e checklists das obras).</li>
-   <li>No canto superior direito, toque no seu nome › digite seu <b>e-mail corporativo</b> › Identificar-me.</li>
+   <li>No canto superior direito, ao abrir o app, entre com seu <b>usuário</b> (nome.sobrenome ou e-mail) e sua <b>senha</b>. No primeiro acesso use a senha provisória que o Coordenador entregou em particular e crie a sua (mínimo 10 caracteres, letras e números). A sessão dura 12 h sem uso; para sair, use o menu › Sair.</li>
    <li>Em Dados deste aparelho › <b>OneDrive da CTE</b> › <b>Conectar ao OneDrive</b>. Entre com a conta da CTE e aceite as permissões.</li><li>Ainda em Dados deste aparelho › <b>Ativar avisos por e-mail</b>, e aceite a permissão de envio de e-mail.</li>
    <li>Toque em <b>Sincronizar agora</b>. Pronto: as obras, registros e fotos da equipe aparecem.</li></ol>
    <p class="warn-s">Os arquivos de equipe e de pacote têm dados internos: não encaminhe por WhatsApp ou e-mail pessoal.</p>`)}
@@ -5311,7 +5319,7 @@ function guiaHTML(){ return `
    <li><b>Versão antiga no app:</b> feche o app por completo e abra duas vezes, com sinal. Confira em Dados deste aparelho › “App: v…”.</li>
    <li><b>Foto de outro aparelho não aparece:</b> Sincronizar agora; depois Baixar fotos que faltam.</li>
    <li><b>⚠ OneDrive: reconectar:</b> toque na faixa do topo › Conectar ao OneDrive.</li>
-   <li><b>Não consegui me identificar:</b> o e-mail precisa constar do arquivo de equipe. Peça ao Coordenador o arquivo atualizado.</li>
+   <li><b>Não consegui entrar:</b> confira usuário e senha. Sem senha ou esquecida: peça ao Coordenador uma senha provisória e, se pedir, importe o arquivo de equipe atualizado. Após 5 erros o app aguarda alguns segundos antes de aceitar nova tentativa.</li>
    <li><b>Não limpe os dados do navegador/Safari:</b> isso apaga o que ainda não foi sincronizado. Antes, toque em Sincronizar agora.</li>
    <li>Se a dúvida continuar, fale com o Coordenador.</li></ul>`)}
   ${GD("9. Propriedade e confidencialidade",`<p>${esc(DIREITOS)}</p><p class="small">Os dados das obras e da equipe são confidenciais: ficam apenas nos aparelhos e no OneDrive da CTE, e nunca neste endereço público.</p>`)}
@@ -5367,6 +5375,128 @@ function mailAtualizaSt(){ const el=document.getElementById("mail-st"); if(!el) 
 document.addEventListener("click",e=>{ const b=e.target.closest&&e.target.closest("#sheet [data-ml]"); if(!b) return; e.stopImmediatePropagation();
   if(b.dataset.ml==="on"){ try{ localStorage.setItem("cte_mail_on","1"); if(!localStorage.getItem("cte_mail_ini")) localStorage.setItem("cte_mail_ini",String(Date.now())); }catch(_){} OD.escopo=OD.escopo.replace(/ https:\/\/graph\.microsoft\.com\/Mail\.Send/,"")+" https://graph.microsoft.com/Mail.Send"; odConectar(); }
   else { try{ localStorage.removeItem("cte_mail_on"); }catch(_){} toast("Avisos por e-mail desativados neste aparelho."); sheetDados(); } },true);
+
+/* ================= ONDA 26: login com usuário e senha ================= */
+const LG={ITER:600000, SESS:12*3600*1000, MIN:10, claro:{}};
+const lgAtivo=()=>!!(S&&S.equipeAtiva&&S.usuarios&&S.usuarios.length);
+const lgNorm=s=>(s||"").trim().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"");
+const lgLogin=u=>lgNorm((u.email||"").split("@")[0]);
+function lgAcha(txt){ const v=lgNorm(txt); if(!v) return null;
+  const c=S.usuarios.filter(u=>!EXEMPLO_RE.test(u.email||"")&&(lgNorm(u.email)===v||lgLogin(u)===v)); return c.length===1?c[0]:null; }
+const lgB64=b=>{ let s=""; for(const x of b) s+=String.fromCharCode(x); return btoa(s); };
+const lgDeB64=t=>Uint8Array.from(atob(t),c=>c.charCodeAt(0));
+async function lgDeriva(senha,salt,it){ const k=await crypto.subtle.importKey("raw",new TextEncoder().encode(senha),"PBKDF2",false,["deriveBits"]);
+  return lgB64(new Uint8Array(await crypto.subtle.deriveBits({name:"PBKDF2",hash:"SHA-256",salt,iterations:it},k,256))); }
+async function lgCriar(senha,prov){ const salt=crypto.getRandomValues(new Uint8Array(16)); return {s:lgB64(salt),h:await lgDeriva(senha,salt,LG.ITER),it:LG.ITER,prov:!!prov,mod:Date.now()}; }
+async function lgConfere(c,senha){ try{ return (await lgDeriva(senha,lgDeB64(c.s),c.it||LG.ITER))===c.h; }catch(_){ return false; } }
+function lgSenhaProv(){ const A="ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; const r=crypto.getRandomValues(new Uint8Array(12)); return [...r].map(x=>A[x%A.length]).join("").replace(/(.{4})(?=.)/g,"$1-"); }
+function lgRegraSenha(s,u){ if(s.length<LG.MIN) return `A senha precisa ter no mínimo ${LG.MIN} caracteres.`; if(!/[A-Za-zÀ-ú]/.test(s)||!/\d/.test(s)) return "Use letras e números na senha."; if(u&&lgNorm(s).includes(lgLogin(u))) return "A senha não pode conter o seu usuário."; return ""; }
+function lgSes(){ try{ return JSON.parse(localStorage.getItem("cte_ses")||"null"); }catch(_){ return null; } }
+function lgSessOk(){ if(!lgAtivo()) return true; const s=lgSes(); if(!s||!S.userId||s.uid!==S.userId||!(s.ate>Date.now())) return false; const c=(S.cred||{})[s.uid]; return !!c&&!c.prov; }
+function lgTocar(){ const s=lgSes(); if(s&&s.ate>Date.now()&&Date.now()-(s.t||0)>60000){ s.ate=Date.now()+LG.SESS; s.t=Date.now(); try{ localStorage.setItem("cte_ses",JSON.stringify(s)); }catch(_){} } }
+function lgSair(){ try{ localStorage.removeItem("cte_ses"); }catch(_){} if(typeof fechar==="function") fechar(); render(); }
+function lgMescla(src){ if(!src||typeof src!=="object") return false; S.cred=S.cred||{}; let n=0;
+  for(const [id,c] of Object.entries(src)){ if(!c||!c.h||!c.s) continue; const a=S.cred[id]; if(!a||(c.mod||0)>(a.mod||0)){ S.cred[id]={s:c.s,h:c.h,it:c.it||LG.ITER,prov:!!c.prov,mod:c.mod||0}; n++; } } return n>0; }
+/* tentativas */
+const lgFalhas=()=>{ try{ return JSON.parse(localStorage.getItem("cte_lg_f")||"{}"); }catch(_){ return {}; } };
+function lgEspera(){ const f=lgFalhas(); return f.ate&&f.ate>Date.now()?Math.ceil((f.ate-Date.now())/1000):0; }
+function lgFalhou(){ const f=lgFalhas(); f.n=(f.n||0)+1; if(f.n>=5) f.ate=Date.now()+Math.min(900,30*Math.pow(2,f.n-5))*1000; try{ localStorage.setItem("cte_lg_f",JSON.stringify(f)); }catch(_){} }
+const lgLimpaFalhas=()=>{ try{ localStorage.removeItem("cte_lg_f"); }catch(_){} };
+/* tela */
+let lgModo={m:"login"};
+function lgTela(msg){ let el=document.getElementById("lg"); if(!el){ el=document.createElement("div"); el.id="lg"; document.body.appendChild(el); }
+  const m=lgModo.m; const u=lgModo.uid?S.usuarios.find(x=>x.id===lgModo.uid):null;
+  const topo=`<div class="lg-top"><b>CTE Vistorias</b><span>Acesso restrito à equipe autorizada</span></div>`;
+  if(m==="nova"){
+    el.innerHTML=`${topo}<form class="lg-box" id="lg-f" autocomplete="on"><h2>${lgModo.boot?"Crie sua senha":"Defina sua nova senha"}</h2>
+      <p class="small">Olá, <b>${esc(u?.nome||"")}</b>. ${lgModo.boot?"Este é o seu primeiro acesso com senha.":"A senha provisória vale apenas para este primeiro acesso."} Escolha uma senha pessoal com no mínimo ${LG.MIN} caracteres, com letras e números. Não compartilhe.</p>
+      <input type="text" name="username" value="${esc(u?lgLogin(u):"")}" autocomplete="username" hidden>
+      <label class="f"><span>Nova senha</span><input id="lg-n1" type="password" autocomplete="new-password" autocapitalize="off" required></label>
+      <label class="f"><span>Repita a nova senha</span><input id="lg-n2" type="password" autocomplete="new-password" autocapitalize="off" required></label>
+      <p id="lg-e" class="warn" ${msg?"":"hidden"}>${esc(msg||"")}</p><button class="btn primary block" type="submit">Salvar e entrar</button>
+      <button class="link" type="button" id="lg-v">Cancelar</button></form>`;
+  } else {
+    el.innerHTML=`${topo}<form class="lg-box" id="lg-f" autocomplete="on"><h2>Entrar</h2>
+      <label class="f"><span>Usuário ou e-mail</span><input id="lg-u" name="username" type="text" inputmode="email" autocomplete="username" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="nome.sobrenome" value="${esc(lgModo.ult||"")}" required></label>
+      <label class="f"><span>Senha</span><input id="lg-p" name="password" type="password" autocomplete="current-password" autocapitalize="off" required></label>
+      <p id="lg-e" class="warn" ${msg?"":"hidden"}>${esc(msg||"")}</p><button class="btn primary block" type="submit">Entrar</button>
+      <p class="muted small">Primeiro acesso ou senha esquecida? Peça ao Coordenador uma senha provisória. Se o app informar que a equipe é antiga, importe o arquivo de equipe mais recente abaixo.</p>
+      <button class="link" type="button" id="lg-eq">Importar arquivo de equipe (.json)</button></form>`;
+  }
+  const f=el.querySelector("#lg-f"); f.onsubmit=e=>{ e.preventDefault(); lgEnviar(); };
+  const v=el.querySelector("#lg-v"); if(v) v.onclick=()=>{ lgModo={m:"login"}; lgTela(); };
+  const q=el.querySelector("#lg-eq"); if(q) q.onclick=()=>{ importarEquipe(); };
+  setTimeout(()=>{ const i=el.querySelector(m==="nova"?"#lg-n1":"#lg-u"); if(i&&document.activeElement!==i) i.focus(); },50);
+}
+function lgMostrar(msg){ lgTela(msg); document.body.classList.add("lg-on"); }
+function lgFecharTela(){ const el=document.getElementById("lg"); if(el) el.remove(); document.body.classList.remove("lg-on"); }
+function lgEntrar(u){ S.userId=u.id; try{ localStorage.setItem("cte_ses",JSON.stringify({uid:u.id,ate:Date.now()+LG.SESS,t:Date.now()})); }catch(_){} lgLimpaFalhas(); lgModo={m:"login"}; save(); lgFecharTela(); render(); toast(`Olá, ${u.nome} (${PERFIS[u.perfil]})`); }
+let lgOcupado=false;
+async function lgEnviar(){ if(lgOcupado) return; lgOcupado=true; try{
+  if(lgModo.m==="nova"){ const u=S.usuarios.find(x=>x.id===lgModo.uid); const a=document.getElementById("lg-n1").value, b=document.getElementById("lg-n2").value;
+    const er=lgRegraSenha(a,u); if(er) return lgTela(er); if(a!==b) return lgTela("As duas senhas não conferem.");
+    const antigo=(S.cred||{})[u.id]; if(antigo&&await lgConfere(antigo,a)) return lgTela("Escolha uma senha diferente da provisória.");
+    S.cred=S.cred||{}; S.cred[u.id]=await lgCriar(a,false); return lgEntrar(u); }
+  const w=lgEspera(); if(w) return lgTela(`Muitas tentativas. Aguarde ${w} s e tente de novo.`);
+  const txt=document.getElementById("lg-u").value, sen=document.getElementById("lg-p").value; lgModo.ult=txt;
+  const u=lgAcha(txt); const c=u&&(S.cred||{})[u.id];
+  if(u&&!c&&u.perfil==="coord"&&S.userId===u.id){ lgModo={m:"nova",uid:u.id,boot:true}; return lgTela(); }
+  if(!u||!c||!(await lgConfere(c,sen))){ lgFalhou(); const w2=lgEspera(); return lgTela(w2?`Muitas tentativas. Aguarde ${w2} s.`:"Usuário ou senha inválidos, ou senha ainda não definida. Peça ao Coordenador uma senha provisória."); }
+  if(c.prov){ lgModo={m:"nova",uid:u.id}; return lgTela(); }
+  lgEntrar(u);
+} finally { lgOcupado=false; } }
+/* trava da renderização */
+{ const _rn=render; render=function(){ if(lgAtivo()&&!lgSessOk()){ if(!document.getElementById("lg")) { lgModo={m:"login"}; lgMostrar(); } return; } if(document.getElementById("lg")) lgFecharTela(); _rn.apply(this,arguments); }; }
+setInterval(()=>{ try{ if(lgAtivo()&&!lgSessOk()&&!document.getElementById("lg")) render(); }catch(_){} },30000);
+document.addEventListener("visibilitychange",()=>{ try{ if(!document.hidden&&lgAtivo()&&!lgSessOk()&&!document.getElementById("lg")) render(); }catch(_){} });
+for(const ev of ["pointerdown","keydown"]) document.addEventListener(ev,()=>{ try{ if(lgAtivo()) lgTocar(); }catch(_){} },true);
+/* propagação das credenciais (somente hash) */
+{ const _mb=mesclarBackup; mesclarBackup=async function(d,cont){ await _mb.apply(this,arguments); try{ lgMescla(d&&d.estado&&d.estado.cred); }catch(_){} }; }
+{ const _ae=aplicarEquipe; aplicarEquipe=function(d){ try{ if(d&&d.tipo==="cte-vistoria-equipe"&&d.cred) lgMescla(d.cred); }catch(_){} return _ae.apply(this,arguments); }; }
+{ const _eq=equipeArquivo; equipeArquivo=function(){ const d=_eq.apply(this,arguments); d.versao=2; d.cred={}; for(const u of d.usuarios){ const c=(S.cred||{})[u.id]; if(c) d.cred[u.id]=c; } return d; }; }
+{ const _mv=typeof mailVarrer==="function"?mailVarrer:null; if(_mv){ mailVarrer=function(){ if(lgAtivo()&&!lgSessOk()) return; return _mv.apply(this,arguments); }; } }
+/* Quem está usando */
+{ const _su=sheetUsuario; sheetUsuario=function(){ if(!lgAtivo()) return _su.apply(this,arguments); const u=user(), cd=isCoord();
+  abrirSheet(`<div class="row between"><h2>Minha conta</h2><button class="link" data-x="1">Fechar</button></div>
+   <p class="small">Conectado como <b>${esc(u.nome)}</b> (${PERFIS[u.perfil]})<br><span class="muted">Usuário: ${esc(lgLogin(u))} · ${esc(u.email)}</span></p>
+   <button class="btn block" data-lg="troca">Trocar minha senha</button>
+   ${cd?`<button class="btn block" data-lg="senhas">Senhas da equipe</button><button class="btn block" data-gu="1">Gerenciar usuários e equipe</button>`:""}
+   <button class="btn danger block" data-lg="sair">Sair</button>
+   <p class="muted small">Todos os registros ficam identificados pelo usuário que entrou. A sessão se encerra após 12 horas sem uso.</p>`,
+   e=>{ const b=e.target.closest("[data-lg]"); if(b){ const k=b.dataset.lg; if(k==="sair"){ lgSair(); } else if(k==="troca") lgSheetTroca(); else if(k==="senhas") lgSheetSenhas(); return; }
+     if(e.target.closest("[data-gu]")){ fechar(); UI.view="usuarios"; render(); } }); }; }
+function lgSheetTroca(){ abrirSheet(`<div class="row between"><h2>Trocar minha senha</h2><button class="link" data-x="1">Fechar</button></div>
+  <form id="lg-tf" autocomplete="on"><input type="text" name="username" value="${esc(lgLogin(user()))}" autocomplete="username" hidden>
+  <label class="f"><span>Senha atual</span><input id="lt-a" type="password" autocomplete="current-password" required></label>
+  <label class="f"><span>Nova senha (mín. ${LG.MIN}, letras e números)</span><input id="lt-n" type="password" autocomplete="new-password" required></label>
+  <label class="f"><span>Repita a nova senha</span><input id="lt-r" type="password" autocomplete="new-password" required></label>
+  <p id="lt-e" class="warn" hidden></p><button class="btn primary block" type="submit">Salvar nova senha</button></form>`);
+  document.getElementById("lg-tf").onsubmit=async e=>{ e.preventDefault(); const er=document.getElementById("lt-e"); const m=t=>{ er.textContent=t; er.hidden=false; };
+    const u=user(), a=lt_v("lt-a"), n=lt_v("lt-n"), r=lt_v("lt-r"); const c=(S.cred||{})[u.id];
+    if(!c||!(await lgConfere(c,a))) return m("Senha atual incorreta."); const x=lgRegraSenha(n,u); if(x) return m(x); if(n!==r) return m("As duas senhas não conferem."); if(n===a) return m("Escolha uma senha diferente da atual.");
+    S.cred[u.id]=await lgCriar(n,false); save(); fechar(); toast("Senha alterada. Nos outros aparelhos vale após a próxima sincronização."); }; }
+const lt_v=id=>document.getElementById(id).value;
+/* Coordenador: senhas provisórias */
+function lgStatus(id){ const c=(S.cred||{})[id]; return !c?"Sem senha":c.prov?"Provisória (aguarda 1º acesso)":"Definida"; }
+function lgSheetSenhas(){ const eu=S.userId; const us=S.usuarios.filter(u=>!EXEMPLO_RE.test(u.email||""));
+  abrirSheet(`<div class="row between"><h2>Senhas da equipe</h2><button class="link" data-x="1">Fechar</button></div>
+  <p class="small">A senha provisória aparece só nesta tela, agora. Envie a cada pessoa em conversa individual (nunca em grupo). No primeiro acesso a pessoa define a própria senha. Depois de gerar, exporte a equipe de novo.</p>
+  <div class="lg-rows">${us.map(u=>`<div class="lg-r"><div><b>${esc(u.nome)}</b><br><span class="muted small">${esc(lgLogin(u))} · ${PERFIS[u.perfil]} · ${lgStatus(u.id)}</span>${LG.claro[u.id]?`<br><code class="lg-c">${esc(LG.claro[u.id])}</code>`:""}</div>${u.id===eu?"":`<button class="btn small-btn" data-rs="${esc(u.id)}">${(S.cred||{})[u.id]?"Redefinir":"Gerar"}</button>`}</div>`).join("")}</div>
+  <button class="btn block" data-lg2="todos">Gerar para quem ainda não tem senha</button>
+  <button class="btn block" data-lg2="copiar">Copiar lista das senhas geradas</button>
+  <button class="btn primary block" data-lg2="exp">Exportar equipe (.json)</button>`,
+  async e=>{ const r=e.target.closest("[data-rs]"); if(r){ await lgGera(r.dataset.rs); return lgSheetSenhas(); }
+    const b=e.target.closest("[data-lg2]"); if(!b) return; const k=b.dataset.lg2;
+    if(k==="todos"){ for(const u of us) if(u.id!==eu&&!(S.cred||{})[u.id]) await lgGera(u.id); lgSheetSenhas(); }
+    else if(k==="copiar"){ const t=us.filter(u=>LG.claro[u.id]).map(u=>`${u.nome} | usuário: ${lgLogin(u)} | senha provisória: ${LG.claro[u.id]}`).join("\n"); if(!t) return toast("Nenhuma senha gerada nesta tela."); try{ await navigator.clipboard.writeText(t); toast("Lista copiada. Envie individualmente."); }catch(_){ toast("Não foi possível copiar."); } }
+    else if(k==="exp"){ exportarEquipe(); } }); }
+async function lgGera(id){ const p=lgSenhaProv(); S.cred=S.cred||{}; S.cred[id]=await lgCriar(p.replace(/-/g,""),true); LG.claro[id]=p; save(); }
+/* a senha digitada ignora hífens da provisória */
+{ const _lc=lgConfere; lgConfere=async function(c,s){ if(c&&c.prov) s=(s||"").replace(/[\s-]/g,"").toUpperCase(); return _lc.call(this,c,s); }; }
+{ const _vU2=vUsuarios; vUsuarios=function(){ let h=_vU2(); if(!isCoord()||!lgAtivo()) return h; return h+`<section class="card"><h2>Acesso e senhas</h2><p class="small muted">Cada pessoa entra com usuário (nome.sobrenome) e senha própria. Gere a senha provisória, entregue em particular e exporte a equipe.</p><button class="btn primary block" data-act="lgsen">Senhas da equipe</button></section>`; }; }
+document.addEventListener("click",e=>{ if(e.target.closest("#sheet")) return; const a=e.target.closest("[data-act='lgsen']"); if(!a) return; e.stopImmediatePropagation(); lgSheetSenhas(); },true);
+{ const _mg2=montarGaveta; montarGaveta=function(){ _mg2.apply(this,arguments); const n=document.getElementById("drawer-nav"); if(n&&lgAtivo()&&!n.querySelector("[data-act='lgsair']")) n.insertAdjacentHTML("beforeend",`<button data-act="lgsair" type="button"><span class="gd-ic" aria-hidden="true">⎋</span>Sair</button>`); }; }
+document.addEventListener("click",e=>{ const a=e.target.closest("[data-act='lgsair']"); if(!a) return; e.stopImmediatePropagation(); lgSair(); },true);
 
 (async function iniciar(){ $("#logo").src=LOGO_DARK; rede(); await openDB(); S=(await kvGet("state2"))||estadoInicial(); if(!S.rfs){ S.rfs=[]; } S.seqAV=S.seqAV||1;
   migrar(); purgarModelo(); await carregarIndiceFotosHist(); lastJSON=snapJSON(); kvSet("state2",S); UI.oid=(S.obras[0]||{}).id||null; render(); })();
