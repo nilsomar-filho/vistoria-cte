@@ -800,6 +800,16 @@ button.kpi-b{border:0;font:inherit;color:inherit;cursor:pointer;width:100%;text-
 body.lg-on{overflow:hidden}
 .lg-r{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #e3e8ec}
 .lg-c{display:inline-block;margin-top:4px;padding:3px 8px;background:#fff7d6;border:1px solid #e6d27a;border-radius:6px;font-size:15px;letter-spacing:1px}
+.cl-oq{margin:6px 0 4px;font-size:14px;line-height:1.4;color:var(--fg,#1b2a33)}
+.cl-como{margin:4px 0 8px;border:1px solid var(--line,#d5dde3);border-radius:8px;background:#f7fafc}
+.cl-como summary{padding:8px 10px;font-weight:700;font-size:13px;color:#004d6d;cursor:pointer;list-style:none}
+.cl-como summary::-webkit-details-marker{display:none}
+.cl-como summary::after{content:"+";float:right}
+.cl-como[open] summary::after{content:"–"}
+.cl-como dl{margin:0;padding:0 10px 8px;font-size:13px;line-height:1.35}
+.cl-como dt{font-weight:700;color:#58595b;margin-top:6px;font-size:12px;text-transform:uppercase;letter-spacing:.02em}
+.cl-como dd{margin:1px 0 0}
+.lb-it{padding-bottom:6px}
 </style>
 
 <header class="top">
@@ -5188,7 +5198,7 @@ try{ syUlt=+localStorage.getItem("cte_od_sync_ult")||0; }catch(_){}
 setTimeout(()=>{ if(odAtivo()) sySincronizar(false); },7000);
 
 /* ================= ONDA 21: "Versões e arquivos em uso" na tela Dados deste aparelho ================= */
-const APP_VER="v31";
+const APP_VER="v32";
 const vaFmt=t=>{ try{ return new Date(t).toLocaleString("pt-BR",{dateStyle:"short",timeStyle:"short"}); }catch(_){ return "—"; } };
 const vaGet=k=>odLS(k,null);
 { const _ej=entregarJSON; entregarJSON=function(nome){ try{ if(/^registros_/.test(nome)) odSet("cte_va_exp",{n:nome,t:Date.now()}); }catch(_){} return _ej.apply(this,arguments); }; }
@@ -5499,6 +5509,73 @@ async function lgGera(id){ const p=lgSenhaProv(); S.cred=S.cred||{}; S.cred[id]=
 document.addEventListener("click",e=>{ if(e.target.closest("#sheet")) return; const a=e.target.closest("[data-act='lgsen']"); if(!a) return; e.stopImmediatePropagation(); lgSheetSenhas(); },true);
 { const _mg2=montarGaveta; montarGaveta=function(){ _mg2.apply(this,arguments); const n=document.getElementById("drawer-nav"); if(n&&lgAtivo()&&!n.querySelector("[data-act='lgsair']")) n.insertAdjacentHTML("beforeend",`<button data-act="lgsair" type="button"><span class="gd-ic" aria-hidden="true">⎋</span>Sair</button>`); }; }
 document.addEventListener("click",e=>{ const a=e.target.closest("[data-act='lgsair']"); if(!a) return; e.stopImmediatePropagation(); lgSair(); },true);
+
+/* ================= ONDA 27: biblioteca de modelos de checklist (disciplinas, “como verificar”) ================= */
+const LB_CP=["cod","oq","quando","fase","como","crit","evid","resp","risco","ref","nota","apl"];
+const LB_ROT=[["quando","Quando verificar"],["como","Como verificar"],["crit","Critério de aceitação"],["evid","Evidência / registro"],["resp","Responsável"],["risco","Risco evitado"],["ref","Referência"],["nota","Observação"]];
+const lbModelos=()=>clMods().filter(m=>m.lib);
+function lbDiscs(){ const mp=new Map(); for(const m of lbModelos()){ if(!mp.has(m.disc)) mp.set(m.disc,m.discNome); } return [...mp.entries()].sort((a,b)=>String(a[0]).localeCompare(String(b[0]))); }
+function lbComo(i){
+  const lin=[]; for(const [k,r] of LB_ROT){ let v=i[k]; if(!v) continue; if(k==="quando"&&i.fase) v+=" · fase: "+i.fase; lin.push(`<dt>${r}</dt><dd>${esc(v)}</dd>`); }
+  if(i.apl&&i.apl!=="Sim") lin.push(`<dt>Aplica-se à obra?</dt><dd>${esc(i.apl)} (confirmar)</dd>`);
+  return (i.oq?`<p class="cl-oq">${esc(i.oq)}</p>`:"")+(lin.length?`<details class="cl-como"><summary>Como verificar${i.cod?` · ${esc(i.cod)}`:""}</summary><dl>${lin.join("")}</dl></details>`:""); }
+{ const _ci=clItem; clItem=function(c,i,n){ const h=_ci.apply(this,arguments); if(!(i.oq||i.como||i.crit||i.evid||i.cod)) return h; const x=lbComo(i); const p=h.indexOf('<div class="ck-btns"'); return p<0?h:h.slice(0,p)+x+h.slice(p); }; }
+/* criação do checklist a partir do modelo, levando os campos de orientação */
+function clLerNovo(){ const g=id=>(document.getElementById(id)||{}).value||""; UI.cln={oid:g("cn-o"),tipo:g("cn-t"),ot:g("cn-ot"),mid:g("cn-m"),nome:g("cn-n"),local:g("cn-l"),disc:g("cn-d")}; return UI.cln; }
+function clCriar(){
+  const d=clLerNovo(); const err=m=>{ const x=document.getElementById("cn-e"); x.textContent=m; x.hidden=false; };
+  if(!d.oid) return err("Selecione a obra."); if(d.tipo==="Outro (descrever)"&&!d.ot.trim()) return err("Descreva qual é o checklist (tipo “Outro”).");
+  if(!d.nome.trim()) return err("Dê um nome ao checklist.");
+  const o=obraDe(d.oid); const m=clMods().find(x=>x.id===d.mid);
+  const c={id:uid("c"),kind:"CL",obraId:o.id,numero:proxNumero(o,"CL"),tipo:d.tipo,tipoOutro:d.tipo==="Outro (descrever)"?d.ot.trim():"",titulo:d.nome.trim(),modeloId:m?m.id:"",modeloNome:m?m.nome:"",local:d.local.trim(),data:hoje(),resp:user().nome,criado:Date.now(),
+    itens:(m?m.itens:[]).map((x,i)=>{ const it={id:"i"+(i+1),g:x.g||"",desc:x.desc,local:x.local||"",st:"",obs:"",antes:null,depois:null,pos:"",rev:""}; for(const k of LB_CP) if(x[k]) it[k]=x[k]; return it; })};
+  clL().unshift(c); UI.oid=o.id; UI.cln=null; UI.clid=c.id; UI.view="cl"; save(); render(); scrollTo(0,0);
+}
+{ const _vN=vClNovo; vClNovo=function(){ let h=_vN.apply(this,arguments); const sel=UI.cln||{}; const ds=lbDiscs(); const todos=clMods();
+  const dsel=sel.disc||""; let lista=todos; if(dsel==="__meus") lista=todos.filter(m=>!m.lib); else if(dsel) lista=todos.filter(m=>m.disc===dsel);
+  const opt=m=>`<option value="${esc(m.id)}" ${sel.mid===m.id?"selected":""}>${esc(m.nome)} (${m.itens.length} itens)</option>`;
+  let ops; if(!dsel&&ds.length){ ops=ds.map(([k,n])=>`<optgroup label="${esc(n)}">${todos.filter(m=>m.disc===k).map(opt).join("")}</optgroup>`).join("")+(todos.some(m=>!m.lib)?`<optgroup label="Meus modelos (pilotos)">${todos.filter(m=>!m.lib).map(opt).join("")}</optgroup>`:""); } else ops=lista.map(opt).join("");
+  const cur=todos.find(m=>m.id===sel.mid);
+  const novo=`${ds.length?`<label class="f"><span>Disciplina</span><select id="cn-d"><option value="">Todas as disciplinas</option>${ds.map(([k,n])=>`<option value="${esc(k)}" ${dsel===k?"selected":""}>${esc(n)}</option>`).join("")}${todos.some(m=>!m.lib)?`<option value="__meus" ${dsel==="__meus"?"selected":""}>Meus modelos (pilotos)</option>`:""}</select></label>`:""}
+    <label class="f"><span>Modelo pré-preenchido</span><select id="cn-m"><option value="">Em branco · adicionar itens em campo</option>${ops}</select></label>
+    ${cur?`<p class="muted small">${cur.itens.length} itens pré-preenchidos, com orientação de como verificar. Você pode incluir itens novos depois, dentro do checklist.</p>`:`<p class="muted small">${ds.length?"":"A biblioteca de modelos CTE ainda não foi importada neste aparelho (Dados e fotos › Importar modelos de checklist)."}</p>`}`;
+  return h.replace(/<label class="f"><span>Modelo \(piloto\)<\/span><select id="cn-m">[\s\S]*?<\/select><\/label>/,novo); }; }
+document.addEventListener("change",e=>{ if(UI.view!=="clnovo"||!e.target.id) return;
+  if(e.target.id==="cn-d"){ clLerNovo(); UI.cln.mid=""; render(); }
+  else if(e.target.id==="cn-m"){ const d=clLerNovo(); const m=clMods().find(x=>x.id===d.mid); if(m&&m.lib){ UI.cln.tipo=m.tipo||UI.cln.tipo; if(m.tipo==="Outro (descrever)") UI.cln.ot=UI.cln.ot||m.tipoOutro||""; UI.cln.disc=UI.cln.disc||""; UI.cln.nome=UI.cln.nome||m.nome; render(); } } });
+/* lista e leitura dos modelos */
+{ const _vM=vClMods; vClMods=function(){ const h=_vM.apply(this,arguments); const ds=lbDiscs(); const card=m=>`<div class="cl-card" data-act="clmodabrir" data-v="${esc(m.id)}" role="button" tabindex="0"><b>${esc(m.nome)}</b><span class="muted small">${esc(m.tipo||"")} · ${m.itens.length} itens${m.lib?" · biblioteca CTE":""}</span></div>`;
+  if(!ds.length) return h; const meus=clMods().filter(m=>!m.lib);
+  const lst=ds.map(([k,n])=>`<h3 class="grp">${esc(n)}</h3>${clMods().filter(m=>m.disc===k).map(card).join("")}`).join("")+(meus.length?`<h3 class="grp">Meus modelos (pilotos)</h3>${meus.map(card).join("")}`:"");
+  return h.replace(/<div class="cl-lista">[\s\S]*$/,`<div class="cl-lista">${lst}</div>`); }; }
+{ const _vM1=vClMod; vClMod=function(){ const m=clMods().find(x=>x.id===UI.cmid); if(!m||!m.lib) return _vM1.apply(this,arguments); let g=null;
+  const li=m.itens.map(i=>{ const cab=(i.g&&i.g!==g)?`<h3 class="grp">${esc(i.g)}</h3>`:""; if(i.g) g=i.g; return cab+`<article class="cli lb-it"><div class="cli-h"><span class="cli-t"><b>${esc(i.desc)}</b></span></div>${lbComo(i)}</article>`; }).join("");
+  return `<div class="row between"><div><p class="eyebrow">Biblioteca CTE · somente leitura</p><h1>${esc(m.nome)}</h1><p class="muted small">${esc(m.discNome||"")} · ${m.itens.length} itens · ${esc(m.tipo||"")}</p></div></div>
+  ${m.obs?`<p class="warn">${esc(m.obs)}</p>`:""}<p class="muted small">Para usar, crie um checklist e escolha este modelo. Para adaptar, abra um checklist criado a partir dele e inclua, edite ou remova itens.</p>
+  <button class="btn primary block" data-act="clnovo">Criar checklist com este modelo</button><button class="btn block" data-act="clmods">Voltar aos modelos</button>${li}`; }; }
+document.addEventListener("click",e=>{ if(e.target.closest("#sheet")) return; const a=e.target.closest("[data-act='clnovo']"); if(!a||UI.view!=="clmod") return; const m=clMods().find(x=>x.id===UI.cmid); if(!m||!m.lib) return;
+  e.stopImmediatePropagation(); UI.cln={mid:m.id,disc:m.disc,tipo:m.tipo,ot:m.tipoOutro||"",nome:m.nome}; UI.view="clnovo"; render(); scrollTo(0,0); },true);
+/* importação */
+function importarModelos(d){
+  if(!d||d.tipo!=="cte-vistoria-modelos"||!Array.isArray(d.modelos)){ aviso("Arquivo não reconhecido","Este arquivo não é uma biblioteca de modelos de checklist do app."); return; }
+  let add=0,upd=0,igual=0; const L=clMods();
+  for(const m of d.modelos){ if(!m||!m.id||!Array.isArray(m.itens)||!m.itens.length) continue; const i=L.findIndex(x=>x.id===m.id);
+    if(i<0){ L.push({...m,mod:Date.now()}); add++; } else if(L[i].lib&&L[i].lib!==m.lib){ L[i]={...m,mod:Date.now()}; upd++; } else igual++; }
+  save(); render();
+  aviso("Modelos de checklist importados",`${add} novo(s), ${upd} atualizado(s), ${igual} já existente(s). Biblioteca: ${esc(d.origem||d.lib||"")}. Seus modelos próprios não foram alterados. Os modelos acompanham a sincronização entre os aparelhos.`);
+}
+async function importarPacote(){
+  const d=await escolherArquivoJSON(); if(!d) return;
+  if(d.tipo==="cte-vistoria-equipe"){ aplicarEquipe(d); return; }
+  if(d.tipo==="cte-vistoria-modelos"){ importarModelos(d); return; }
+  if(d.tipo!=="cte-vistoria-pacote"||!Array.isArray(d.obras)){ aviso("Arquivo não reconhecido","Este arquivo não é um pacote de dados de obra do app."); return; }
+  try{ localStorage.setItem("cte_pacote",JSON.stringify(d)); }catch(e){ aviso("Não foi possível guardar","O navegador recusou guardar o pacote neste aparelho (modo anônimo ou sem espaço)."); return; }
+  S.obrasReaisVer=0; commit(); toast("Pacote importado. Recarregando…"); setTimeout(()=>location.reload(),600);
+}
+{ const _sd7=sheetDados; sheetDados=function(){ _sd7.apply(this,arguments); const h=[...document.querySelectorAll("#sheet h3")].find(x=>/^1\./.test(x.textContent)); if(!h||!isEngOuCoord()) return;
+  const n=lbModelos().length, v=(lbModelos()[0]||{}).lib||"";
+  h.insertAdjacentHTML("beforebegin",`<h3>Modelos de checklist (biblioteca CTE)</h3><p class="small">${n?`${n} modelos da biblioteca neste aparelho (versão ${esc(v)}).`:"A biblioteca ainda não foi importada neste aparelho."} Arquivo: <b>modelos-checklist_CTE_R00.json</b>, da pasta privada “1 - Equipe e pacotes”. Depois de importada por uma pessoa, a biblioteca chega aos demais aparelhos pela sincronização.</p><button class="btn block" data-lb="imp">Importar modelos de checklist (.json)</button>`); }; }
+document.addEventListener("click",e=>{ const b=e.target.closest&&e.target.closest("#sheet [data-lb]"); if(!b) return; e.stopImmediatePropagation(); (async()=>{ const d=await escolherArquivoJSON(); if(d) importarModelos(d); })(); },true);
 
 (async function iniciar(){ $("#logo").src=LOGO_DARK; rede(); await openDB(); S=(await kvGet("state2"))||estadoInicial(); if(!S.rfs){ S.rfs=[]; } S.seqAV=S.seqAV||1;
   migrar(); purgarModelo(); await carregarIndiceFotosHist(); lastJSON=snapJSON(); kvSet("state2",S); UI.oid=(S.obras[0]||{}).id||null; render(); })();
