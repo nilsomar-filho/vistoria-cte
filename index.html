@@ -800,6 +800,7 @@ button.kpi-b{border:0;font:inherit;color:inherit;cursor:pointer;width:100%;text-
 body.lg-on{overflow:hidden}
 .lg-r{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #e3e8ec}
 .lg-c{display:inline-block;margin-top:4px;padding:3px 8px;background:#fff7d6;border:1px solid #e6d27a;border-radius:6px;font-size:15px;letter-spacing:1px}
+.lg-ou{text-align:center;margin:10px 0 2px}
 .cl-oq{margin:6px 0 4px;font-size:14px;line-height:1.4;color:var(--fg,#1b2a33)}
 .cl-como{margin:4px 0 8px;border:1px solid var(--line,#d5dde3);border-radius:8px;background:#f7fafc}
 .cl-como summary{padding:8px 10px;font-weight:700;font-size:13px;color:#004d6d;cursor:pointer;list-style:none}
@@ -5198,7 +5199,7 @@ try{ syUlt=+localStorage.getItem("cte_od_sync_ult")||0; }catch(_){}
 setTimeout(()=>{ if(odAtivo()) sySincronizar(false); },7000);
 
 /* ================= ONDA 21: "Versões e arquivos em uso" na tela Dados deste aparelho ================= */
-const APP_VER="v33";
+const APP_VER="v34";
 const vaFmt=t=>{ try{ return new Date(t).toLocaleString("pt-BR",{dateStyle:"short",timeStyle:"short"}); }catch(_){ return "—"; } };
 const vaGet=k=>odLS(k,null);
 { const _ej=entregarJSON; entregarJSON=function(nome){ try{ if(/^registros_/.test(nome)) odSet("cte_va_exp",{n:nome,t:Date.now()}); }catch(_){} return _ej.apply(this,arguments); }; }
@@ -5402,7 +5403,7 @@ async function lgConfere(c,senha){ try{ return (await lgDeriva(senha,lgDeB64(c.s
 function lgSenhaProv(){ const A="ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; const r=crypto.getRandomValues(new Uint8Array(12)); return [...r].map(x=>A[x%A.length]).join("").replace(/(.{4})(?=.)/g,"$1-"); }
 function lgRegraSenha(s,u){ if(s.length<LG.MIN) return `A senha precisa ter no mínimo ${LG.MIN} caracteres.`; if(!/[A-Za-zÀ-ú]/.test(s)||!/\d/.test(s)) return "Use letras e números na senha."; if(u&&lgNorm(s).includes(lgLogin(u))) return "A senha não pode conter o seu usuário."; return ""; }
 function lgSes(){ try{ return JSON.parse(localStorage.getItem("cte_ses")||"null"); }catch(_){ return null; } }
-function lgSessOk(){ if(!lgAtivo()) return true; const s=lgSes(); if(!s||!S.userId||s.uid!==S.userId||!(s.ate>Date.now())) return false; const c=(S.cred||{})[s.uid]; return !!c&&!c.prov; }
+function lgSessOk(){ if(!lgAtivo()) return true; const s=lgSes(); if(!s||!S.userId||s.uid!==S.userId||!(s.ate>Date.now())) return false; if(s.ms) return true; const c=(S.cred||{})[s.uid]; return !!c&&!c.prov; }
 function lgTocar(){ const s=lgSes(); if(s&&s.ate>Date.now()&&Date.now()-(s.t||0)>60000){ s.ate=Date.now()+LG.SESS; s.t=Date.now(); try{ localStorage.setItem("cte_ses",JSON.stringify(s)); }catch(_){} } }
 function lgSair(){ try{ localStorage.removeItem("cte_ses"); }catch(_){} if(typeof fechar==="function") fechar(); render(); }
 function lgMescla(src){ if(!src||typeof src!=="object") return false; S.cred=S.cred||{}; let n=0;
@@ -5645,6 +5646,31 @@ async function resumoSemanalPDF(){
 }
 { const _v=vRel11; vRel11=function(){ const h=_v.apply(this,arguments); return h.replace('<button class="btn" data-act="r11xls">','<button class="btn" data-act="r11sem">Resumo semanal (PDF)</button><button class="btn" data-act="r11xls">'); }; }
 document.addEventListener("click",e=>{ if(e.target.closest("#sheet")) return; const a=e.target.closest("[data-act='r11sem']"); if(!a) return; e.stopImmediatePropagation(); resumoSemanalPDF(); },true);
+
+/* ================= ONDA 29: entrar com conta Microsoft (mesma conta da empresa; também conecta o OneDrive) ================= */
+const MSL="cte_ms_login";
+const msAcha=(upn,mail)=>{ const v=[upn,mail].map(x=>lgNorm(x)).filter(Boolean); const c=S.usuarios.filter(u=>!EXEMPLO_RE.test(u.email||"")&&v.includes(lgNorm(u.email))); return c.length===1?c[0]:null; };
+async function msIniciar(){ try{ localStorage.setItem(MSL,String(Date.now())); }catch(_){ } try{ await odConectar(); }catch(e){ lgMostrar("Não foi possível abrir o login Microsoft: "+(e.message||e)); } }
+{ const _t=lgTela; lgTela=function(msg){ _t.apply(this,arguments); const el=document.getElementById("lg"); if(!el||lgModo.m!=="login"||el.querySelector("#lg-ms")) return;
+    const box=el.querySelector(".lg-box"); if(!box) return;
+    box.insertAdjacentHTML("afterbegin",`<button class="btn primary block" type="button" id="lg-ms">Entrar com Microsoft</button><p class="muted small">Use a conta Microsoft da empresa. Sem senha do app; o OneDrive é conectado junto.</p><p class="lg-ou muted small">— ou entre com usuário e senha —</p>`);
+    el.querySelector("#lg-ms").onclick=()=>msIniciar(); }; }
+async function msFinalizar(){
+  let ts=""; try{ ts=localStorage.getItem(MSL)||""; }catch(_){ } if(!ts) return; try{ localStorage.removeItem(MSL); }catch(_){ }
+  if(Date.now()-(+ts||0)>15*60*1000) return;
+  for(let i=0;i<100;i++){ if(typeof S!=="undefined"&&S&&S.usuarios&&S.usuarios.length&&typeof render==="function") break; await new Promise(r=>setTimeout(r,100)); }
+  for(let i=0;i<150;i++){ const t=odTok(); if(t&&t.rt&&t.em>=(+ts||0)-1000) break; await new Promise(r=>setTimeout(r,100)); }
+  if(!lgAtivo()) return;
+  const falha=m=>{ lgModo={m:"login"}; lgMostrar(m); };
+  const tk=await odToken(); if(!tk) return falha("Não foi possível confirmar sua conta Microsoft. Tente novamente.");
+  let me=null; try{ const r=await fetch("https://graph.microsoft.com/v1.0/me?$select=userPrincipalName,mail,displayName",{headers:{Authorization:"Bearer "+tk}}); if(r.ok) me=await r.json(); }catch(_){ }
+  if(!me||!me.userPrincipalName) return falha("Não foi possível confirmar sua conta Microsoft. Tente novamente.");
+  const u=msAcha(me.userPrincipalName,me.mail);
+  if(!u) return falha(`A conta ${me.userPrincipalName} não está cadastrada na equipe. Peça ao Coordenador para conferir o e-mail do seu usuário (deve ser igual ao da conta Microsoft) e para enviar o arquivo de equipe atualizado.`);
+  try{ localStorage.setItem("cte_ses",JSON.stringify({uid:u.id,ate:Date.now()+LG.SESS,t:Date.now(),ms:1})); }catch(_){ }
+  S.userId=u.id; lgLimpaFalhas(); lgModo={m:"login"}; save(); lgFecharTela(); render(); toast(`Olá, ${u.nome} (${PERFIS[u.perfil]}) · conta Microsoft`);
+}
+setTimeout(()=>{ msFinalizar().catch(e=>console.error(e)); },0);
 
 (async function iniciar(){ $("#logo").src=LOGO_DARK; rede(); await openDB(); S=(await kvGet("state2"))||estadoInicial(); if(!S.rfs){ S.rfs=[]; } S.seqAV=S.seqAV||1;
   migrar(); purgarModelo(); await carregarIndiceFotosHist(); lastJSON=snapJSON(); kvSet("state2",S); UI.oid=(S.obras[0]||{}).id||null; render(); })();
