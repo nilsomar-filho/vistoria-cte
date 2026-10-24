@@ -5198,7 +5198,7 @@ try{ syUlt=+localStorage.getItem("cte_od_sync_ult")||0; }catch(_){}
 setTimeout(()=>{ if(odAtivo()) sySincronizar(false); },7000);
 
 /* ================= ONDA 21: "Versões e arquivos em uso" na tela Dados deste aparelho ================= */
-const APP_VER="v32";
+const APP_VER="v33";
 const vaFmt=t=>{ try{ return new Date(t).toLocaleString("pt-BR",{dateStyle:"short",timeStyle:"short"}); }catch(_){ return "—"; } };
 const vaGet=k=>odLS(k,null);
 { const _ej=entregarJSON; entregarJSON=function(nome){ try{ if(/^registros_/.test(nome)) odSet("cte_va_exp",{n:nome,t:Date.now()}); }catch(_){} return _ej.apply(this,arguments); }; }
@@ -5576,6 +5576,75 @@ async function importarPacote(){
   const n=lbModelos().length, v=(lbModelos()[0]||{}).lib||"";
   h.insertAdjacentHTML("beforebegin",`<h3>Modelos de checklist (biblioteca CTE)</h3><p class="small">${n?`${n} modelos da biblioteca neste aparelho (versão ${esc(v)}).`:"A biblioteca ainda não foi importada neste aparelho."} Arquivo: <b>modelos-checklist_CTE_R00.json</b>, da pasta privada “1 - Equipe e pacotes”. Depois de importada por uma pessoa, a biblioteca chega aos demais aparelhos pela sincronização.</p><button class="btn block" data-lb="imp">Importar modelos de checklist (.json)</button>`); }; }
 document.addEventListener("click",e=>{ const b=e.target.closest&&e.target.closest("#sheet [data-lb]"); if(!b) return; e.stopImmediatePropagation(); (async()=>{ const d=await escolherArquivoJSON(); if(d) importarModelos(d); })(); },true);
+
+/* ================= ONDA 28: disciplinas dos checklists (arquivo), busca nos modelos, resumo semanal em PDF ================= */
+/* --- A) importar disciplinas definidas fora do app (chave: número do checklist | id do item) --- */
+function importarDisciplinas(d){
+  if(!d||d.tipo!=="cte-vistoria-disciplinas"||!d.disc||typeof d.disc!=="object"){ aviso("Arquivo não reconhecido","Este arquivo não é uma lista de disciplinas de checklist."); return; }
+  const obraId=(S.obras.find(o=>o.codigo===d.obraCodigo)||{}).id; let n=0,ja=0,sem=0; const idx=new Map();
+  for(const c of (S.cls||[])){ if(d.obraCodigo&&obraId&&c.obraId!==obraId) continue; for(const i of c.itens) idx.set(c.numero+"|"+i.id,i); }
+  for(const [k,v] of Object.entries(d.disc)){ const i=idx.get(k); if(!i){ sem++; continue; } const nm=discAdd(v); if(!nm) continue; if(i.disc===nm&&!i.discSug){ ja++; continue; } i.disc=nm; delete i.discSug; n++; }
+  save(); render();
+  aviso("Disciplinas aplicadas",`${n} item(ns) com disciplina definida, ${ja} já estavam iguais, ${sem} não encontrado(s) neste aparelho. As disciplinas ficam gravadas nos itens e entram nos relatórios por disciplina.`);
+}
+{ const _ip=importarPacote; importarPacote=async function(){ const d=await escolherArquivoJSON(); if(!d) return;
+    if(d.tipo==="cte-vistoria-disciplinas"){ importarDisciplinas(d); return; }
+    if(d.tipo==="cte-vistoria-equipe"){ aplicarEquipe(d); return; }
+    if(d.tipo==="cte-vistoria-modelos"){ importarModelos(d); return; }
+    if(d.tipo!=="cte-vistoria-pacote"||!Array.isArray(d.obras)){ aviso("Arquivo não reconhecido","Este arquivo não é um pacote de dados de obra do app."); return; }
+    try{ localStorage.setItem("cte_pacote",JSON.stringify(d)); }catch(e){ aviso("Não foi possível guardar","O navegador recusou guardar o pacote neste aparelho."); return; }
+    S.obrasReaisVer=0; commit(); toast("Pacote importado. Recarregando…"); setTimeout(()=>location.reload(),600); }; }
+
+/* --- B) busca dentro dos modelos da biblioteca --- */
+const lbNorm=t=>String(t||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"");
+function lbBusca(q){
+  const ts=lbNorm(q).split(/\s+/).filter(x=>x.length>1); if(!ts.length) return {mods:[],its:[],tot:0};
+  const mods=[],its=[];
+  for(const m of clMods()){ const hm=lbNorm(m.nome+" "+(m.discNome||"")); if(ts.every(t=>hm.includes(t))) mods.push(m);
+    for(const i of m.itens){ const h=lbNorm([i.desc,i.oq,i.como,i.crit,i.evid,i.cod,i.ref,i.g].join(" ")); if(ts.every(t=>h.includes(t))) its.push({m,i}); } }
+  return {mods,its,tot:mods.length+its.length};
+}
+function lbResHTML(q){
+  const r=lbBusca(q); if(!lbNorm(q).trim()) return ""; if(!r.tot) return `<p class="muted small">Nada encontrado para “${esc(q)}”. Tente uma palavra só (ex.: baguete, ralo, quadro, prumo).</p>`;
+  const lim=40; return `<p class="muted small">${r.mods.length} modelo(s) e ${r.its.length} item(ns) encontrados${r.its.length>lim?` · mostrando ${lim}`:""}.</p>`+
+    r.mods.slice(0,10).map(m=>`<div class="cl-card" data-act="clmodabrir" data-v="${esc(m.id)}" role="button" tabindex="0"><b>${esc(m.nome)}</b><span class="muted small">${esc(m.discNome||"Meus modelos")} · ${m.itens.length} itens</span></div>`).join("")+
+    r.its.slice(0,lim).map(({m,i})=>`<div class="cl-card" data-act="clmodabrir" data-v="${esc(m.id)}" role="button" tabindex="0"><b>${esc(i.desc)}</b><span class="muted small">${esc(m.nome)}${i.cod?" · "+esc(i.cod):""}</span></div>`).join("");
+}
+{ const _v=vClMods; vClMods=function(){ const h=_v.apply(this,arguments); const q=UI.lbq||"";
+  const box=`<label class="f"><span>Buscar nos modelos</span><input id="lb-q" type="search" value="${esc(q)}" placeholder="ex.: baguete, ralo, prumo, quadro" autocomplete="off"></label><div id="lb-res">${lbResHTML(q)}</div>`;
+  const k=h.indexOf('<div class="cl-lista">'); return k<0?h+box:h.slice(0,k)+box+h.slice(k); }; }
+document.addEventListener("input",e=>{ if(!e.target||e.target.id!=="lb-q") return; UI.lbq=e.target.value; const r=document.getElementById("lb-res"); if(r) r.innerHTML=lbResHTML(UI.lbq); });
+
+/* --- C) resumo semanal da obra (PDF para o cliente) --- */
+async function resumoSemanalPDF(){
+  const o=obraDe(UI.r11.oid); if(!o){ aviso("Selecione a obra","Escolha a obra no Relatório por disciplina."); return; }
+  progresso("Gerando resumo semanal…"); await new Promise(r=>setTimeout(r,60));
+  try{
+    const L=relLinhas(o.id), A=relAgg(L), T=relTot(A), hj=hoje(); const ab=L.filter(x=>x.st==="Aberto");
+    const P=pendItens().filter(x=>x.obraId===o.id); const tar=P.filter(x=>x.tipo==="tarefa"&&x.vence).sort((a,b)=>a.vence.localeCompare(b.vence));
+    const apr=P.filter(x=>x.tipo==="aprovar"), dev=P.filter(x=>x.tipo==="devolvida");
+    const d=new PDF(); const W=297,H=210,m=10,LOGO=logoBytes(); const num=`${o.codigo||"OBRA"}-RESUMO-SEMANAL-${hj.replace(/-/g,"")}`;
+    const cab=()=>{ d.rect(0,0,W,16,NAVY); d.image(LOGO,LOGO_JPG_W,LOGO_JPG_H,m,3,10*LOGO_JPG_W/LOGO_JPG_H,10); d.text("RESUMO SEMANAL DA OBRA",W/2,8.3,9.5,true,[255,255,255],"c"); d.text(o.nome||"",W/2,12.6,7.5,false,[200,214,222],"c"); d.text(num,W-m,10,8,true,[255,255,255],"r"); };
+    d.addPage(); cab(); d.text("Situação em "+fmtData(hj),m,28,12,true,NAVY); d.rect(m,31,30,1,PET);
+    const cx=[["ITENS VERIFICADOS",T.t-T.sv,NAVY],["EM ABERTO",T.Aberto,RED],["FECHADOS",T.Fechado,[63,143,42]],["CONFORMES",T.Conforme,[63,143,42]],["AGUARDANDO APROVAÇÃO",apr.length,PET],["DEVOLVIDOS P/ CORREÇÃO",dev.length,GR]]; const bw=(W-2*m-5*5)/6;
+    cx.forEach(([t,v,col],j)=>{ const x=m+j*(bw+5); d.rect(x,36,bw,22,[244,246,248],LINE); d.rect(x,36,bw,1.6,col); d.text(String(v),x+bw/2,49,17,true,col,"c"); d.text(t,x+bw/2,55,6.4,true,GR,"c"); });
+    let y=68; d.text("Em aberto por disciplina",m,y,9.5,true,NAVY); y+=4; d.text("DISCIPLINA",m,y+3,7,true,GR); d.text("EM ABERTO",m+100,y+3,7,true,GR,"r"); d.text("FECHADOS",m+122,y+3,7,true,GR,"r"); d.text("TOTAL",m+140,y+3,7,true,GR,"r"); y+=3;
+    for(const a of A.filter(a=>a.Aberto||a.Fechado).slice(0,10)){ y+=6; d.rect(m,y-4.2,150,0.2,LINE); d.text(discTxt(a.disc),m,y,8.2,true,[20,35,45]); d.text(String(a.Aberto),m+100,y,8.2,true,a.Aberto?RED:GR,"r"); d.text(String(a.Fechado),m+122,y,8.2,false,[20,35,45],"r"); d.text(String(a.t),m+140,y,8.2,false,[20,35,45],"r"); }
+    let yp=72; const xp=m+165; d.text("Prazos e tarefas",xp,yp,9.5,true,NAVY); yp+=6;
+    if(!tar.length) d.text("Nenhuma tarefa com prazo cadastrada.",xp,yp,8,false,GR);
+    for(const t of tar.slice(0,11)){ const atr=t.vence<hj; d.text(fmtData(t.vence),xp,yp,7.6,true,atr?RED:NAVY); d.text(clTxt(t.titulo,48),xp+19,yp,7.6,false,[20,35,45]); if(atr) d.text("atrasada",W-m,yp,6.8,true,RED,"r"); yp+=5.2; }
+    if(apr.length||dev.length){ y=Math.max(y,yp)+10; if(y>H-40) y=H-40; d.text("Pendências de aprovação",m,y,9.5,true,NAVY); y+=6; for(const x of [...apr,...dev].slice(0,8)){ d.text(clTxt(x.titulo.replace(/^Aguardando aprovação: /,"Aguardando aprovação · "),110),m,y,7.6,false,[20,35,45]); y+=5; } }
+    /* itens em aberto */
+    const novaPg=t=>{ d.addPage(); cab(); d.text(t,m,26,10,true,NAVY); return 33; };
+    if(ab.length){ let yy=novaPg(`Itens em aberto (${ab.length})`); const g=new Map(); for(const x of ab){ const k=x.disc||""; (g.get(k)||g.set(k,[]).get(k)).push(x); }
+      for(const a of A){ const l=g.get(a.disc); if(!l) continue; if(yy>H-30) yy=novaPg("Itens em aberto (continuação)"); d.rect(m,yy-3.6,W-2*m,5.4,[236,241,245]); d.text(`${discTxt(a.disc)} · ${l.length}`,m+2,yy,8.5,true,NAVY); yy+=6;
+        for(const x of l.slice(0,60)){ if(yy>H-14) yy=novaPg("Itens em aberto (continuação)"); d.text(x.doc,m+2,yy,7,true,PET); d.text(d.wrap(x.txt,150,7.3,false)[0]||"",m+30,yy,7.3,false,[20,35,45]); d.text(clTxt(x.loc,62),m+186,yy,6.5,false,GR); yy+=4.4; } yy+=2; } }
+    const tot=d.pages.length; d.pages.forEach((ops,k)=>{ d.ops=ops; d.text("CTE Gerenciamento · Resumo de acompanhamento; não constitui aceite de serviços.",m,H-5,6.5,false,GR); d.text(`página ${k+1} de ${tot}`,W-m,H-5,7,false,GR,"r"); });
+    const blob=await finalizarPDF(d,[],num); if($("#sheet .prog")) fechar(); await entregarArquivo(`${num}.pdf`,blob);
+  }catch(err){ console.error(err); aviso("Erro ao gerar o resumo",String(err&&err.message||err)); }
+}
+{ const _v=vRel11; vRel11=function(){ const h=_v.apply(this,arguments); return h.replace('<button class="btn" data-act="r11xls">','<button class="btn" data-act="r11sem">Resumo semanal (PDF)</button><button class="btn" data-act="r11xls">'); }; }
+document.addEventListener("click",e=>{ if(e.target.closest("#sheet")) return; const a=e.target.closest("[data-act='r11sem']"); if(!a) return; e.stopImmediatePropagation(); resumoSemanalPDF(); },true);
 
 (async function iniciar(){ $("#logo").src=LOGO_DARK; rede(); await openDB(); S=(await kvGet("state2"))||estadoInicial(); if(!S.rfs){ S.rfs=[]; } S.seqAV=S.seqAV||1;
   migrar(); purgarModelo(); await carregarIndiceFotosHist(); lastJSON=snapJSON(); kvSet("state2",S); UI.oid=(S.obras[0]||{}).id||null; render(); })();
