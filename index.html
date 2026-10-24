@@ -830,6 +830,16 @@ body.lg-on{overflow:hidden}
 .cr-pl{display:grid;grid-template-columns:1fr auto;gap:0 10px;padding:7px 0;border-bottom:1px solid var(--line,#e3e8ec)}.cr-pl small{grid-column:1/3;color:#58595b;font-size:12px}
 @media (max-width:520px){.cr-g{grid-template-columns:repeat(2,1fr)}}
 .cr-lst small,.rl-it small{display:block}
+.cr-qt{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;margin:6px 0;padding:8px 10px;border:1px dashed #8fb0c2;border-radius:10px;background:#f4f8fa;font-size:13px}
+.cr-qt label{display:flex;align-items:center;gap:6px;font-weight:700}
+.cr-qt input{width:76px;padding:6px 8px;border:1px solid var(--line,#c9d4db);border-radius:8px;font:inherit;text-align:right}
+.cr-qt small{flex:1 1 100%;color:#58595b}.cr-qt.sem{border-style:solid;border-color:#e3e8ec;background:#fff}
+.cr-tb{display:flex;flex-direction:column;gap:6px;margin:6px 0}
+.cr-tr{position:relative;display:grid;grid-template-columns:1fr auto;gap:0 10px;text-align:left;padding:8px 10px;border:1px solid var(--line,#d5dde3);border-radius:10px;background:#fff;font:inherit;cursor:pointer;overflow:hidden}
+.cr-tr i{position:absolute;left:0;bottom:0;height:3px;background:#004d6d;opacity:.55}
+.cr-tn{font-weight:700;font-size:13.5px}.cr-tv{font-weight:700;color:#004d6d;font-size:13.5px}.cr-tr small{grid-column:1/3;color:#58595b;font-size:12px}
+.cr-dv{font-style:normal;font-weight:700;color:#004d6d;font-size:12px;margin-right:4px}
+.cr-dl2{border:1px solid var(--line,#e3e8ec);border-radius:10px;padding:8px 10px;margin:0 0 8px}.cr-dl2 .f{margin:4px 0}
 </style>
 
 <header class="top">
@@ -4304,7 +4314,7 @@ function vRel11(){
 }
 { const _vI=vInicio; vInicio=function(){ return UI.view==="rel11"?vRel11():_vI(); }; }
 document.addEventListener("click",e=>{ if(e.target.closest("#sheet")) return; const a=e.target.closest("[data-act]"); if(!a) return; const act=a.dataset.act, v=a.dataset.v;
-  if(act==="rel11"){ e.stopImmediatePropagation(); if(a.dataset.o) UI.r11={oid:a.dataset.o,orig:a.dataset.s||"todos",grupo:"",disc:a.dataset.disc!=null?a.dataset.disc:null,sit:a.dataset.k||(a.dataset.c?"Aberto":null),crit:a.dataset.c?+a.dataset.c:null}; UI.view="rel11"; render(); scrollTo(0,0); if(a.dataset.disc!=null||a.dataset.k||a.dataset.c) setTimeout(()=>{ const d=document.getElementById("r11-det"); if(d) d.scrollIntoView({block:"start"}); },60); }
+  if(act==="rel11"){ e.stopImmediatePropagation(); if(a.dataset.o) UI.r11={oid:a.dataset.o,orig:a.dataset.s||"todos",grupo:"",disc:a.dataset.disc!=null?a.dataset.disc:null,sit:a.dataset.k||(a.dataset.c||a.dataset.e?"Aberto":null),crit:a.dataset.c?+a.dataset.c:null,eap:a.dataset.e||null}; UI.view="rel11"; render(); scrollTo(0,0); if(a.dataset.disc!=null||a.dataset.k||a.dataset.c||a.dataset.e) setTimeout(()=>{ const d=document.getElementById("r11-det"); if(d) d.scrollIntoView({block:"start"}); },60); }
   else if(act==="r11d"){ e.stopImmediatePropagation(); const y=scrollY; if(v==="__x"){ UI.r11.disc=null; UI.r11.sit=null; } else { const abre=UI.r11.disc!==v; UI.r11.disc=abre?v:null; if(abre&&!UI.r11.sit) UI.r11.sit="Aberto"; UI.r11.lim=60; render(); if(abre){ const d=document.getElementById("r11-det"); if(d) d.scrollIntoView({block:"start"}); return; } } UI.r11.lim=60; render(); scrollTo(0,y); }
   else if(act==="r11k"){ e.stopImmediatePropagation(); const y=scrollY; UI.r11.sit=(v==="todos"||UI.r11.sit===v)?null:v; UI.r11.lim=60; render(); if(UI.r11.sit){ const d=document.getElementById("r11-det"); if(d){ d.scrollIntoView({block:"start"}); return; } } scrollTo(0,y); }
   else if(act==="r11mais"){ e.stopImmediatePropagation(); const y=scrollY; UI.r11.lim=(UI.r11.lim||60)+60; render(); scrollTo(0,y); }
@@ -4345,10 +4355,10 @@ function xlsxBlob(sheets){ const ns='xmlns="http://schemas.openxmlformats.org/sp
   return new Blob([zip(files)],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}); }
 async function relXLS(){
   const f=UI.r11, o=obraDe(f.oid); const L=relLinhas(f.oid); if(!L.length){ aviso("Sem itens","Esta obra ainda não tem itens de RNC ou checklist."); return; }
-  const H=["Obra","Origem","Documento","Título do documento","Local","Nº/Cód. do item","Item","Disciplina","Disciplina sugerida?","Situação","Foto pendente","Data","Observação","Criticidade","Estimativa de correção (R$, mediana de obras de retrofit)"];
-  const PV=typeof podeValor==="function"&&podeValor(); if(!PV) H.pop();
+  const H=["Obra","Origem","Documento","Título do documento","Local","Nº/Cód. do item","Item","Disciplina","Disciplina sugerida?","Situação","Foto pendente","Data","Observação","Criticidade"];
+  const PV=typeof podeValor==="function"&&podeValor(); if(PV) H.push(...critXlsH());
   const rows=[H.map(h=>({v:h,s:1}))]; const DS=x=>x.disc||"(sem disciplina)";
-  for(const x of L) rows.push([o.nome,x.orig,x.doc,x.docNome,x.loc,x.n,x.txt,DS(x),x.sug?"Sim":"",x.st,x.fp?"Sim":"",x.data?fmtData(x.data):"",x.obs,critTxtN(x.crit),...(PV?[(x.st==="Aberto"&&x.est&&!x.est.sem)?Math.round(x.est.tot):""]:[])].map((v,j)=>({v,s:2})));
+  for(const x of L) rows.push([o.nome,x.orig,x.doc,x.docNome,x.loc,x.n,x.txt,DS(x),x.sug?"Sim":"",x.st,x.fp?"Sim":"",x.data?fmtData(x.data):"",x.obs,critTxtN(x.crit),...(PV?critXlsCols(x):[])].map((v,j)=>({v,s:2})));
   const A=relAgg(L), T=relTot(A); const n=rows.length;
   const R=[[{v:"Relatório por disciplina · "+o.nome,s:4}],[{v:"Gerado em "+fmtData(hoje())+" · CTE Gerenciamento · aba “Itens” traz todos os itens da obra (use os filtros).",s:0}],[],
    ["Disciplina","Total de itens","Aberto","Fechado","Conforme","Não verificado / sem verificação","Foto pendente","% em aberto"].map(h=>({v:h,s:1}))];
@@ -4357,7 +4367,7 @@ async function relXLS(){
   const r0=5, r1=R.length; const tr=R.length+1;
   R.push([{v:"TOTAL",s:6},...["B","C","D","E","F","G"].map((c,i)=>({v:[T.t,T.Aberto,T.Fechado,T.Conforme,T.sv,T.fp][i],s:6,f:`SUM(${c}${r0}:${c}${r1})`})),{v:T.t?T.Aberto/T.t:0,s:3,f:`IF(B${tr}=0,0,C${tr}/B${tr})`}]);
   R.push([],[{v:"Fechado = checklist corrigido e reverificado, NC encerrada ou RNC corrigida. Disciplinas marcadas como sugeridas na aba Itens vieram de palavras-chave e precisam de confirmação.",s:0}]);
-  const sheets=[{nome:"Resumo",xml:xsheet(R,[34,14,10,10,12,22,14,12],{first:1})},{nome:"Itens",filtro:`$A$1:$${PV?"O":"N"}$${n}`,xml:xsheet(rows,[18,11,16,34,36,10,60,20,12,16,10,11,40,12,18],{freeze:1,filter:1})}];
+  const sheets=[{nome:"Resumo",xml:xsheet(R,[34,14,10,10,12,22,14,12],{first:1})},{nome:"Itens",filtro:`$A$1:$${PV?"T":"N"}$${n}`,xml:xsheet(rows,[18,11,16,34,36,10,60,20,12,16,10,11,40,12].concat(PV?[30,34,11,6,14,16]:[]),{freeze:1,filter:1})}];
   const nome=`${o.codigo||"OBRA"}_Relatorio_por_disciplina_${hoje()}.xlsx`; try{ entregarArquivo(nome,xlsxBlob(sheets)); }catch(err){ aviso("Erro ao gerar o Excel",String(err&&err.message||err)); } }
 { const _sa=sheetArquivo; sheetArquivo=function(nome,blob,r){ _sa(nome,blob,r); if(/\.xlsx$/i.test(nome)){ const sh=document.getElementById("sheet"); if(sh) sh.innerHTML=sh.innerHTML.replace("Word pronto","Excel pronto").replace("Baixar Word","Baixar Excel"); } }; }
 
@@ -5228,7 +5238,7 @@ try{ syUlt=+localStorage.getItem("cte_od_sync_ult")||0; }catch(_){}
 setTimeout(()=>{ if(odAtivo()) sySincronizar(false); },7000);
 
 /* ================= ONDA 21: "Versões e arquivos em uso" na tela Dados deste aparelho ================= */
-const APP_VER="v39";
+const APP_VER="v40";
 const vaFmt=t=>{ try{ return new Date(t).toLocaleString("pt-BR",{dateStyle:"short",timeStyle:"short"}); }catch(_){ return "—"; } };
 const vaGet=k=>odLS(k,null);
 { const _ej=entregarJSON; entregarJSON=function(nome){ try{ if(/^registros_/.test(nome)) odSet("cte_va_exp",{n:nome,t:Date.now()}); }catch(_){} return _ej.apply(this,arguments); }; }
@@ -5832,8 +5842,13 @@ const CRIT_DEF={ rev:"R00", em:"", por:"", vis:"coord",
   ],
   estDisc:{"Pintura":["pint_parede",1.5],"Acabamento e limpeza":["limp_final",8],"Impermeabilização":["imp_nesp",3],"Pisos e revestimentos":["piso_cer",2],"Rodapé":["rodape",3],"Bancada":["bancada",0.5],"Esquadrias de madeira":["porta_mad",1],"Caixilhos":["caixilho_un",0.25],"Hidráulica":["pt_hidr",1],"Elétrica":["tomada",1],"Incêndio":["pci_un",1],"Elevadores e plataformas":["elev_manut",1],"Ar-condicionado":["ar_infra",1],"Vedações":["emboco",2]}
 };
+const EAP_NOMES=[["01","Administração da obra"],["02","Projetos, consultorias e serviços técnicos"],["03","Implantação, operação e manutenção do canteiro"],["04","Serviços iniciais"],["05","Preparo do terreno / ambiente"],["06","Estrutura em concreto armado"],["07","Outras estruturas"],["08","Alvenaria, paredes e fechamentos / drywall"],["09","Esquadrias de alumínio"],["10","Esquadrias de ferro"],["11","Esquadrias de madeira"],["12","Coberturas"],["13","Impermeabilização e tratamentos"],["14","Revestimentos de paredes internas"],["15","Fachada e revestimentos externos"],["16","Revestimentos em teto"],["17","Revestimentos de pisos"],["18","Pintura"],["19","Instalações elétricas e sistemas"],["20","Instalações hidráulicas e acessórios"],["21","Bancadas, louças e metais"],["22","Elevadores e plataformas"],["23","Implantação e paisagismo"],["24","Outras instalações"],["25","Serviços complementares"]];
+const EAP_DISC_DEF={"Acabamento e limpeza":"25","Acessibilidade":"10","Ar-condicionado":"24","Arquitetura":"25","Bancada":"21","Caixilhos":"09","Elétrica":"19","Elevadores e plataformas":"22","Esquadrias de madeira":"11","Hidráulica":"20","Impermeabilização":"13","Incêndio":"19","Pintura":"18","Pisos e revestimentos":"17","Rodapé":"17","Vedações":"08"};
+const eapTxt=g=>{ const x=EAP_NOMES.find(n=>n[0]===g); return x?x[0]+" · "+x[1]:(g||"sem grupo"); };
 const CRIT_KEY="cte_precos";
 function critCfg(){ return S.critCfg||CRIT_DEF; }
+function eapDiscMap(){ return critCfg().eapDisc||EAP_DISC_DEF; }
+function eapDe(it,e){ return it.eapG||(e&&e.eap)||eapDiscMap()[it.disc||""]||""; }
 function critEdit(){ if(!S.critCfg) S.critCfg=JSON.parse(JSON.stringify(CRIT_DEF)); return S.critCfg; }
 function precosGet(){ try{ const p=JSON.parse(localStorage.getItem(CRIT_KEY)||"null"); if(p&&Array.isArray(p.servicos)){ p.map={}; for(const s of p.servicos) p.map[s.k]=s; return p; } }catch(_){ } return null; }
 const cN=s=>String(s==null?"":s).normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/[’'`´]/g," ").replace(/-/g," ").replace(/\s+/g," ").trim();
@@ -5866,11 +5881,12 @@ function estCalc(it){
   if(!serv) return {sem:true,motivo:"Nenhuma regra de serviço se aplica. Escolha o serviço no item ou informe o valor."};
   if(!P) return {sem:true,motivo:"Base de preços ainda não importada neste aparelho."};
   const sv=P.map[serv]; if(!sv) return {sem:true,motivo:"Serviço “"+serv+"” não consta na base importada."};
+  if(!it.estS&&it.eapG&&sv.eap&&sv.eap!==it.eapG) return {sem:true,motivo:"Escolha o serviço do grupo "+eapTxt(it.eapG)+"."};
   if(!qs||qs==="padrao"){ const qt=qtdTexto(it.desc||"",sv.un); if(qt){ q=qt; qs="texto"; } }
   if(!q) return {sem:true,motivo:"Informe a quantidade."};
   const conf=[]; if(qs==="padrao") conf.push("quantidade por premissa"); if(qs==="texto") conf.push("quantidade lida do texto do item"); if(qs==="manual") conf.push("quantidade informada");
   if(sv.n!=null&&sv.n<3) conf.push("poucas propostas na base ("+sv.n+")"); if(sv.cv>0.5) conf.push("dispersão alta entre propostas (CV "+Math.round(sv.cv*100)+"%)");
-  return {serv,nome:sv.nome,un:sv.un,q,qs,med:sv.med,tot:q*sv.med,min:q*sv.min,max:q*sv.max,cv:sv.cv,n:sv.n,nota,conf:conf.join("; ")};
+  return {serv,nome:sv.nome,un:sv.un,eap:sv.eap,q,qs,med:sv.med,tot:q*sv.med,min:q*sv.min,max:q*sv.max,cv:sv.cv,n:sv.n,nota,conf:conf.join("; ")};
 }
 const estBRL=v=>"R$ "+Math.round(v).toLocaleString("pt-BR");
 function podeValor(){ try{ return critCfg().vis==="engcoord"?isEngOuCoord():isCoord(); }catch(_){ return false; } }
@@ -5881,21 +5897,30 @@ function chipEst(e,aberto){ if(!aberto||!e||!podeValor()) return ""; if(e.sem) r
 /* ---- linhas do relatório recebem criticidade e estimativa ---- */
 { const _rl=relLinhas; relLinhas=function(oid){ const L=_rl.apply(this,arguments); const itens=new Map(), tit=new Map();
     for(const c of (S.cls||[])) if(c.obraId===oid){ tit.set(c.id,c.titulo); for(const i of c.itens) itens.set(c.id+"|"+i.id,i); }
-    for(const x of L){ const i=x.orig==="Checklist"?itens.get(x.docId+"|"+x.itemId):null; const it=i?{desc:i.desc,obs:i.obs,local:i.local,g:i.g,disc:x.disc,critN:i.critN,estS:i.estS,estQ:i.estQ,estV:i.estV,titulo:tit.get(x.docId)}:{desc:x.txt,obs:x.obs,local:x.loc,g:x.grupo,disc:x.disc,titulo:x.docNome};
-      const c=critCalc(it); x.crit=c.n; x.critSrc=c.src; x.est=x.st==="Aberto"?estCalc(it):null; }
+    for(const x of L){ const i=x.orig==="Checklist"?itens.get(x.docId+"|"+x.itemId):null; const it=i?{desc:i.desc,obs:i.obs,local:i.local,g:i.g,disc:x.disc,critN:i.critN,estS:i.estS,estQ:i.estQ,estV:i.estV,eapG:i.eapG,titulo:tit.get(x.docId)}:{desc:x.txt,obs:x.obs,local:x.loc,g:x.grupo,disc:x.disc,titulo:x.docNome};
+      const c=critCalc(it); x.crit=c.n; x.critSrc=c.src; x.est=estCalc(it); x.eap=eapDe(it,x.est); }
     return L; }; }
-{ const _rf=relFiltra; relFiltra=function(L,f){ let R=_rf.apply(this,arguments); if(f&&f.crit) R=R.filter(x=>x.crit===f.crit); return R; }; }
+{ const _rf=relFiltra; relFiltra=function(L,f){ let R=_rf.apply(this,arguments); if(f&&f.crit) R=R.filter(x=>x.crit===f.crit); if(f&&f.eap) R=R.filter(x=>x.eap===f.eap); return R; }; }
 
 /* ---- no item do checklist ---- */
-function critItemCtx(c,i){ return {desc:i.desc,obs:i.obs,local:i.local,g:i.g,disc:discNorm(i.disc),critN:i.critN,estS:i.estS,estQ:i.estQ,estV:i.estV,titulo:c.titulo}; }
+function critItemCtx(c,i){ return {desc:i.desc,obs:i.obs,local:i.local,g:i.g,disc:discNorm(i.disc),critN:i.critN,estS:i.estS,estQ:i.estQ,estV:i.estV,eapG:i.eapG,titulo:c.titulo}; }
 { const _ci=clItem; clItem=function(c,i,n){ let h=_ci.apply(this,arguments); try{ const it=critItemCtx(c,i), k=critCalc(it); const ab=i.st==="NOK"&&i.rev!=="OK"; const e=ab?estCalc(it):null;
-      h=h.replace('</span><button type="button" class="ph-more"',`<span class="cr-lin">${chipCrit(k.n)}${chipEst(e,ab)}</span></span><button type="button" class="ph-more"`); }catch(err){ console.error(err); } return h; }; }
+      h=h.replace('</span><button type="button" class="ph-more"',`<span class="cr-lin">${chipCrit(k.n)}${chipEst(e,ab)}</span></span><button type="button" class="ph-more"`);
+      if(ab&&podeValor()){ let q=""; if(!e) q=`<div class="cr-qt sem"><small>Item sem custo (definido no cadastro do item).</small></div>`;
+        else if(e.sem) q=`<div class="cr-qt sem"><small>Sem estimativa: ${esc(e.motivo)} Use ⋮ para escolher o serviço ou informar o valor.</small></div>`;
+        else if(e.manual) q=`<div class="cr-qt"><span>Valor informado: <b>≈ ${estBRL(e.tot)}</b></span></div>`;
+        else q=`<div class="cr-qt"><label>Quantidade <input type="text" inputmode="decimal" data-crq="${esc(i.id)}" value="${i.estQ?qtBR(i.estQ):""}" placeholder="${qtBR(e.q)}" aria-label="Quantidade em ${esc(e.un)}"> <b>${esc(e.un)}</b></label><span>× ${estBRL(e.med)}/${esc(e.un)} = <b>≈ ${estBRL(e.tot)}</b></span><small>${esc(e.nome)} · grupo ${esc(eapTxt(eapDe(it,e)))}${e.qs==="padrao"?" · quantidade por premissa: ajuste":e.qs==="texto"?" · quantidade lida do texto do item":""}</small></div>`;
+        h=h.replace('<div class="cl-fotos">',q+'<div class="cl-fotos">'); } }catch(err){ console.error(err); } return h; }; }
+document.addEventListener("change",e=>{ const t=e.target; if(!t.dataset||t.dataset.crq==null) return; e.stopImmediatePropagation(); const i=clItemPor(t.dataset.crq); if(!i) return; const v=numIn(t.value); if(v) i.estQ=v; else delete i.estQ; save(); const y=scrollY; render(); scrollTo(0,y); },true);
 let CRIT_ED=null;
+function svOpts(g,sel){ const P=precosGet(); const opt=(v,t,s)=>`<option value="${esc(v)}" ${s?"selected":""}>${esc(t)}</option>`; let h=opt("","Automático (pelas regras)",!sel)+opt("-","Sem custo (não estimar)",sel==="-"); if(!P) return h;
+  const grupos=g?[g]:EAP_NOMES.map(n=>n[0]); for(const gg of grupos){ const L=P.servicos.filter(s=>s.eap===gg); if(!L.length) continue; h+=`<optgroup label="${esc(eapTxt(gg))}">${L.map(s=>opt(s.k,s.nome+" ("+s.un+") · "+estBRL(s.med)+"/"+s.un,sel===s.k)).join("")}</optgroup>`; } return h; }
 { const _sci=sheetClItem; sheetClItem=function(novo,id){ _sci.apply(this,arguments); if(novo) return; const c=clAtual(), i=clItemPor(id), sh=document.getElementById("sheet"); if(!c||!i||!sh) return; CRIT_ED={c,i};
     const pv=podeValor(), P=precosGet(); const k=critCalc(critItemCtx(c,i)); const opt=(v,t,sel)=>`<option value="${esc(v)}" ${sel?"selected":""}>${esc(t)}</option>`;
     const h=`<h3 class="h12">Criticidade${pv?" e custo estimado":""}</h3><p class="small" id="ci-cr-t"></p>
       <label class="f"><span>Criticidade (automática ou definida por você)</span><select id="ci-cn">${opt("","Automática",!i.critN)}${CRIT_NIV.map(x=>opt(x.n,x.t,+i.critN===x.n)).join("")}</select></label>
-      ${pv?`<label class="f"><span>Serviço de referência para o custo</span><select id="ci-es">${opt("","Automático (pelas regras)",!i.estS)}${opt("-","Sem custo (não estimar)",i.estS==="-")}${P?P.servicos.map(s=>opt(s.k,s.nome+" ("+s.un+")",i.estS===s.k)).join(""):""}</select></label>
+      ${pv?`<label class="f"><span>Grupo do orçamento (EAP)</span><select id="ci-eg">${opt("","Automático (pelo serviço ou pela disciplina)",!i.eapG)}${EAP_NOMES.map(n=>opt(n[0],n[0]+" · "+n[1],i.eapG===n[0])).join("")}</select></label>
+      <label class="f"><span>Serviço de referência para o custo</span><select id="ci-es">${svOpts(i.eapG,i.estS)}</select></label>
       <label class="f"><span>Quantidade no serviço escolhido (m², m, un… conforme a unidade)</span><input id="ci-eq" inputmode="decimal" value="${i.estQ?qtBR(i.estQ):""}" placeholder="automática"></label>
       <label class="f"><span>Valor manual em R$ (substitui o cálculo; use p.ex. o orçamento da obra)</span><input id="ci-ev" inputmode="decimal" value="${i.estV?qtBR(i.estV):""}" placeholder="em branco = calculado"></label>
       <p class="small muted" id="ci-es-t"></p>`:""}`;
@@ -5904,7 +5929,8 @@ function critItemTxt(){ if(!CRIT_ED) return; const {c,i}=CRIT_ED; const t1=docum
   t1.innerHTML=`${chipCrit(k.n)} <span class="muted">${esc(k.src)}</span>`;
   const t2=document.getElementById("ci-es-t"); if(t2){ const e=estCalc(it); t2.innerHTML=!e?"Sem estimativa de custo para este item.":e.sem?esc(e.motivo):e.manual?"Valor manual: <b>"+estBRL(e.tot)+"</b>.":`Estimativa: <b>${estBRL(e.tot)}</b> (${qtBR(e.q)} ${esc(e.un)} × mediana ${estBRL(e.med)}/${esc(e.un)} · ${esc(e.nome)})${e.min!=null?`; faixa ${estBRL(e.min)} a ${estBRL(e.max)}`:""}. ${e.conf?esc(e.conf)+". ":""}${esc(e.nota||"")}`; } }
 const numIn=s=>{ const v=parseFloat(String(s||"").replace(/\./g,"").replace(",",".")); return v>0?v:0; };
-document.addEventListener("change",e=>{ const t=e.target; if(!t.id||!/^ci-(cn|es|eq|ev)$/.test(t.id)||!CRIT_ED||!t.closest("#sheet")) return; const i=CRIT_ED.i;
+document.addEventListener("change",e=>{ const t=e.target; if(!t.id||!/^ci-(cn|eg|es|eq|ev)$/.test(t.id)||!CRIT_ED||!t.closest("#sheet")) return; const i=CRIT_ED.i; const P=precosGet();
+  if(t.id==="ci-eg"){ if(t.value) i.eapG=t.value; else delete i.eapG; if(i.estS&&i.estS!=="-"&&t.value&&P&&P.map[i.estS]&&P.map[i.estS].eap!==t.value) delete i.estS; const es=document.getElementById("ci-es"); if(es) es.innerHTML=svOpts(i.eapG,i.estS); save(); critItemTxt(); return; }
   if(t.id==="ci-cn"){ if(t.value) i.critN=+t.value; else delete i.critN; }
   else if(t.id==="ci-es"){ if(t.value) i.estS=t.value; else delete i.estS; }
   else if(t.id==="ci-eq"){ const v=numIn(t.value); if(v) i.estQ=v; else delete i.estQ; }
@@ -5915,13 +5941,18 @@ document.addEventListener("change",e=>{ const t=e.target; if(!t.id||!/^ci-(cn|es
 function critResumo(L){ const R={4:{q:0,v:0,sv:0},3:{q:0,v:0,sv:0},2:{q:0,v:0,sv:0},1:{q:0,v:0,sv:0}}; let tot=0,mn=0,mx=0;
   for(const x of L){ if(x.st!=="Aberto") continue; const a=R[x.crit]; a.q++; const e=x.est; if(e&&!e.sem){ a.v+=e.tot; tot+=e.tot; if(e.min!=null){ mn+=e.min; mx+=e.max; } else { mn+=e.tot; mx+=e.tot; } } else a.sv++; }
   return {R,tot,mn,mx}; }
+function critAgrupa(L,fn){ const m=new Map(); for(const x of L){ if(x.st!=="Aberto") continue; const k=fn(x); let a=m.get(k); if(!a){ a={k,q:0,c4:0,v:0,sv:0}; m.set(k,a); } a.q++; if(x.crit===4) a.c4++; if(x.est&&!x.est.sem) a.v+=x.est.tot; else a.sv++; } return [...m.values()].sort((a,b)=>b.v-a.v||b.q-a.q); }
+function critTabela(A,pv,acao,o){ const mx=Math.max(1,...A.map(a=>pv?a.v:a.q)); return `<div class="cr-tb">${A.map(a=>{ const nome=acao==="disc"?discTxt(a.k):eapTxt(a.k); const bt=acao==="disc"?`data-act="rel11" data-o="${esc(o)}" data-s="CL" data-k="Aberto" data-disc="${esc(a.k)}"`:acao==="eap"?`data-act="rel11" data-o="${esc(o)}" data-s="CL" data-k="Aberto" data-e="${esc(a.k)}"`:`data-act="r11e" data-v="${esc(a.k)}"`;
+    return `<button type="button" class="cr-tr" ${bt}><span class="cr-tn">${esc(nome)}</span><span class="cr-tv">${pv?(a.v?"≈ "+estBRL(a.v):"—"):a.q}</span><i style="width:${(pv?a.v:a.q)/mx*100}%"></i><small>${a.q} em aberto${a.c4?" · "+a.c4+" crítico"+(a.c4>1?"s":""):""}${pv&&a.sv?" · "+a.sv+" sem estimativa":""}</small></button>`; }).join("")}</div>`; }
 const CRIT_AVISO="Estimativa paramétrica baseada na mediana de preços de obras de retrofit da base de preços CTE (custo raso: sem BDI, taxas, contingência e impostos), com quantidades estimadas a partir da descrição do item. Não substitui orçamento nem composição de custo. Use o orçamento da obra quando houver.";
 function critBotoes(R,f,pv,acao,obra){ return `<div class="cr-g">${CRIT_NIV.map(n=>`<button type="button" class="cr-b cr-${n.n}" ${acao==="r11c"?`data-act="r11c" data-v="${n.n}" aria-pressed="${f&&f.crit===n.n}"`:`data-act="rel11" data-o="${esc(obra)}" data-s="CL" data-c="${n.n}"`}><b>${R[n.n].q}</b><span>${n.t}</span>${pv&&R[n.n].v?`<small>≈ ${estBRL(R[n.n].v)}</small>`:""}</button>`).join("")}</div>`; }
 { const _v=vRel11; vRel11=function(){ let h=_v.apply(this,arguments); try{ const f=UI.r11, pv=podeValor(); const base=relFiltra(relLinhas(f.oid),Object.assign({},f,{crit:null})); const k=critResumo(base);
       const sec=`<section class="card"><h2>Criticidade dos itens em aberto</h2>${critBotoes(k.R,f,pv,"r11c")}
         ${pv&&k.tot?`<p class="cr-tot">Estimativa de correção dos itens em aberto: <b>${estBRL(k.tot)}</b> <span class="muted">(faixa ${estBRL(k.mn)} a ${estBRL(k.mx)})</span></p><p class="muted small">${CRIT_AVISO}</p>`:pv?`<p class="muted small">Sem estimativa: ${precosGet()?"nenhum item em aberto com serviço de referência.":"importe a base de preços (Dados deste aparelho > Critérios de criticidade)."}</p>`:""}
         <p class="muted small">Toque num nível para filtrar o relatório, o Excel e o PDF. ${f.crit?`<b>Filtro ativo: ${critTxtN(f.crit)}.</b> <button class="link" data-act="r11c" data-v="0">Limpar</button>`:""} Critérios editáveis em Dados deste aparelho.</p></section>`;
-      h=h.replace('<section class="card"><h2>Por disciplina</h2>',sec+'<section class="card"><h2>Por disciplina</h2>');
+      const eapA=critAgrupa(base,x=>x.eap||""); const sec2=pv&&eapA.length?`<section class="card"><h2>Estimativa por grupo do orçamento</h2><p class="muted small">Grupos da EAP do orçamento (25 grupos). Toque para filtrar. ${f.eap?`<b>Filtro: ${esc(eapTxt(f.eap))}.</b> <button class="link" data-act="r11e" data-v="0">Limpar</button>`:""}</p>${critTabela(eapA.slice(0,10),pv,"r11e")}</section>`:"";
+      h=h.replace('<section class="card"><h2>Por disciplina</h2>',sec+sec2+'<section class="card"><h2>Por disciplina</h2>');
+      if(pv){ const dm=new Map(critAgrupa(base,x=>x.disc||"").map(a=>[esc(a.k),a])); h=h.replace(/(data-act="r11d" data-v="([^"]*)"(?:(?!<\/button>)[\s\S])*?<span class="rl-q">)/g,(m,a,k)=>{ const d=dm.get(k); return d&&d.v?a+`<em class="cr-dv">≈ ${estBRL(d.v)}</em> `:a; }); }
       const rows=UI.r11rows||[]; h=h.replace(/(data-act="r11go" data-n="(\d+)"><span class="rl-s[^>]*>[^<]*<\/span>)/g,(m,a,n)=>{ const x=rows[+n]; return x?a+chipCrit(x.crit)+(x.st==="Aberto"?chipEst(x.est,true):""):a; });
     }catch(err){ console.error(err); } return h; }; }
 document.addEventListener("click",e=>{ if(e.target.closest("#sheet")) return; const a=e.target.closest('[data-act="r11c"]'); if(!a) return; e.stopImmediatePropagation(); const v=+a.dataset.v;
@@ -5933,12 +5964,18 @@ function blocoCrit(o){ const L=relLinhas(o.id).filter(x=>x.orig==="Checklist"); 
   const top=ab.filter(x=>x.crit===4).sort((a,b)=>((b.est&&b.est.tot)||0)-((a.est&&a.est.tot)||0)).slice(0,8); UI.dgRows=top;
   return `<div class="ob-sec"><h3>Criticidade · itens em aberto</h3>${critBotoes(k.R,null,pv,"dash",o.id)}
     ${pv&&k.tot?`<p class="cr-tot">Estimativa de correção: <b>${estBRL(k.tot)}</b> <span class="muted">(faixa ${estBRL(k.mn)} a ${estBRL(k.mx)})</span></p>`:""}
+    ${(()=>{ const D=critAgrupa(L,x=>x.disc||"").slice(0,8), E=critAgrupa(L,x=>x.eap||"").slice(0,8); return `<h3 class="h12">Por disciplina${pv?" · estimativa de correção":""}</h3>${critTabela(D,pv,"disc",o.id)}${pv&&E.length?`<h3 class="h12">Por grupo do orçamento (EAP)</h3>${critTabela(E,pv,"eap",o.id)}`:""}`; })()}
+    ${(()=>{ if(!pv) return ""; const T=ab.filter(x=>x.est&&!x.est.sem).sort((a,b)=>b.est.tot-a.est.tot).slice(0,8); UI.dgRows2=T; return T.length?`<h3 class="h12">Maiores estimativas (qualquer criticidade)</h3><ul class="cr-lst">${T.map((x,n)=>`<li><button type="button" class="rl-it" data-act="dgo2" data-n="${n}">${chipCrit(x.crit)}${chipEst(x.est,true)}<b>${esc(x.doc)}</b> · ${esc(clTxt(x.txt,90))}<small>${esc(x.loc)}${x.disc?" · "+esc(x.disc):""} · ${esc(x.est.nome)}, ${qtBR(x.est.q)} ${esc(x.est.un)}</small></button></li>`).join("")}</ul><p class="muted small">Para ver o item e ajustar a quantidade, toque nele. Todos os itens com valor estão em Relatório por disciplina.</p>`:""; })()}
     ${top.length?`<h3 class="h12">Itens críticos em aberto${pv?" · maior estimativa primeiro":""}</h3><ul class="cr-lst">${top.map((x,n)=>`<li><button type="button" class="rl-it" data-act="dgo" data-n="${n}">${chipCrit(x.crit)}${chipEst(x.est,true)}<b>${esc(x.doc)}</b> · ${esc(clTxt(x.txt,90))}<small>${esc(x.loc)}${x.disc?" · "+esc(x.disc):""}</small></button></li>`).join("")}</ul>`:""}
     ${pv?`<p class="muted small">${CRIT_AVISO}</p>`:`<p class="muted small">Criticidade pelo critério da CTE (Dados deste aparelho > Critérios de criticidade).</p>`}</div>`; }
 { const _bt=blocoTerm; blocoTerm=function(o){ let h=_bt.apply(this,arguments); let c=""; try{ c=blocoCrit(o); }catch(e){ console.error(e); } return h+c; }; }
+document.addEventListener("click",e=>{ if(e.target.closest("#sheet")) return; const a=e.target.closest('[data-act="r11e"]'); if(!a) return; e.stopImmediatePropagation(); const v=a.dataset.v; UI.r11.eap=(v&&v!=="0"&&UI.r11.eap!==v)?v:null; if(UI.r11.eap&&!UI.r11.sit) UI.r11.sit="Aberto"; UI.r11.lim=60; const y=scrollY; render(); if(UI.r11.eap){ const d=document.getElementById("r11-det"); if(d){ d.scrollIntoView({block:"start"}); return; } } scrollTo(0,y); },true);
 document.addEventListener("click",e=>{ if(e.target.closest("#sheet")) return; const a=e.target.closest('[data-act="dgo"]'); if(!a) return; e.stopImmediatePropagation(); const x=(UI.dgRows||[])[+a.dataset.n]; if(x) irItemRel(x); },true);
+document.addEventListener("click",e=>{ if(e.target.closest("#sheet")) return; const a=e.target.closest('[data-act="dgo2"]'); if(!a) return; e.stopImmediatePropagation(); const x=(UI.dgRows2||[])[+a.dataset.n]; if(x) irItemRel(x); },true);
 
 /* ---- PDF: resumo de criticidade na primeira página ---- */
+function critXlsH(){ return ["Grupo do orçamento (EAP)","Serviço de referência","Quantidade","Un.","Preço unitário mediano (R$)","Estimativa de correção (R$)"]; }
+function critXlsCols(x){ const e=x.st==="Aberto"?x.est:null; const ok=e&&!e.sem&&!e.manual; return [eapTxt(x.eap),ok?e.nome:(e&&e.manual?"Valor informado manualmente":""),ok?Math.round(e.q*100)/100:"",ok?e.un:"",ok?e.med:"",(e&&!e.sem)?Math.round(e.tot):""]; }
 function critPdfLinha(d,L,y,m){ const k=critResumo(L), pv=podeValor(); y+=7; d.text("Criticidade dos itens em aberto: "+CRIT_NIV.map(n=>`${n.t} ${k.R[n.n].q}`).join(" · ")+(pv&&k.tot?` · estimativa de correção ${estBRL(k.tot)} (faixa ${estBRL(k.mn)} a ${estBRL(k.mx)})`:""),m,y,7.6,true,NAVY);
   if(pv&&k.tot){ y+=4.4; d.text("Estimativa paramétrica pela mediana de obras de retrofit (base de preços CTE, custo raso: sem BDI, taxas, contingência e impostos); quantidades estimadas pela descrição. Não substitui orçamento.",m,y,6.5,false,GR); } return y; }
 function critPdfItem(d,x,xr,y){ d.text(critTxtN(x.crit),xr,y,6.5,true,x.crit===4?RED:GR,"r"); if(podeValor()&&x.est&&!x.est.sem) d.text(estBRL(x.est.tot),xr-16,y,6.5,false,[20,35,45],"r"); }
@@ -5954,7 +5991,7 @@ function sheetCritMain(){ const C=critCfg(), P=precosGet(), ed=critEh(); const d
    <p class="small">${esc(C.lastro)}</p>
    <h3>Níveis</h3>${CRIT_NIV.map(n=>`<div class="cr-nv">${chipCrit(n.n)}<span class="small">${esc(C.niveis[n.n])}</span></div>`).join("")}
    <h3>Nível padrão por disciplina</h3><p class="muted small">Vale quando nenhuma regra por palavra-chave indicar nível maior. Vence o maior nível entre a disciplina e as regras.</p>
-   ${discs.map(d=>`<label class="f cr-dl"><span>${esc(d)}</span>${critNivSel(C.disc[d]||2,`data-cd="${esc(d)}"`)}</label>`).join("")}
+   ${discs.map(d=>`<div class="cr-dl2"><b>${esc(d)}</b><label class="f"><span>Nível</span>${critNivSel(C.disc[d]||2,`data-cd="${esc(d)}"`)}</label><label class="f"><span>Grupo do orçamento</span><select data-ce="${esc(d)}" ${critEh()?"":"disabled"}>${EAP_NOMES.map(n=>`<option value="${n[0]}" ${(eapDiscMap()[d]||"")===n[0]?"selected":""}>${n[0]} · ${esc(n[1])}</option>`).join("")}</select></label></div>`).join("")}
    <h3>Regras por palavra-chave (${C.regras.length})</h3><p class="muted small">Cada regra tem a sua base. “A validar” indica que a referência deve ser conferida na versão vigente antes de citar em laudo.</p>
    ${C.regras.map(r=>`<button type="button" class="cr-rg" data-crr="${esc(r.id)}">${chipCrit(r.nivel)}<span><b>${esc(r.nome)}</b><small>${esc(r.val||"")} · ${cTermos(r.kw).length} palavra(s)</small></span></button>`).join("")}
    ${ed?`<button class="btn block" data-crn="1">+ Nova regra de criticidade</button>`:""}
@@ -5976,6 +6013,7 @@ function sheetCritMain(){ const C=critCfg(), P=precosGet(), ed=critEh(); const d
     else if(t.closest("[data-crx]")){ const k=t.closest("[data-crx]").dataset.crx; if(k==="exp") critExportar(); else if(confirm("Restaurar a matriz e as regras de serviço para o padrão? As edições feitas serão perdidas (itens com criticidade definida manualmente não são afetados).")){ delete S.critCfg; save(); render(); sheetCritMain(); toast("Critérios padrão restaurados."); } } }); }
 document.addEventListener("change",e=>{ const t=e.target; if(!t.closest||!t.closest("#sheet")||!critEh()) return;
   if(t.dataset&&t.dataset.cd!=null){ const C=critEdit(); C.disc[t.dataset.cd]=+t.value; critMarca(); save(); render(); toast("Nível da disciplina atualizado."); }
+  else if(t.dataset&&t.dataset.ce!=null){ const C=critEdit(); C.eapDisc=Object.assign({},C.eapDisc||EAP_DISC_DEF); C.eapDisc[t.dataset.ce]=t.value; critMarca(); save(); render(); toast("Grupo do orçamento da disciplina atualizado."); }
   else if(t.id==="cr-vis"){ const C=critEdit(); C.vis=t.value; critMarca(); save(); render(); toast("Visibilidade dos valores atualizada."); } },true);
 function critMarca(){ const C=critEdit(); C.em=new Date().toISOString(); try{ C.por=(typeof usuarioAtual==="function"&&usuarioAtual()||{}).nome||""; }catch(_){ } C.rev="R"+String(((+String(C.rev||"R00").slice(1))||0)+1).padStart(2,"0"); }
 function critExportar(){ const d={tipo:"cte-vistoria-criterios",geradoEm:hoje(),criterios:JSON.parse(JSON.stringify(critCfg()))}; entregarArquivo(`criterios-criticidade_CTE_${hoje()}.json`,new Blob([JSON.stringify(d,null,1)],{type:"application/json"})); }
@@ -5986,7 +6024,7 @@ function precosImportar(d){ if(!d||d.tipo!=="cte-vistoria-precos"||!Array.isArra
   render(); aviso("Base de preços importada",`Base ${esc(d.rev||"")} com ${d.servicos.length} serviços, guardada somente neste aparelho. ${esc(d.aviso||"")}`); }
 function sheetPrecos(){ const P=precosGet(); if(!P) return; abrirSheet(`<div class="row between"><h2>Preços de referência</h2><button class="link" data-x="1">Fechar</button></div>
   <p class="small">${esc(P.fonte||"")}. ${esc(P.estatistica||"")}. <b>${esc(P.aviso||"")}</b></p>
-  <div class="cr-tab">${P.servicos.map(s=>`<div class="cr-pl"><b>${esc(s.nome)}</b><span>${estBRL(s.med)}/${esc(s.un)}</span><small>faixa ${estBRL(s.min)} a ${estBRL(s.max)} · ${s.n} proposta(s)${s.cv>0.5?" · dispersão alta":""}</small></div>`).join("")}</div>
+  <div class="cr-tab">${EAP_NOMES.map(n=>{ const L=P.servicos.filter(x=>x.eap===n[0]); return L.length?`<h3 class="h12">${esc(n[0]+" · "+n[1])}</h3>`+L.map(s=>`<div class="cr-pl"><b>${esc(s.nome)}</b><span>${estBRL(s.med)}/${esc(s.un)}</span><small>faixa ${estBRL(s.min)} a ${estBRL(s.max)} · ${s.n} proposta(s)${s.cv>0.5?" · dispersão alta":""}</small></div>`).join(""):""; }).join("")}</div>
   <button class="btn block" data-back="1">Voltar</button>`,e=>{ if(e.target.closest("[data-back]")) sheetCritMain(); }); }
 function sheetCritRegra(id){ const C=critEdit(); const ed=critEh(); let r=C.regras.find(x=>x.id===id); const novo=!r; if(novo) r={id:"u"+Date.now().toString(36),nome:"",nivel:3,kw:"",base:"",val:"Critério CTE"};
   abrirSheet(`<div class="row between"><h2>${novo?"Nova regra":"Regra de criticidade"}</h2><button class="link" data-x="1">Fechar</button></div>
