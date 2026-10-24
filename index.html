@@ -4188,26 +4188,34 @@ document.addEventListener("click",e=>{ if(e.target.closest("#sheet")) return; co
   const y=scrollY; UI.d10=a.dataset.v; render(); scrollTo(0,y); },true);
 
 /* ================= ONDA 11: disciplina por item e relatório da obra por disciplina ================= */
-const DISC_PAD=["Acessibilidade","Ar-condicionado","Arquitetura","Caixilhos","Elétrica","Hidráulica","Impermeabilização","Incêndio","Vedações"];
-const DISC_LEG={"Áreas molhadas e impermeabilização":"Impermeabilização","Vedações e drywall":"Vedações","Elétrica e sistemas":"Elétrica","Acabamentos":"Arquitetura","Esquadrias e fachada":"Caixilhos"};
+const DISC_PAD=["Acabamento e limpeza","Acessibilidade","Ar-condicionado","Arquitetura","Bancada","Caixilhos","Elétrica","Elevadores e plataformas","Esquadrias de madeira","Hidráulica","Impermeabilização","Incêndio","Pintura","Pisos e revestimentos","Rodapé","Vedações"];
+const DISC_LEG={"Áreas molhadas e impermeabilização":"Impermeabilização","Vedações e drywall":"Vedações","Elétrica e sistemas":"Elétrica","Acabamentos":"Arquitetura","Esquadrias e fachada":"Caixilhos","Estruturas de madeira":"Esquadrias de madeira","Estrutura de madeira":"Esquadrias de madeira","Madeira":"Esquadrias de madeira","Esquadrias de alumínio":"Caixilhos"};
 const discNorm=d=>{ d=String(d||"").trim(); return DISC_LEG[d]||d; };
 function discOutras(){ if(!Array.isArray(S.discOutras)) S.discOutras=[]; return S.discOutras; }
 function discAdd(n){ n=String(n||"").trim().slice(0,40); if(!n) return ""; const ex=[...DISC_PAD,...discOutras()].find(x=>x.toLowerCase()===n.toLowerCase()); if(ex) return ex; discOutras().push(n); return n; }
-function discOpts(cur){ const lst=[...DISC_PAD,...discOutras().slice().sort((a,b)=>a.localeCompare(b,"pt"))]; if(cur&&!lst.includes(cur)) lst.push(cur);
+function discOpts(cur){ const lst=[...DISC_PAD,...discOutras().filter(x=>!DISC_LEG[x]&&!DISC_PAD.includes(x)).sort((a,b)=>a.localeCompare(b,"pt"))]; if(cur&&!lst.includes(cur)) lst.push(cur);
   return `<option value="">Sem disciplina</option>`+lst.map(d=>`<option ${d===cur?"selected":""}>${esc(d)}</option>`).join("")+`<option value="__outro">Outro (informar)…</option>`; }
 /* sugestão por palavras-chave: serve só como ponto de partida, sempre marcada como “sugerida” */
 const DISC_REGRAS=[
+ ["Acabamento e limpeza",/limpeza|limpar|sujidade|sujo|calafet|veda[cç][aã]o|vedar|polir|polimento|acabamento|terminalidade|\bacabar\b|finalizar|concluir/i],
  ["Acessibilidade",/\bpcd\b|\bpne\b|acessib|t[aá]til|rampa|cadeirante/i],
- ["Ar-condicionado",/ar[ -]condicionado|climatiz|condensador|evaporador|\bsplit\b|\bhvac\b|infra de ar/i],
+ ["Ar-condicionado",/ar[ -]condicionado|climatiz|condensador|condensadora|evaporador|evaporadora|\bsplit\b|\bhvac\b|infra de ar/i],
  ["Incêndio",/inc[eê]ndio|bombeiro|hidrante|extintor|sprinkler|detector|alarme|emerg[eê]ncia/i],
  ["Impermeabilização",/impermeab|infiltr|umidade|muret|rufo|\bcalha\b|jardineira/i],
  ["Hidráulica",/hidr[aá]ul|hidr[oô]metro|tubula|registro|\bralo|\bvaso|chuveiro|torneira|bomba|reservat[oó]rio|caixa d|esgoto|vazament|barrilete|fluxo/i],
  ["Elétrica",/el[eé]tric|quadro|tomada|ilumina|lumin[aá]ria|eletroduto|condulete|canaleta|aterram|diagrama|botoeira|interfone|spda|para.?raio|fia[cç][aã]o|\bcabos?\b|circuito|\bled\b|arandela|medi[cç][aã]o|\binfra\b/i],
- ["Caixilhos",/caixilho|janela|esquadria|vidro|guarni|batente|requadro|port[aã]o|gradil|\bporta/i],
- ["Vedações",/drywall|alvenaria|gesso|trinc|parede|forro|emass|fissura/i],
- ["Arquitetura",/pintura|arremate|rejunt|piso|revestiment|ard[oó]sia|pastilha|granilite|ladrilho|\btaco|rodap|soleira|calafet|marcenaria|bancada|limpeza|acabamento|retoque|\bpedra|fulget|contrapiso|brinquedoteca|cobog|perfil|grelha|churrasq|espelho|sujidade|polir|tinta|veda[cç]/i]];
+ ["Elevadores e plataformas",/elevador|plataforma|cabine|casa de m[aá]quinas/i],
+ ["Pintura",/pintura|pintar|\btinta|massa corrida|emass|retoque|arremates? de pintu/i],
+ ["Rodapé",/rodap/i],
+ ["Bancada",/bancada|tampo|\bcuba\b|\bpia\b|\bilha\b/i],
+ ["Caixilhos",/caixilho|janela|esquadria|vidro|gradil|guarda.?corpo|veneziana|peitoril|requadro|port[aã]o|moldura/i],
+ ["Pisos e revestimentos",/rejunt|\bpiso|revestiment|pastilha|ard[oó]sia|granilite|baguete|desn[ií]vel|cer[aâ]mic|porcelanat|m[aá]rmore|granito|\btaco|soleira|contrapiso|ladrilho|fulget|frontão|azulejo|\bpedra/i],
+ ["Esquadrias de madeira",/\bporta|batente|guarni[cç]|folha|fechadura|ferragem|dobradi[cç]|ma[cç]aneta|marcenaria|madeira|arm[aá]rio|soleira/i],
+ ["Vedações",/drywall|alvenaria|gesso|trinc|parede|forro|fissura|cobog/i],
+ ["Arquitetura",/perfil|grelha|churrasq|espelho|mobili|comunica[cç]|paisag|marquise|acess[oó]rio/i]];
 function discSug(t){ for(const [d,re] of DISC_REGRAS) if(re.test(t||"")) return d; return ""; }
-function discSugerirObra(oid){ let n=0,tot=0; for(const c of (S.cls||[])){ if(c.obraId!==oid) continue; for(const i of c.itens){ if(discNorm(i.disc)) continue; tot++; const d=discSug([i.desc,i.obs,i.local].join(" ")); if(d){ i.disc=d; i.discSug=true; n++; } } } if(n) save(); return {n,sem:tot-n}; }
+function discSugItem(i,c){ if(c&&/elevador|casa de m[aá]quinas/i.test(c.titulo||"")) return "Elevadores e plataformas"; const d=discSug(i.desc); if(d) return d; return discSug([i.obs,i.local,i.g].join(" ")); }
+function discSugerirObra(oid){ let n=0,tot=0; for(const c of (S.cls||[])){ if(c.obraId!==oid) continue; for(const i of c.itens){ if(discNorm(i.disc)) continue; tot++; const d=discSugItem(i,c); if(d){ i.disc=d; i.discSug=true; n++; } } } if(n) save(); return {n,sem:tot-n}; }
 
 /* seletor de disciplina nos itens de checklist e de RNC */
 const selDisc=(kind,id,cur,sug,pad)=>`<label class="f disc11"><span>Disciplina${sug?' <em>(sugerida · confirme)</em>':""}${pad?' <em>(padrão do tipo de vistoria)</em>':""}</span><select data-d11="${kind}" data-id="${esc(id)}">${discOpts(cur)}</select></label>`;
@@ -5200,7 +5208,7 @@ try{ syUlt=+localStorage.getItem("cte_od_sync_ult")||0; }catch(_){}
 setTimeout(()=>{ if(odAtivo()) sySincronizar(false); },7000);
 
 /* ================= ONDA 21: "Versões e arquivos em uso" na tela Dados deste aparelho ================= */
-const APP_VER="v37";
+const APP_VER="v38";
 const vaFmt=t=>{ try{ return new Date(t).toLocaleString("pt-BR",{dateStyle:"short",timeStyle:"short"}); }catch(_){ return "—"; } };
 const vaGet=k=>odLS(k,null);
 { const _ej=entregarJSON; entregarJSON=function(nome){ try{ if(/^registros_/.test(nome)) odSet("cte_va_exp",{n:nome,t:Date.now()}); }catch(_){} return _ej.apply(this,arguments); }; }
