@@ -5199,7 +5199,7 @@ try{ syUlt=+localStorage.getItem("cte_od_sync_ult")||0; }catch(_){}
 setTimeout(()=>{ if(odAtivo()) sySincronizar(false); },7000);
 
 /* ================= ONDA 21: "Versões e arquivos em uso" na tela Dados deste aparelho ================= */
-const APP_VER="v35";
+const APP_VER="v36";
 const vaFmt=t=>{ try{ return new Date(t).toLocaleString("pt-BR",{dateStyle:"short",timeStyle:"short"}); }catch(_){ return "—"; } };
 const vaGet=k=>odLS(k,null);
 { const _ej=entregarJSON; entregarJSON=function(nome){ try{ if(/^registros_/.test(nome)) odSet("cte_va_exp",{n:nome,t:Date.now()}); }catch(_){} return _ej.apply(this,arguments); }; }
@@ -5705,6 +5705,28 @@ function limpezaDesfazer(){ let b=null; try{ b=JSON.parse(localStorage.getItem(L
   const h=[...document.querySelectorAll("#sheet h3")].find(x=>/^1\./.test(x.textContent)); if(!h) return;
   h.insertAdjacentHTML("beforebegin",`<h3>Limpeza de itens repetidos</h3><p class="small">Houve uma limpeza neste aparelho. Se algo foi removido por engano, é possível desfazer.</p><button class="btn block" data-lpz="1">Desfazer a última limpeza</button>`); }; }
 document.addEventListener("click",e=>{ const b=e.target.closest&&e.target.closest("#sheet [data-lpz]"); if(!b) return; e.stopImmediatePropagation(); limpezaDesfazer(); },true);
+
+/* ================= ONDA 31: Dashboard · prazo vencido, cabeçalho e terminalidade dos checklists ================= */
+{ const _s=statusObra; statusObra=function(ind){ const r=_s.apply(this,arguments); try{ const t=ind&&(ind.termino); if(r.k!=="na"&&t&&t<hoje()&&ind.prazo&&ind.prazo.realizado<100) return {k:"pv",t:"Prazo vencido",dev:r.dev}; }catch(_){ } return r; }; }
+function termDados(o){
+  const L=relLinhas(o.id).filter(x=>x.orig==="Checklist"); if(!L.length) return null;
+  const T=relTot(relAgg(L)); const tr=x=>{ const m=/Torre\s*(\d+)/i.exec(x.loc+" "+x.docNome); return m?"Torre "+m[1]:"Áreas comuns e demais"; };
+  const mp=new Map(); for(const x of L){ const k=tr(x); const a=mp.get(k)||{k,t:0,ab:0,ok:0}; a.t++; if(x.st==="Aberto") a.ab++; else if(x.st==="Fechado"||x.st==="Conforme") a.ok++; mp.set(k,a); }
+  return {T,disc:relAgg(L).filter(a=>a.Aberto).slice(0,6),torres:[...mp.values()].sort((a,b)=>a.k.localeCompare(b.k,"pt",{numeric:true}))};
+}
+function blocoTerm(o){
+  const d=termDados(o); if(!d||!d.T.t) return ""; const T=d.T, tratados=T.Fechado+T.Conforme, p=T.t?tratados/T.t*100:0;
+  const lin=(n,a,b)=>`<div class="pz-l"><span>${esc(n)}</span><div class="pz-t"><i class="fin" style="width:${b?a/b*100:0}%"></i></div><b>${a}/${b}</b></div>`;
+  return `<div class="ob-sec"><h3>Terminalidade · checklists</h3>
+    <div class="k7g">${kpi7("Itens",T.t)}${kpi7("Em aberto",T.Aberto,T.Aberto?"d-cr":"")}${kpi7("Tratados",tratados)}${kpi7("% tratado",numBR(p,1)+"%")}</div>
+    ${barPrazo("Tratados",p,"fin")}
+    ${d.torres.length>1?`<h3 class="h12">Por torre / local · tratados</h3>${d.torres.map(a=>lin(a.k,a.ok,a.t)).join("")}`:""}
+    ${d.disc.length?`<h3 class="h12">Mais itens em aberto por disciplina</h3><div class="rn-g g3">${d.disc.map(a=>`<button type="button" class="rn rn-b nc" data-act="rel11" data-o="${esc(o.id)}" data-s="CL" data-k="Aberto"><b>${a.Aberto}</b><span>${esc(discTxt(a.disc))}</span></button>`).join("")}</div>`:""}
+    <p class="muted small">Tratado = fechado (corrigido e reverificado) ou conforme. Itens sem verificação não entram como tratados.</p></div>`; }
+{ const _b=blocoObra; blocoObra=function(o){ let h=_b.apply(this,arguments);
+    h=h.replace(/(<header class="ob-h"><div><h2>[^<]*<\/h2>\s*<p class="muted">)([^<]*)(<\/p>)/,(m,a,b,c)=>a+b.replace(/(\s·\s*){2,}/g," · ").replace(/^(\s*·\s*)+/,"").replace(/(\s*·\s*)+$/,"")+c);
+    let t=""; try{ t=blocoTerm(o); }catch(e){ console.error(e); }
+    return t?h.replace('<div class="ob-grid">','<div class="ob-grid">'+t):h; }; }
 
 (async function iniciar(){ $("#logo").src=LOGO_DARK; rede(); await openDB(); S=(await kvGet("state2"))||estadoInicial(); if(!S.rfs){ S.rfs=[]; } S.seqAV=S.seqAV||1;
   migrar(); purgarModelo(); await carregarIndiceFotosHist(); lastJSON=snapJSON(); kvSet("state2",S); UI.oid=(S.obras[0]||{}).id||null; render(); })();
