@@ -811,6 +811,7 @@ body.lg-on{overflow:hidden}
 .cl-como dt{font-weight:700;color:#58595b;margin-top:6px;font-size:12px;text-transform:uppercase;letter-spacing:.02em}
 .cl-como dd{margin:1px 0 0}
 .lb-it{padding-bottom:6px}
+#r11-det{scroll-margin-top:84px}
 </style>
 
 <header class="top">
@@ -4263,7 +4264,7 @@ function vRel11(){
   let det="";
   if(f.disc!==null||f.sit){ const D=L.filter(x=>(f.disc===null||(x.disc||"")===f.disc)&&relSitOk(x,f.sit)).sort((a,b)=>REL_SIT.indexOf(a.st)-REL_SIT.indexOf(b.st)); UI.r11rows=D; const lim=f.lim||60;
     const tit=[f.sit?({Aberto:"Em aberto",Fechado:"Fechados",Conforme:"Conformes",sv:"Sem verificação / NV",fp:"Foto pendente",todos:"Todos"}[f.sit]):"",f.disc!==null?discTxt(f.disc):""].filter(Boolean).join(" · ")||"Itens";
-    det=`<section class="card"><div class="row between"><h2>${esc(tit)} · ${D.length} item(ns)</h2><button class="link" data-act="r11d" data-v="__x">Limpar filtro</button></div><p class="muted small">Toque num item para abrir o registro, ver a foto, editar e mudar o status. Os indicadores se atualizam sozinhos.</p><ul class="rl-det">${D.slice(0,lim).map((x,n)=>`<li><button type="button" class="rl-it" data-act="r11go" data-n="${n}"><span class="rl-s s-${REL_SIT.indexOf(x.st)}">${x.st}</span><b>${esc(x.doc)}</b> · ${esc(clTxt(x.txt,110))}<small>${esc(x.loc)}${x.fp?" · foto pendente":""}${x.disc?"":" · sem disciplina"}</small></button></li>`).join("")}</ul>${D.length>lim?`<button class="btn block" data-act="r11mais">Mostrar mais (${D.length-lim} restantes)</button>`:""}</section>`; }
+    det=`<section class="card" id="r11-det"><div class="row between"><h2>${esc(tit)} · ${D.length} item(ns)</h2><button class="link" data-act="r11d" data-v="__x">Limpar filtro</button></div><p class="muted small">Toque num item para abrir o registro, ver a foto, editar e mudar o status. Os indicadores se atualizam sozinhos.</p><ul class="rl-det">${D.slice(0,lim).map((x,n)=>`<li><button type="button" class="rl-it" data-act="r11go" data-n="${n}"><span class="rl-s s-${REL_SIT.indexOf(x.st)}">${x.st}</span><b>${esc(x.doc)}</b> · ${esc(clTxt(x.txt,110))}<small>${esc(x.loc)}${x.fp?" · foto pendente":""}${x.disc?"":" · sem disciplina"}</small></button></li>`).join("")}</ul>${D.length>lim?`<button class="btn block" data-act="r11mais">Mostrar mais (${D.length-lim} restantes)</button>`:""}</section>`; }
   return `<div><p class="eyebrow">CTE Gerenciamento · Análise da obra</p><h1>Relatório por disciplina</h1><p class="muted small">RNC e checklists juntos, por disciplina. Disciplina definida item a item; pode ser alterada a qualquer momento.</p></div>
   <section class="card rl-f"><label class="f"><span>Obra</span><select id="r11-o">${obras.map(x=>`<option value="${esc(x.id)}" ${x.id===f.oid?"selected":""}>${esc(x.nome)}</option>`).join("")}</select></label>
    <label class="f"><span>Origem</span><select id="r11-s"><option value="todos">RNC e checklists</option><option value="RNC" ${f.orig==="RNC"?"selected":""}>Somente RNC</option><option value="CL" ${f.orig==="CL"?"selected":""}>Todos os checklists</option>${cls.map(c=>`<option value="CL:${esc(c.id)}" ${f.orig==="CL:"+c.id?"selected":""}>${esc(c.numero)} · ${esc(clTxt(c.titulo,46))}</option>`).join("")}</select></label>
@@ -4277,9 +4278,9 @@ function vRel11(){
 }
 { const _vI=vInicio; vInicio=function(){ return UI.view==="rel11"?vRel11():_vI(); }; }
 document.addEventListener("click",e=>{ if(e.target.closest("#sheet")) return; const a=e.target.closest("[data-act]"); if(!a) return; const act=a.dataset.act, v=a.dataset.v;
-  if(act==="rel11"){ e.stopImmediatePropagation(); if(a.dataset.o) UI.r11={oid:a.dataset.o,orig:a.dataset.s||"todos",grupo:"",disc:null,sit:a.dataset.k||null}; UI.view="rel11"; render(); scrollTo(0,0); }
-  else if(act==="r11d"){ e.stopImmediatePropagation(); const y=scrollY; if(v==="__x"){ UI.r11.disc=null; UI.r11.sit=null; } else UI.r11.disc=(UI.r11.disc===v)?null:v; UI.r11.lim=60; render(); scrollTo(0,y); }
-  else if(act==="r11k"){ e.stopImmediatePropagation(); const y=scrollY; UI.r11.sit=(v==="todos"||UI.r11.sit===v)?null:v; UI.r11.lim=60; render(); scrollTo(0,y); }
+  if(act==="rel11"){ e.stopImmediatePropagation(); if(a.dataset.o) UI.r11={oid:a.dataset.o,orig:a.dataset.s||"todos",grupo:"",disc:a.dataset.disc!=null?a.dataset.disc:null,sit:a.dataset.k||null}; UI.view="rel11"; render(); scrollTo(0,0); if(a.dataset.disc!=null||a.dataset.k) setTimeout(()=>{ const d=document.getElementById("r11-det"); if(d) d.scrollIntoView({block:"start"}); },60); }
+  else if(act==="r11d"){ e.stopImmediatePropagation(); const y=scrollY; if(v==="__x"){ UI.r11.disc=null; UI.r11.sit=null; } else { const abre=UI.r11.disc!==v; UI.r11.disc=abre?v:null; if(abre&&!UI.r11.sit) UI.r11.sit="Aberto"; UI.r11.lim=60; render(); if(abre){ const d=document.getElementById("r11-det"); if(d) d.scrollIntoView({block:"start"}); return; } } UI.r11.lim=60; render(); scrollTo(0,y); }
+  else if(act==="r11k"){ e.stopImmediatePropagation(); const y=scrollY; UI.r11.sit=(v==="todos"||UI.r11.sit===v)?null:v; UI.r11.lim=60; render(); if(UI.r11.sit){ const d=document.getElementById("r11-det"); if(d){ d.scrollIntoView({block:"start"}); return; } } scrollTo(0,y); }
   else if(act==="r11mais"){ e.stopImmediatePropagation(); const y=scrollY; UI.r11.lim=(UI.r11.lim||60)+60; render(); scrollTo(0,y); }
   else if(act==="r11go"){ e.stopImmediatePropagation(); const x=(UI.r11rows||[])[+a.dataset.n]; if(x) irItemRel(x); }
   else if(act==="r11sug"){ e.stopImmediatePropagation(); const r=discSugerirObra(UI.r11.oid); const y=scrollY; render(); scrollTo(0,y); toast(r.n?`${r.n} disciplina(s) sugerida(s). ${r.sem?r.sem+" sem sugestão: defina manualmente.":"Confirme item a item."}`:"Nada a sugerir: itens já têm disciplina ou o texto não permite sugerir."); }
@@ -5199,7 +5200,7 @@ try{ syUlt=+localStorage.getItem("cte_od_sync_ult")||0; }catch(_){}
 setTimeout(()=>{ if(odAtivo()) sySincronizar(false); },7000);
 
 /* ================= ONDA 21: "Versões e arquivos em uso" na tela Dados deste aparelho ================= */
-const APP_VER="v36";
+const APP_VER="v37";
 const vaFmt=t=>{ try{ return new Date(t).toLocaleString("pt-BR",{dateStyle:"short",timeStyle:"short"}); }catch(_){ return "—"; } };
 const vaGet=k=>odLS(k,null);
 { const _ej=entregarJSON; entregarJSON=function(nome){ try{ if(/^registros_/.test(nome)) odSet("cte_va_exp",{n:nome,t:Date.now()}); }catch(_){} return _ej.apply(this,arguments); }; }
@@ -5721,7 +5722,7 @@ function blocoTerm(o){
     <div class="k7g">${kpi7("Itens",T.t)}${kpi7("Em aberto",T.Aberto,T.Aberto?"d-cr":"")}${kpi7("Tratados",tratados)}${kpi7("% tratado",numBR(p,1)+"%")}</div>
     ${barPrazo("Tratados",p,"fin")}
     ${d.torres.length>1?`<h3 class="h12">Por torre / local · tratados</h3>${d.torres.map(a=>lin(a.k,a.ok,a.t)).join("")}`:""}
-    ${d.disc.length?`<h3 class="h12">Mais itens em aberto por disciplina</h3><div class="rn-g g3">${d.disc.map(a=>`<button type="button" class="rn rn-b nc" data-act="rel11" data-o="${esc(o.id)}" data-s="CL" data-k="Aberto"><b>${a.Aberto}</b><span>${esc(discTxt(a.disc))}</span></button>`).join("")}</div>`:""}
+    ${d.disc.length?`<h3 class="h12">Mais itens em aberto por disciplina</h3><div class="rn-g g3">${d.disc.map(a=>`<button type="button" class="rn rn-b nc" data-act="rel11" data-o="${esc(o.id)}" data-s="CL" data-k="Aberto" data-disc="${esc(a.disc)}"><b>${a.Aberto}</b><span>${esc(discTxt(a.disc))}</span></button>`).join("")}</div>`:""}
     <p class="muted small">Tratado = fechado (corrigido e reverificado) ou conforme. Itens sem verificação não entram como tratados.</p></div>`; }
 { const _b=blocoObra; blocoObra=function(o){ let h=_b.apply(this,arguments);
     h=h.replace(/(<header class="ob-h"><div><h2>[^<]*<\/h2>\s*<p class="muted">)([^<]*)(<\/p>)/,(m,a,b,c)=>a+b.replace(/(\s·\s*){2,}/g," · ").replace(/^(\s*·\s*)+/,"").replace(/(\s*·\s*)+$/,"")+c);
