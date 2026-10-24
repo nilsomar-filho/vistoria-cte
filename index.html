@@ -5199,7 +5199,7 @@ try{ syUlt=+localStorage.getItem("cte_od_sync_ult")||0; }catch(_){}
 setTimeout(()=>{ if(odAtivo()) sySincronizar(false); },7000);
 
 /* ================= ONDA 21: "Versões e arquivos em uso" na tela Dados deste aparelho ================= */
-const APP_VER="v34";
+const APP_VER="v35";
 const vaFmt=t=>{ try{ return new Date(t).toLocaleString("pt-BR",{dateStyle:"short",timeStyle:"short"}); }catch(_){ return "—"; } };
 const vaGet=k=>odLS(k,null);
 { const _ej=entregarJSON; entregarJSON=function(nome){ try{ if(/^registros_/.test(nome)) odSet("cte_va_exp",{n:nome,t:Date.now()}); }catch(_){} return _ej.apply(this,arguments); }; }
@@ -5671,6 +5671,40 @@ async function msFinalizar(){
   S.userId=u.id; lgLimpaFalhas(); lgModo={m:"login"}; save(); lgFecharTela(); render(); toast(`Olá, ${u.nome} (${PERFIS[u.perfil]}) · conta Microsoft`);
 }
 setTimeout(()=>{ msFinalizar().catch(e=>console.error(e)); },0);
+
+/* ================= ONDA 30: limpeza de itens repetidos (arquivo de pares remover → manter) ================= */
+const LPZ="cte_limpeza_bkp";
+function limpezaAplicar(d){
+  if(!d||d.tipo!=="cte-vistoria-limpeza"||!Array.isArray(d.pares)){ aviso("Arquivo não reconhecido","Este arquivo não é uma lista de limpeza de itens repetidos."); return; }
+  const idx=new Map(); for(const c of (S.cls||[])) for(const i of c.itens) idx.set(c.numero+"|"+i.id,{c,i});
+  const bkp=[]; let rem=0,heranca=0,pulou=0,ausente=0; const CP=["st","rev","pos","depois","depoisEm","obsCampo"];
+  for(const p of d.pares){ const a=idx.get(p.r), b=idx.get(p.k); if(!a||!b){ ausente++; continue; }
+    const ra=a.i, rb=b.i; if(ra.st&&rb.st&&ra.st!==rb.st){ pulou++; continue; }
+    bkp.push({cid:a.c.id,pos:a.c.itens.indexOf(ra),item:JSON.parse(JSON.stringify(ra))});
+    if(ra.st&&!rb.st){ for(const k of CP) if(ra[k]&&!rb[k]) rb[k]=ra[k]; rb.st=ra.st; heranca++; }
+    a.c.itens=a.c.itens.filter(x=>x!==ra); rem++; }
+  const vazios=[]; S.excl=S.excl||{};
+  for(const c of [...(S.cls||[])]) if(!c.itens.length&&bkp.some(x=>x.cid===c.id)){ vazios.push(c.numero); S.excl[c.id]=Date.now(); bkp.push({cid:c.id,cl:JSON.parse(JSON.stringify(c))}); S.cls=S.cls.filter(x=>x.id!==c.id); }
+  if(rem) try{ localStorage.setItem(LPZ,JSON.stringify({em:Date.now(),bkp})); }catch(_){ }
+  save(); render();
+  aviso("Limpeza concluída",`${rem} item(ns) repetido(s) removido(s)${heranca?` (${heranca} tinham status e foram transferidos ao item mantido)`:""}. ${pulou?pulou+" mantido(s) por terem status diferente do original: confira. ":""}${ausente?ausente+" não encontrado(s) neste aparelho (já removidos ou checklist diferente). ":""}${vazios.length?"Checklist(s) que ficaram vazios foram excluídos: "+vazios.join(", ")+". ":""}Os itens mantidos não foram alterados e as fotos continuam no aparelho. Há como desfazer em Dados do aparelho.`);
+}
+function limpezaDesfazer(){ let b=null; try{ b=JSON.parse(localStorage.getItem(LPZ)||"null"); }catch(_){ } if(!b){ aviso("Nada a desfazer","Não há limpeza recente neste aparelho."); return; }
+  S.excl=S.excl||{}; for(const x of b.bkp){ if(x.cl){ delete S.excl[x.cl.id]; if(!S.cls.some(c=>c.id===x.cl.id)) S.cls.push(x.cl); } }
+  for(const x of b.bkp){ if(x.cl) continue; const c=S.cls.find(c=>c.id===x.cid); if(c&&!c.itens.some(i=>i.id===x.item.id)) c.itens.splice(Math.min(x.pos,c.itens.length),0,x.item); }
+  try{ localStorage.removeItem(LPZ); }catch(_){ } save(); render(); aviso("Limpeza desfeita","Os itens removidos foram devolvidos aos seus checklists."); }
+{ const _ip=importarPacote; importarPacote=async function(){ const d=await escolherArquivoJSON(); if(!d) return;
+    if(d.tipo==="cte-vistoria-limpeza"){ limpezaAplicar(d); return; }
+    if(d.tipo==="cte-vistoria-disciplinas"){ importarDisciplinas(d); return; }
+    if(d.tipo==="cte-vistoria-equipe"){ aplicarEquipe(d); return; }
+    if(d.tipo==="cte-vistoria-modelos"){ importarModelos(d); return; }
+    if(d.tipo!=="cte-vistoria-pacote"||!Array.isArray(d.obras)){ aviso("Arquivo não reconhecido","Este arquivo não é um pacote de dados de obra do app."); return; }
+    try{ localStorage.setItem("cte_pacote",JSON.stringify(d)); }catch(e){ aviso("Não foi possível guardar","O navegador recusou guardar o pacote neste aparelho."); return; }
+    S.obrasReaisVer=0; commit(); toast("Pacote importado. Recarregando…"); setTimeout(()=>location.reload(),600); }; }
+{ const _sd=sheetDados; sheetDados=function(){ _sd.apply(this,arguments); let tem=false; try{ tem=!!localStorage.getItem(LPZ); }catch(_){ } if(!tem||!isEngOuCoord()) return;
+  const h=[...document.querySelectorAll("#sheet h3")].find(x=>/^1\./.test(x.textContent)); if(!h) return;
+  h.insertAdjacentHTML("beforebegin",`<h3>Limpeza de itens repetidos</h3><p class="small">Houve uma limpeza neste aparelho. Se algo foi removido por engano, é possível desfazer.</p><button class="btn block" data-lpz="1">Desfazer a última limpeza</button>`); }; }
+document.addEventListener("click",e=>{ const b=e.target.closest&&e.target.closest("#sheet [data-lpz]"); if(!b) return; e.stopImmediatePropagation(); limpezaDesfazer(); },true);
 
 (async function iniciar(){ $("#logo").src=LOGO_DARK; rede(); await openDB(); S=(await kvGet("state2"))||estadoInicial(); if(!S.rfs){ S.rfs=[]; } S.seqAV=S.seqAV||1;
   migrar(); purgarModelo(); await carregarIndiceFotosHist(); lastJSON=snapJSON(); kvSet("state2",S); UI.oid=(S.obras[0]||{}).id||null; render(); })();
