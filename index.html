@@ -812,6 +812,24 @@ body.lg-on{overflow:hidden}
 .cl-como dd{margin:1px 0 0}
 .lb-it{padding-bottom:6px}
 #r11-det{scroll-margin-top:84px}
+.cr-chip{display:inline-block;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:700;letter-spacing:.02em;margin-right:6px;vertical-align:middle;border:1px solid transparent}
+.cr-4{background:#f6d9dc;color:#8e1b24;border-color:#e3a9af}.cr-3{background:#fbe5d0;color:#8a4a06;border-color:#ecc197}.cr-2{background:#f8ecd0;color:#6f5600;border-color:#e3d29a}.cr-1{background:#e4ebf0;color:#3d5563;border-color:#c6d3dc}
+.cr-est{display:inline-block;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:700;background:#eef3f6;color:#004d6d;border:1px dashed #8fb0c2;margin-right:6px;vertical-align:middle}
+.cr-est.cr-sem{background:#fff;color:#6b7b85;border-color:#cdd6dc;font-weight:600}
+.cr-lin{display:block;margin-top:3px}
+.cr-g{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:8px 0}
+.cr-b{display:flex;flex-direction:column;align-items:center;gap:1px;padding:10px 4px;border-radius:10px;border:2px solid transparent;font:inherit;cursor:pointer}
+.cr-b b{font-size:22px;line-height:1}.cr-b span{font-size:12px;font-weight:700}.cr-b small{font-size:10.5px;opacity:.9}
+.cr-b[aria-pressed="true"]{border-color:#004d6d;box-shadow:0 0 0 2px #cfe3ee}
+.cr-tot{margin:6px 0;font-size:15px}
+.cr-lst{list-style:none;margin:0;padding:0}.cr-lst li{margin:0 0 6px}
+.cr-nv{display:flex;gap:8px;align-items:flex-start;margin:0 0 8px}.cr-nv .cr-chip{flex:0 0 auto;margin-top:2px}
+.cr-dl{display:flex;align-items:center;justify-content:space-between;gap:10px}.cr-dl select{max-width:55%}
+.cr-rg{display:flex;align-items:center;gap:8px;width:100%;text-align:left;padding:9px 10px;margin:0 0 6px;border:1px solid var(--line,#d5dde3);border-radius:10px;background:#fff;font:inherit;cursor:pointer}
+.cr-rg span{display:flex;flex-direction:column}.cr-rg small{color:#58595b;font-size:12px}
+.cr-pl{display:grid;grid-template-columns:1fr auto;gap:0 10px;padding:7px 0;border-bottom:1px solid var(--line,#e3e8ec)}.cr-pl small{grid-column:1/3;color:#58595b;font-size:12px}
+@media (max-width:520px){.cr-g{grid-template-columns:repeat(2,1fr)}}
+.cr-lst small,.rl-it small{display:block}
 </style>
 
 <header class="top">
@@ -4270,7 +4288,7 @@ function vRel11(){
   const mx=Math.max(1,...A.map(a=>a.t));
   const linhas=A.map(a=>`<button type="button" class="rl-row" data-act="r11d" data-v="${esc(a.disc)}" aria-pressed="${f.disc===a.disc}"><span class="rl-n">${esc(discTxt(a.disc))}${a.sug?` <small>(${a.sug} sugerida${a.sug>1?"s":""})</small>`:""}</span><span class="rl-b"><i class="ab" style="width:${a.Aberto/mx*100}%"></i><i class="fe" style="width:${a.Fechado/mx*100}%"></i><i class="co" style="width:${a.Conforme/mx*100}%"></i><i class="sv" style="width:${a.sv/mx*100}%"></i></span><span class="rl-q"><b>${a.t}</b> · ${a.Aberto} aberto${a.Aberto===1?"":"s"}</span></button>`).join("");
   let det="";
-  if(f.disc!==null||f.sit){ const D=L.filter(x=>(f.disc===null||(x.disc||"")===f.disc)&&relSitOk(x,f.sit)).sort((a,b)=>REL_SIT.indexOf(a.st)-REL_SIT.indexOf(b.st)); UI.r11rows=D; const lim=f.lim||60;
+  if(f.disc!==null||f.sit){ const D=L.filter(x=>(f.disc===null||(x.disc||"")===f.disc)&&relSitOk(x,f.sit)).sort((a,b)=>REL_SIT.indexOf(a.st)-REL_SIT.indexOf(b.st)||(b.crit||0)-(a.crit||0)); UI.r11rows=D; const lim=f.lim||60;
     const tit=[f.sit?({Aberto:"Em aberto",Fechado:"Fechados",Conforme:"Conformes",sv:"Sem verificação / NV",fp:"Foto pendente",todos:"Todos"}[f.sit]):"",f.disc!==null?discTxt(f.disc):""].filter(Boolean).join(" · ")||"Itens";
     det=`<section class="card" id="r11-det"><div class="row between"><h2>${esc(tit)} · ${D.length} item(ns)</h2><button class="link" data-act="r11d" data-v="__x">Limpar filtro</button></div><p class="muted small">Toque num item para abrir o registro, ver a foto, editar e mudar o status. Os indicadores se atualizam sozinhos.</p><ul class="rl-det">${D.slice(0,lim).map((x,n)=>`<li><button type="button" class="rl-it" data-act="r11go" data-n="${n}"><span class="rl-s s-${REL_SIT.indexOf(x.st)}">${x.st}</span><b>${esc(x.doc)}</b> · ${esc(clTxt(x.txt,110))}<small>${esc(x.loc)}${x.fp?" · foto pendente":""}${x.disc?"":" · sem disciplina"}</small></button></li>`).join("")}</ul>${D.length>lim?`<button class="btn block" data-act="r11mais">Mostrar mais (${D.length-lim} restantes)</button>`:""}</section>`; }
   return `<div><p class="eyebrow">CTE Gerenciamento · Análise da obra</p><h1>Relatório por disciplina</h1><p class="muted small">RNC e checklists juntos, por disciplina. Disciplina definida item a item; pode ser alterada a qualquer momento.</p></div>
@@ -4286,7 +4304,7 @@ function vRel11(){
 }
 { const _vI=vInicio; vInicio=function(){ return UI.view==="rel11"?vRel11():_vI(); }; }
 document.addEventListener("click",e=>{ if(e.target.closest("#sheet")) return; const a=e.target.closest("[data-act]"); if(!a) return; const act=a.dataset.act, v=a.dataset.v;
-  if(act==="rel11"){ e.stopImmediatePropagation(); if(a.dataset.o) UI.r11={oid:a.dataset.o,orig:a.dataset.s||"todos",grupo:"",disc:a.dataset.disc!=null?a.dataset.disc:null,sit:a.dataset.k||null}; UI.view="rel11"; render(); scrollTo(0,0); if(a.dataset.disc!=null||a.dataset.k) setTimeout(()=>{ const d=document.getElementById("r11-det"); if(d) d.scrollIntoView({block:"start"}); },60); }
+  if(act==="rel11"){ e.stopImmediatePropagation(); if(a.dataset.o) UI.r11={oid:a.dataset.o,orig:a.dataset.s||"todos",grupo:"",disc:a.dataset.disc!=null?a.dataset.disc:null,sit:a.dataset.k||(a.dataset.c?"Aberto":null),crit:a.dataset.c?+a.dataset.c:null}; UI.view="rel11"; render(); scrollTo(0,0); if(a.dataset.disc!=null||a.dataset.k||a.dataset.c) setTimeout(()=>{ const d=document.getElementById("r11-det"); if(d) d.scrollIntoView({block:"start"}); },60); }
   else if(act==="r11d"){ e.stopImmediatePropagation(); const y=scrollY; if(v==="__x"){ UI.r11.disc=null; UI.r11.sit=null; } else { const abre=UI.r11.disc!==v; UI.r11.disc=abre?v:null; if(abre&&!UI.r11.sit) UI.r11.sit="Aberto"; UI.r11.lim=60; render(); if(abre){ const d=document.getElementById("r11-det"); if(d) d.scrollIntoView({block:"start"}); return; } } UI.r11.lim=60; render(); scrollTo(0,y); }
   else if(act==="r11k"){ e.stopImmediatePropagation(); const y=scrollY; UI.r11.sit=(v==="todos"||UI.r11.sit===v)?null:v; UI.r11.lim=60; render(); if(UI.r11.sit){ const d=document.getElementById("r11-det"); if(d){ d.scrollIntoView({block:"start"}); return; } } scrollTo(0,y); }
   else if(act==="r11mais"){ e.stopImmediatePropagation(); const y=scrollY; UI.r11.lim=(UI.r11.lim||60)+60; render(); scrollTo(0,y); }
@@ -4327,9 +4345,10 @@ function xlsxBlob(sheets){ const ns='xmlns="http://schemas.openxmlformats.org/sp
   return new Blob([zip(files)],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}); }
 async function relXLS(){
   const f=UI.r11, o=obraDe(f.oid); const L=relLinhas(f.oid); if(!L.length){ aviso("Sem itens","Esta obra ainda não tem itens de RNC ou checklist."); return; }
-  const H=["Obra","Origem","Documento","Título do documento","Local","Nº/Cód. do item","Item","Disciplina","Disciplina sugerida?","Situação","Foto pendente","Data","Observação"];
+  const H=["Obra","Origem","Documento","Título do documento","Local","Nº/Cód. do item","Item","Disciplina","Disciplina sugerida?","Situação","Foto pendente","Data","Observação","Criticidade","Estimativa de correção (R$, mediana de obras de retrofit)"];
+  const PV=typeof podeValor==="function"&&podeValor(); if(!PV) H.pop();
   const rows=[H.map(h=>({v:h,s:1}))]; const DS=x=>x.disc||"(sem disciplina)";
-  for(const x of L) rows.push([o.nome,x.orig,x.doc,x.docNome,x.loc,x.n,x.txt,DS(x),x.sug?"Sim":"",x.st,x.fp?"Sim":"",x.data?fmtData(x.data):"",x.obs].map((v,j)=>({v,s:2})));
+  for(const x of L) rows.push([o.nome,x.orig,x.doc,x.docNome,x.loc,x.n,x.txt,DS(x),x.sug?"Sim":"",x.st,x.fp?"Sim":"",x.data?fmtData(x.data):"",x.obs,critTxtN(x.crit),...(PV?[(x.st==="Aberto"&&x.est&&!x.est.sem)?Math.round(x.est.tot):""]:[])].map((v,j)=>({v,s:2})));
   const A=relAgg(L), T=relTot(A); const n=rows.length;
   const R=[[{v:"Relatório por disciplina · "+o.nome,s:4}],[{v:"Gerado em "+fmtData(hoje())+" · CTE Gerenciamento · aba “Itens” traz todos os itens da obra (use os filtros).",s:0}],[],
    ["Disciplina","Total de itens","Aberto","Fechado","Conforme","Não verificado / sem verificação","Foto pendente","% em aberto"].map(h=>({v:h,s:1}))];
@@ -4338,7 +4357,7 @@ async function relXLS(){
   const r0=5, r1=R.length; const tr=R.length+1;
   R.push([{v:"TOTAL",s:6},...["B","C","D","E","F","G"].map((c,i)=>({v:[T.t,T.Aberto,T.Fechado,T.Conforme,T.sv,T.fp][i],s:6,f:`SUM(${c}${r0}:${c}${r1})`})),{v:T.t?T.Aberto/T.t:0,s:3,f:`IF(B${tr}=0,0,C${tr}/B${tr})`}]);
   R.push([],[{v:"Fechado = checklist corrigido e reverificado, NC encerrada ou RNC corrigida. Disciplinas marcadas como sugeridas na aba Itens vieram de palavras-chave e precisam de confirmação.",s:0}]);
-  const sheets=[{nome:"Resumo",xml:xsheet(R,[34,14,10,10,12,22,14,12],{first:1})},{nome:"Itens",filtro:`$A$1:$M$${n}`,xml:xsheet(rows,[18,11,16,34,36,10,60,20,12,16,10,11,40],{freeze:1,filter:1})}];
+  const sheets=[{nome:"Resumo",xml:xsheet(R,[34,14,10,10,12,22,14,12],{first:1})},{nome:"Itens",filtro:`$A$1:$${PV?"O":"N"}$${n}`,xml:xsheet(rows,[18,11,16,34,36,10,60,20,12,16,10,11,40,12,18],{freeze:1,filter:1})}];
   const nome=`${o.codigo||"OBRA"}_Relatorio_por_disciplina_${hoje()}.xlsx`; try{ entregarArquivo(nome,xlsxBlob(sheets)); }catch(err){ aviso("Erro ao gerar o Excel",String(err&&err.message||err)); } }
 { const _sa=sheetArquivo; sheetArquivo=function(nome,blob,r){ _sa(nome,blob,r); if(/\.xlsx$/i.test(nome)){ const sh=document.getElementById("sheet"); if(sh) sh.innerHTML=sh.innerHTML.replace("Word pronto","Excel pronto").replace("Baixar Word","Baixar Excel"); } }; }
 
@@ -4360,13 +4379,14 @@ async function relPDF(fotos){
       [[a.t,78],[a.Aberto,98],[a.Fechado,118],[a.Conforme,140],[a.sv,160]].forEach(([v,x])=>d.text(String(v),m+x,y,8.5,false,[20,35,45],"r"));
       let xs=m+168; for(const [q,col] of [[a.Aberto,ABc],[a.Fechado,FEc],[a.Conforme,OKc],[a.sv,SVc]]){ const w=bwid*q/mx; if(w>0){ d.rect(xs,y-3.6,w,4.4,col); xs+=w; } } }
     y+=9; d.text("Legenda: vermelho = aberto · verde claro = fechado · verde = conforme · cinza = sem verificação / NV. Fechado = corrigido e reverificado, NC encerrada ou RNC corrigida.",m,y,6.8,false,GR);
+    try{ y=critPdfLinha(d,L,y,m); }catch(_){ }
     if(T.sug||A.some(a=>a.disc==="")){ y+=5; d.text(`${(A.find(a=>a.disc===""))?(A.find(a=>a.disc==="").t)+" item(ns) sem disciplina. ":""}${T.sug?T.sug+" disciplina(s) sugerida(s) por palavras-chave, a confirmar.":""}`,m,y,7.2,true,RED); }
     /* itens em aberto por disciplina */
     const ab=L.filter(x=>x.st==="Aberto"); const CAP=700; let pg=null, yy=0; const novaPg=(tit)=>{ d.addPage(); cab(); d.text(tit,m,26,10,true,NAVY); yy=33; };
     if(fotos){ await relFotosPartes(d,L,A,f,o,num); return; }
     if(ab.length&&!fotos){ novaPg(`Itens em aberto (${ab.length})`); const grp=new Map(); for(const x of ab){ const k=x.disc||""; (grp.get(k)||grp.set(k,[]).get(k)).push(x); }
       let cont=0; for(const a of A){ const g=grp.get(a.disc); if(!g) continue; if(yy>H-30) novaPg("Itens em aberto (continuação)"); d.rect(m,yy-3.6,W-2*m,5.4,[236,241,245]); d.text(`${discTxt(a.disc)} · ${g.length}`,m+2,yy,8.5,true,NAVY); yy+=6;
-        for(const x of g){ if(cont>=CAP) break; if(yy>H-14){ novaPg("Itens em aberto (continuação)"); } const t=d.wrap(`${x.txt}`,150,7.3,false)[0]||""; d.text(x.doc,m+2,yy,7,true,PET); d.text(t,m+30,yy,7.3,false,[20,35,45]); d.text(clTxt(x.loc,62),m+186,yy,6.5,false,GR); yy+=4.4; cont++; }
+        for(const x of g){ if(cont>=CAP) break; if(yy>H-14){ novaPg("Itens em aberto (continuação)"); } const t=d.wrap(`${x.txt}`,150,7.3,false)[0]||""; d.text(x.doc,m+2,yy,7,true,PET); d.text(t,m+30,yy,7.3,false,[20,35,45]); d.text(clTxt(x.loc,40),m+186,yy,6.5,false,GR); critPdfItem(d,x,W-m,yy); yy+=4.4; cont++; }
         yy+=2; }
       if(ab.length>CAP){ d.text(`Mostrando ${CAP} de ${ab.length} itens em aberto. A lista completa está no Excel.`,m,yy+2,7.5,true,GR); } }
     const tot=d.pages.length; d.pages.forEach((ops,k)=>{ d.ops=ops; d.text("CTE Gerenciamento · Relatório de acompanhamento; não constitui aceite de serviços.",m,H-5,6.5,false,GR); d.text(`página ${k+1} de ${tot}`,W-m,H-5,7,false,GR,"r"); });
@@ -5208,7 +5228,7 @@ try{ syUlt=+localStorage.getItem("cte_od_sync_ult")||0; }catch(_){}
 setTimeout(()=>{ if(odAtivo()) sySincronizar(false); },7000);
 
 /* ================= ONDA 21: "Versões e arquivos em uso" na tela Dados deste aparelho ================= */
-const APP_VER="v38";
+const APP_VER="v39";
 const vaFmt=t=>{ try{ return new Date(t).toLocaleString("pt-BR",{dateStyle:"short",timeStyle:"short"}); }catch(_){ return "—"; } };
 const vaGet=k=>odLS(k,null);
 { const _ej=entregarJSON; entregarJSON=function(nome){ try{ if(/^registros_/.test(nome)) odSet("cte_va_exp",{n:nome,t:Date.now()}); }catch(_){} return _ej.apply(this,arguments); }; }
@@ -5705,6 +5725,8 @@ function limpezaDesfazer(){ let b=null; try{ b=JSON.parse(localStorage.getItem(L
 { const _ip=importarPacote; importarPacote=async function(){ const d=await escolherArquivoJSON(); if(!d) return;
     if(d.tipo==="cte-vistoria-limpeza"){ limpezaAplicar(d); return; }
     if(d.tipo==="cte-vistoria-disciplinas"){ importarDisciplinas(d); return; }
+    if(d.tipo==="cte-vistoria-precos"){ precosImportar(d); return; }
+    if(d.tipo==="cte-vistoria-criterios"){ criteriosImportar(d); return; }
     if(d.tipo==="cte-vistoria-equipe"){ aplicarEquipe(d); return; }
     if(d.tipo==="cte-vistoria-modelos"){ importarModelos(d); return; }
     if(d.tipo!=="cte-vistoria-pacote"||!Array.isArray(d.obras)){ aviso("Arquivo não reconhecido","Este arquivo não é um pacote de dados de obra do app."); return; }
@@ -5736,6 +5758,269 @@ function blocoTerm(o){
     h=h.replace(/(<header class="ob-h"><div><h2>[^<]*<\/h2>\s*<p class="muted">)([^<]*)(<\/p>)/,(m,a,b,c)=>a+b.replace(/(\s·\s*){2,}/g," · ").replace(/^(\s*·\s*)+/,"").replace(/(\s*·\s*)+$/,"")+c);
     let t=""; try{ t=blocoTerm(o); }catch(e){ console.error(e); }
     return t?h.replace('<div class="ob-grid">','<div class="ob-grid">'+t):h; }; }
+
+/* ================= ONDA 32: matriz de criticidade (editável, com lastro) + estimativa de custo de correção ================= */
+const CRIT_NIV=[{n:4,t:"Crítico"},{n:3,t:"Alto"},{n:2,t:"Médio"},{n:1,t:"Baixo"}];
+const critTxtN=n=>(CRIT_NIV.find(x=>x.n===n)||{t:"—"}).t;
+const CRIT_DEF={ rev:"R00", em:"", por:"", vis:"coord",
+  niveis:{
+    4:"Pode causar acidente ou risco à integridade de pessoas; descumpre requisito normativo ou legal de segurança; compromete a operação ou funcionalidade essencial da edificação; ou provoca dano em cascata em outros sistemas. Tratar de imediato; impede a entrega.",
+    3:"Compromete desempenho, durabilidade ou habitabilidade (estanqueidade, vedação, uso normal) sem risco imediato à vida; tende a gerar dano progressivo se não for corrigido. Corrigir antes da entrega.",
+    2:"Afeta uso, conforto ou funcionalidade parcial, sem risco à segurança nem dano progressivo relevante. Corrigir na terminalidade.",
+    1:"Acabamento, limpeza e estética, sem efeito sobre segurança, desempenho ou durabilidade. Corrigir na terminalidade final."},
+  lastro:"Critério interno da CTE: classificação pela gravidade da consequência da falha do item. O método se apoia em ABNT NBR ISO 31000 (gestão de riscos), ABNT NBR IEC 31010 (técnicas de avaliação de riscos, matriz de consequência), NR-01 / GRO (classificação do risco por gravidade e probabilidade) e ABNT NBR 15575 (desempenho de edificações habitacionais: segurança, habitabilidade e durabilidade). Essas referências fundamentam o método; o nível de cada tema é decisão da CTE e cada regra abaixo traz a sua própria base e a situação do lastro. Números de item de norma não são citados sem conferência.",
+  disc:{"Acabamento e limpeza":1,"Acessibilidade":4,"Ar-condicionado":2,"Arquitetura":2,"Bancada":2,"Caixilhos":3,"Elétrica":3,"Elevadores e plataformas":3,"Esquadrias de madeira":2,"Hidráulica":3,"Impermeabilização":4,"Incêndio":4,"Pintura":1,"Pisos e revestimentos":2,"Rodapé":1,"Vedações":3},
+  regras:[
+   {id:"c01",nome:"Queda e proteção de pessoas",nivel:4,kw:"guarda-corpo, corrimão, parapeito, linha de vida, ancoragem, vidro quebrado, vidro trincado, vidro solto, abertura sem proteção, escada marinheiro",base:"ABNT NBR 14718 (guarda-corpos para edificação); ABNT NBR 9050 (corrimãos e rampas); NR-35 quando houver trabalho em altura.",val:"A validar"},
+   {id:"c02",nome:"Segurança contra incêndio e pânico",nivel:4,kw:"extintor, hidrante, sprinkler, chuveiro automático, alarme de incêndio, detector de fumaça, iluminação de emergência, sinalização de emergência, saída de emergência, corta-fogo, escada de emergência, rota de fuga, pressurização, bomba de incêndio, barra antipânico, selagem",base:"Legislação estadual de segurança contra incêndio e Instruções Técnicas do Corpo de Bombeiros local; ABNT NBR 9077 (saídas de emergência), NBR 10898 (iluminação de emergência), NBR 17240 (detecção e alarme).",val:"A validar"},
+   {id:"c03",nome:"Elevadores e plataformas (segurança de uso)",nivel:4,kw:"casa de máquinas, nivelamento, travamento, intertravamento, fim de curso, botoeira, cabo de tração, porta de pavimento, porta de cabine, parada de emergência, freio, limitador de velocidade, para-choque, alarme da cabine, comunicação da cabine, interfone do elevador, iluminação da cabine",base:"ABNT NBR 16083 (manutenção de elevadores) e NBR 16858 (elevadores existentes), conforme aplicável; legislação municipal de manutenção e inspeção. Confirmar título e escopo antes de citar em laudo.",val:"A validar"},
+   {id:"c04",nome:"Portões e acessos automatizados",nivel:4,kw:"portão automático, portão eletrônico, automatizador, fotocélula, cancela, portão de garagem, sensor de obstáculo, intertravamento, portaria",base:"Funcionalidade essencial de acesso e segurança patrimonial; dispositivos de segurança (anticolisão, parada) conforme norma ABNT aplicável e manual do fabricante. Critério CTE.",val:"Critério CTE"},
+   {id:"c05",nome:"Instalações elétricas: proteção contra choque e incêndio",nivel:4,kw:"quadro elétrico, quadro de distribuição, disjuntor, diferencial residual, idr, dps, aterramento, spda, para-raios, fio exposto, fiação exposta, choque, barramento, subestação, gerador, curto-circuito",base:"ABNT NBR 5410 (instalações elétricas de baixa tensão); ABNT NBR 5419 (proteção contra descargas atmosféricas); NR-10 quando aplicável.",val:"A validar"},
+   {id:"c06",nome:"Água, reservação, pressurização e vazamentos",nivel:4,kw:"caixa d'água, caixa dagua, reservatório, cisterna, recalque, bomba, tubo de aviso, extravasor, ladrão, bóia, vazamento, vazando, registro geral, ruptura, pressurização",base:"ABNT NBR 5626 (sistemas prediais de água fria e água quente); limpeza e conservação de reservatórios conforme legislação sanitária local. Critério CTE: falha interrompe o abastecimento ou causa dano em cascata.",val:"A validar"},
+   {id:"c07",nome:"Instalações de gás",nivel:4,kw:"=gás, =gas, glp, central de gás, regulador de pressão, mangueira de gás, registro de gás",base:"ABNT NBR 15526 (redes de distribuição interna de gases combustíveis); normas da concessionária e do Corpo de Bombeiros local.",val:"A validar"},
+   {id:"c08",nome:"Estrutura e risco de queda de materiais",nivel:4,kw:"fissura estrutural, trinca estrutural, armadura exposta, corrosão de armadura, desplacamento, som cavo, queda de revestimento, reforço estrutural, deformação excessiva, flecha",base:"ABNT NBR 15575 (segurança estrutural); ABNT NBR 16747 (inspeção predial); projeto estrutural e laudo do responsável técnico.",val:"A validar"},
+   {id:"c09",nome:"Estanqueidade e impermeabilização",nivel:4,kw:"impermeabiliz, infiltração, goteira, pingando, umidade, eflorescência, manta asfáltica, membrana, teste de estanqueidade, prova d'água",base:"ABNT NBR 9575 (impermeabilização: seleção e projeto); ABNT NBR 9574 (execução); ABNT NBR 15575 (estanqueidade à água). Critério CTE: falha gera dano em cascata (revestimentos, estrutura, instalações).",val:"A validar"},
+   {id:"c10",nome:"Acessibilidade",nivel:4,kw:"acessibilidade, piso tátil, barra de apoio, rampa, vaga especial, cadeirante, pcd",base:"ABNT NBR 9050; Lei nº 13.146/2015 (Estatuto da Pessoa com Deficiência).",val:"A validar"},
+   {id:"a01",nome:"Esgoto, drenagem e saneamento",nivel:3,kw:"ralo, sifão, esgoto, caimento, entupimento, refluxo, caixa de gordura, caixa de inspeção, águas pluviais, calha, rufo",base:"ABNT NBR 8160 (sistemas prediais de esgoto sanitário); ABNT NBR 10844 (águas pluviais). Critério CTE: risco sanitário e dano progressivo.",val:"A validar"},
+   {id:"a02",nome:"Ar-condicionado: dreno e condensado",nivel:3,kw:"dreno, condensado, condensadora, vazamento de dreno",base:"Manual do fabricante e projeto de climatização. Critério CTE: água de condensado causa dano a forros e acabamentos.",val:"Critério CTE"},
+   {id:"a03",nome:"Piso escorregadio e revestimento solto",nivel:3,kw:"escorregadio, antiderrapante, desnível, degrau, piso solto, peça solta, cerâmica solta, revestimento solto, =oco",base:"ABNT NBR 13753 e NBR 13754 (assentamento de revestimentos cerâmicos) e NBR 15575 (segurança no uso). Critério CTE: risco de queda de pessoa.",val:"A validar"},
+   {id:"a04",nome:"Trincas e fissuras em vedações",nivel:3,kw:"trinca, fissura, rachadura, descolamento de reboco, reboco solto",base:"ABNT NBR 15575 (desempenho de sistemas de vedação); inspeção predial (NBR 16747). Critério CTE: via de entrada de água e dano progressivo.",val:"A validar"}
+  ],
+  est:[
+   {id:"e01",nome:"Infiltração / umidade",kw:"infiltração, umidade, goteira, pingando, mofo, eflorescência, impermeabiliz",serv:"imp_nesp",q:3,nota:"Premissa CTE: 3 m² de tratamento localizado."},
+   {id:"e02",nome:"Boia, tubo de aviso, extravasor",kw:"tubo de aviso, extravasor, ladrão, bóia",serv:"pt_hidr",q:1,nota:"Premissa CTE: 1 ponto hidráulico."},
+   {id:"e03",nome:"Caixa d'água / reservatório",kw:"caixa d'água, caixa dagua, reservatório, cisterna",serv:"imp_nesp",q:10,nota:"Premissa CTE: 10 m² de impermeabilização de reservatório. Ajustar pela geometria real."},
+   {id:"e04",nome:"Bomba / recalque",kw:"recalque, bomba, pressurização",serv:"bomba",q:1,nota:"Premissa CTE: 1 conjunto."},
+   {id:"e05",nome:"Pintura de teto",kw:"pintura de teto, pintura do teto, pintura no teto, pintura de forro, pintura do forro",serv:"pint_teto",q:1.5,nota:"Premissa CTE: 1,5 m² por ponto de retoque (faixa de 1 a 2 m²)."},
+   {id:"e06",nome:"Pintura epóxi",kw:"epóxi, epoxi",serv:"pint_epoxi",q:1.5,nota:"Premissa CTE: 1,5 m² por ponto."},
+   {id:"e07",nome:"Pintura de fachada",kw:"pintura de fachada, pintura da fachada",serv:"pint_fachada",q:4,nota:"Premissa CTE: 4 m² por ponto."},
+   {id:"e08",nome:"Pintura esmalte (esquadrias, grades, portas)",kw:"esmalte, pintura de esquadria, pintura de grade, pintura de porta, pintura de guarda-corpo",serv:"pint_esmalte",q:1.5,nota:"Premissa CTE: 1,5 m² por ponto."},
+   {id:"e09",nome:"Massa corrida / lixamento",kw:"massa corrida, emassamento, lixamento",serv:"massa",q:1.5,nota:"Premissa CTE: 1,5 m² por ponto."},
+   {id:"e10",nome:"Pintura e retoque em geral",kw:"pintura, pintar, tinta, retoque, mancha, descascad, repintura, desbotad, respingo de tinta",serv:"pint_parede",q:1.5,nota:"Premissa CTE: 1,5 m² por ponto de retoque (faixa de 1 a 2 m²)."},
+   {id:"e11",nome:"Limpeza",kw:"limpeza, limpar, sujeira, sujidade, resíduo",serv:"limp_final",q:8,nota:"Premissa CTE: 8 m² por ambiente ou ponto de limpeza."},
+   {id:"e12",nome:"Calafetação / selante (sem referência na base)",kw:"calafet, selante, silicone",serv:"",q:0,nota:"A base de preços R05 não traz calafetação. Informar o valor manual no item."},
+   {id:"e13",nome:"Porta corta-fogo",kw:"corta-fogo, corta fogo",serv:"corta_fogo",q:1,nota:"Premissa CTE: 1 porta."},
+   {id:"e14",nome:"Dispositivos de incêndio",kw:"extintor, hidrante, alarme, detector, iluminação de emergência, sinalização de emergência, sprinkler",serv:"pci_un",q:1,nota:"Premissa CTE: 1 ponto."},
+   {id:"e15",nome:"Guarda-corpo / corrimão",kw:"guarda-corpo, corrimão, parapeito",serv:"guarda_corpo",q:2,nota:"Premissa CTE: 2 m lineares."},
+   {id:"e16",nome:"Automação de portão / acesso",kw:"portão automático, portão eletrônico, automatizador, motor, fotocélula, cancela, interfone, controle de acesso",serv:"sistemas",q:1,nota:"Premissa CTE: 1 ponto de automação."},
+   {id:"e17",nome:"Portão / gradil",kw:"portão, gradil",serv:"portao_un",q:1,nota:"Premissa CTE: 1 unidade."},
+   {id:"e18",nome:"Caixilho / janela / vidro",kw:"caixilho, janela, esquadria, vidro, basculante, persiana",serv:"caixilho_un",q:0.25,nota:"Premissa CTE: intervenção parcial, equivalente a 25% de um conjunto (regulagem, vedação, reposição de peça). Ajustar se for troca."},
+   {id:"e19",nome:"Fechadura / ferragens",kw:"fechadura, maçaneta, dobradiça, ferragem, trinco",serv:"ferragem",q:1,nota:"Premissa CTE: 1 conjunto."},
+   {id:"e20",nome:"Porta de madeira",kw:"=porta, =portas, batente, folha de porta",serv:"porta_mad",q:1,nota:"Premissa CTE: 1 conjunto."},
+   {id:"e21",nome:"Torneira, registro, misturador",kw:"torneira, registro, misturador, acabamento de registro",serv:"torneira",q:1,nota:"Premissa CTE: 1 peça."},
+   {id:"e22",nome:"Vazamento / ponto hidráulico",kw:"vazamento, vazando, gotejamento, ralo, sifão, tubulação",serv:"pt_hidr",q:1,nota:"Premissa CTE: 1 ponto hidráulico."},
+   {id:"e23",nome:"Bacia sanitária",kw:"bacia, vaso sanitário, válvula de descarga, caixa acoplada",serv:"bacia",q:1,nota:"Premissa CTE: 1 peça."},
+   {id:"e24",nome:"Lavatório / cuba",kw:"lavatório, cuba, =pia, =pias",serv:"cuba",q:1,nota:"Premissa CTE: 1 peça."},
+   {id:"e25",nome:"Chuveiro",kw:"chuveiro, ducha",serv:"chuveiro",q:1,nota:"Premissa CTE: 1 peça."},
+   {id:"e26",nome:"Tomada, interruptor",kw:"tomada, interruptor, espelho",serv:"tomada",q:1,nota:"Premissa CTE: 1 peça."},
+   {id:"e27",nome:"Luminária / lâmpada",kw:"luminária, lâmpada, iluminação",serv:"luminaria",q:1,nota:"Premissa CTE: 1 peça."},
+   {id:"e28",nome:"Quadro elétrico",kw:"quadro elétrico, quadro de distribuição, disjuntor",serv:"quadro",q:1,nota:"Premissa CTE: 1 quadro."},
+   {id:"e29",nome:"Elevador / plataforma",kw:"elevador, plataforma elevatória, cabine",serv:"elev_manut",q:1,nota:"Premissa CTE: 1 mês de serviço de modernização/manutenção. Serviço de manutenção contratada é preço mensal."},
+   {id:"e30",nome:"Ar-condicionado / exaustão",kw:"ar-condicionado, dreno, condensadora, split",serv:"ar_infra",q:1,nota:"Premissa CTE: 1 ponto de infraestrutura."},
+   {id:"e31",nome:"Exaustão / ventilação",kw:"exaustão, ventilação, exaustor",serv:"exaustao",q:1,nota:"Premissa CTE: 1 unidade."},
+   {id:"e32",nome:"Gás",kw:"=gás, =gas, glp, registro de gás",serv:"gas_pt",q:1,nota:"Premissa CTE: 1 ponto."},
+   {id:"e33",nome:"Rodapé",kw:"rodapé",serv:"rodape",q:3,nota:"Premissa CTE: 3 m lineares."},
+   {id:"e34",nome:"Soleira, peitoril",kw:"soleira, peitoril, baguete",serv:"soleira",q:1,nota:"Premissa CTE: 1 m linear."},
+   {id:"e35",nome:"Bancada / tampo",kw:"bancada, tampo, granito, mármore",serv:"bancada",q:0.5,nota:"Premissa CTE: 0,5 m²."},
+   {id:"e36",nome:"Rejunte",kw:"rejunte, rejuntamento",serv:"piso_cer",q:1,nota:"Premissa CTE: 1 m² (refazer rejunte e peças vizinhas)."},
+   {id:"e37",nome:"Revestimento de parede",kw:"azulejo, revestimento cerâmico, revestimento de parede",serv:"rev_parede",q:2,nota:"Premissa CTE: 2 m²."},
+   {id:"e38",nome:"Piso",kw:"piso, porcelanato, cerâmica",serv:"piso_cer",q:2,nota:"Premissa CTE: 2 m²."},
+   {id:"e39",nome:"Forro / gesso",kw:"forro, gesso, sanca",serv:"forro",q:2,nota:"Premissa CTE: 2 m²."},
+   {id:"e40",nome:"Reboco, trinca, fissura",kw:"reboco, emboço, trinca, fissura, rachadura",serv:"emboco",q:2,nota:"Premissa CTE: 2 m²."},
+   {id:"e41",nome:"Alvenaria / parede",kw:"alvenaria, parede, drywall, vedação",serv:"alvenaria",q:2,nota:"Premissa CTE: 2 m²."},
+   {id:"e42",nome:"Cobertura",kw:"cobertura, telhado, telha",serv:"cobertura",q:2,nota:"Premissa CTE: 2 m²."}
+  ],
+  estDisc:{"Pintura":["pint_parede",1.5],"Acabamento e limpeza":["limp_final",8],"Impermeabilização":["imp_nesp",3],"Pisos e revestimentos":["piso_cer",2],"Rodapé":["rodape",3],"Bancada":["bancada",0.5],"Esquadrias de madeira":["porta_mad",1],"Caixilhos":["caixilho_un",0.25],"Hidráulica":["pt_hidr",1],"Elétrica":["tomada",1],"Incêndio":["pci_un",1],"Elevadores e plataformas":["elev_manut",1],"Ar-condicionado":["ar_infra",1],"Vedações":["emboco",2]}
+};
+const CRIT_KEY="cte_precos";
+function critCfg(){ return S.critCfg||CRIT_DEF; }
+function critEdit(){ if(!S.critCfg) S.critCfg=JSON.parse(JSON.stringify(CRIT_DEF)); return S.critCfg; }
+function precosGet(){ try{ const p=JSON.parse(localStorage.getItem(CRIT_KEY)||"null"); if(p&&Array.isArray(p.servicos)){ p.map={}; for(const s of p.servicos) p.map[s.k]=s; return p; } }catch(_){ } return null; }
+const cN=s=>String(s==null?"":s).normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/[’'`´]/g," ").replace(/-/g," ").replace(/\s+/g," ").trim();
+const cReC=new Map();
+function cTermos(kw){ let r=cReC.get(kw); if(r) return r; r=String(kw||"").split(/[,;\n]/).map(t=>t.trim()).filter(Boolean).map(t=>{ const ex=t[0]==="="; const n=cN(ex?t.slice(1):t); return n?new RegExp("(^|[^a-z0-9])"+n.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+(ex?"([^a-z0-9]|$)":"")):null; }).filter(Boolean); cReC.set(kw,r); return r; }
+const cCasa=(kw,t)=>cTermos(kw).some(re=>re.test(t));
+function critTextos(it){ return [cN(it.desc)]; }
+function critCalc(it){
+  const C=critCfg(), T=critTextos(it), dl=C.disc[it.disc||""]; let lv=0, src="", regra=null;
+  const man=+it.critN; if(man>=1&&man<=4) return {n:man,src:"Definida manualmente",regra:null};
+  for(const t of T){ for(const r of C.regras){ if(cCasa(r.kw,t)&&r.nivel>lv){ lv=r.nivel; regra=r; } } if(lv) break; }
+  if(regra) src="Regra: "+regra.nome;
+  if(dl&&dl>=lv){ if(dl>lv||!regra){ lv=dl; regra=null; src="Disciplina: "+it.disc; } }
+  if(!lv){ lv=2; src="Sem regra nem disciplina: Médio por padrão (conservador)"; }
+  return {n:lv,src,regra};
+}
+function qtdTexto(txt,un){ const t=cN(txt); let m;
+  if(/^m²|^m2/.test(un||"")) { m=/(\d+(?:[.,]\d+)?)\s*(?:m2|m ?²|metros? quadrados?)/.exec(t); }
+  else if(un==="m"){ m=/(\d+(?:[.,]\d+)?)\s*(?:m|ml|metros?)(?![a-z0-9²])/.exec(t); }
+  else if(un==="un"||un==="pt"||un==="cj"){ m=/(\d+)\s*(?:un\b|und\b|unidades?|pontos?|pts?\b|portas?|janelas?|tomadas?|pecas?|luminarias?|torneiras?|registros?)/.exec(t); }
+  if(!m) return null; const v=parseFloat(m[1].replace(",",".")); return v>0&&v<10000?v:null; }
+function estCalc(it){
+  const C=critCfg(), P=precosGet(); const man=+it.estV;
+  if(man>0) return {tot:man,manual:true,conf:"Valor informado manualmente"};
+  if(it.estS==="-") return null;
+  let serv=it.estS||"", q=+it.estQ>0?+it.estQ:0, qs=q?"manual":"", nota="", regra=null;
+  if(!serv){ const T=critTextos(it); for(const t of T){ for(const r of C.est){ if(cCasa(r.kw,t)){ regra=r; break; } } if(regra) break; }
+    if(regra){ serv=regra.serv; nota=regra.nota||""; if(!q&&serv){ q=+regra.q||0; qs="padrao"; } if(!serv) return {sem:true,motivo:regra.nota||regra.nome}; }
+    else { const d=C.estDisc[it.disc||""]; if(d){ serv=d[0]; if(!q){ q=+d[1]||0; qs="padrao"; } nota="Serviço padrão da disciplina "+it.disc+"."; } } }
+  if(!serv) return {sem:true,motivo:"Nenhuma regra de serviço se aplica. Escolha o serviço no item ou informe o valor."};
+  if(!P) return {sem:true,motivo:"Base de preços ainda não importada neste aparelho."};
+  const sv=P.map[serv]; if(!sv) return {sem:true,motivo:"Serviço “"+serv+"” não consta na base importada."};
+  if(!qs||qs==="padrao"){ const qt=qtdTexto(it.desc||"",sv.un); if(qt){ q=qt; qs="texto"; } }
+  if(!q) return {sem:true,motivo:"Informe a quantidade."};
+  const conf=[]; if(qs==="padrao") conf.push("quantidade por premissa"); if(qs==="texto") conf.push("quantidade lida do texto do item"); if(qs==="manual") conf.push("quantidade informada");
+  if(sv.n!=null&&sv.n<3) conf.push("poucas propostas na base ("+sv.n+")"); if(sv.cv>0.5) conf.push("dispersão alta entre propostas (CV "+Math.round(sv.cv*100)+"%)");
+  return {serv,nome:sv.nome,un:sv.un,q,qs,med:sv.med,tot:q*sv.med,min:q*sv.min,max:q*sv.max,cv:sv.cv,n:sv.n,nota,conf:conf.join("; ")};
+}
+const estBRL=v=>"R$ "+Math.round(v).toLocaleString("pt-BR");
+function podeValor(){ try{ return critCfg().vis==="engcoord"?isEngOuCoord():isCoord(); }catch(_){ return false; } }
+const qtBR=v=>String(Math.round(v*100)/100).replace(".",",");
+function chipCrit(n){ return `<span class="cr-chip cr-${n}" title="Criticidade: ${critTxtN(n)}">${critTxtN(n)}</span>`; }
+function chipEst(e,aberto){ if(!aberto||!e||!podeValor()) return ""; if(e.sem) return `<span class="cr-est cr-sem" title="${esc(e.motivo)}">sem estimativa</span>`; return `<span class="cr-est" title="${esc((e.manual?e.conf:e.q?qtBR(e.q)+" "+e.un+" × mediana "+estBRL(e.med)+"/"+e.un:"")+" · estimativa, custo raso")}">≈ ${estBRL(e.tot)}</span>`; }
+
+/* ---- linhas do relatório recebem criticidade e estimativa ---- */
+{ const _rl=relLinhas; relLinhas=function(oid){ const L=_rl.apply(this,arguments); const itens=new Map(), tit=new Map();
+    for(const c of (S.cls||[])) if(c.obraId===oid){ tit.set(c.id,c.titulo); for(const i of c.itens) itens.set(c.id+"|"+i.id,i); }
+    for(const x of L){ const i=x.orig==="Checklist"?itens.get(x.docId+"|"+x.itemId):null; const it=i?{desc:i.desc,obs:i.obs,local:i.local,g:i.g,disc:x.disc,critN:i.critN,estS:i.estS,estQ:i.estQ,estV:i.estV,titulo:tit.get(x.docId)}:{desc:x.txt,obs:x.obs,local:x.loc,g:x.grupo,disc:x.disc,titulo:x.docNome};
+      const c=critCalc(it); x.crit=c.n; x.critSrc=c.src; x.est=x.st==="Aberto"?estCalc(it):null; }
+    return L; }; }
+{ const _rf=relFiltra; relFiltra=function(L,f){ let R=_rf.apply(this,arguments); if(f&&f.crit) R=R.filter(x=>x.crit===f.crit); return R; }; }
+
+/* ---- no item do checklist ---- */
+function critItemCtx(c,i){ return {desc:i.desc,obs:i.obs,local:i.local,g:i.g,disc:discNorm(i.disc),critN:i.critN,estS:i.estS,estQ:i.estQ,estV:i.estV,titulo:c.titulo}; }
+{ const _ci=clItem; clItem=function(c,i,n){ let h=_ci.apply(this,arguments); try{ const it=critItemCtx(c,i), k=critCalc(it); const ab=i.st==="NOK"&&i.rev!=="OK"; const e=ab?estCalc(it):null;
+      h=h.replace('</span><button type="button" class="ph-more"',`<span class="cr-lin">${chipCrit(k.n)}${chipEst(e,ab)}</span></span><button type="button" class="ph-more"`); }catch(err){ console.error(err); } return h; }; }
+let CRIT_ED=null;
+{ const _sci=sheetClItem; sheetClItem=function(novo,id){ _sci.apply(this,arguments); if(novo) return; const c=clAtual(), i=clItemPor(id), sh=document.getElementById("sheet"); if(!c||!i||!sh) return; CRIT_ED={c,i};
+    const pv=podeValor(), P=precosGet(); const k=critCalc(critItemCtx(c,i)); const opt=(v,t,sel)=>`<option value="${esc(v)}" ${sel?"selected":""}>${esc(t)}</option>`;
+    const h=`<h3 class="h12">Criticidade${pv?" e custo estimado":""}</h3><p class="small" id="ci-cr-t"></p>
+      <label class="f"><span>Criticidade (automática ou definida por você)</span><select id="ci-cn">${opt("","Automática",!i.critN)}${CRIT_NIV.map(x=>opt(x.n,x.t,+i.critN===x.n)).join("")}</select></label>
+      ${pv?`<label class="f"><span>Serviço de referência para o custo</span><select id="ci-es">${opt("","Automático (pelas regras)",!i.estS)}${opt("-","Sem custo (não estimar)",i.estS==="-")}${P?P.servicos.map(s=>opt(s.k,s.nome+" ("+s.un+")",i.estS===s.k)).join(""):""}</select></label>
+      <label class="f"><span>Quantidade no serviço escolhido (m², m, un… conforme a unidade)</span><input id="ci-eq" inputmode="decimal" value="${i.estQ?qtBR(i.estQ):""}" placeholder="automática"></label>
+      <label class="f"><span>Valor manual em R$ (substitui o cálculo; use p.ex. o orçamento da obra)</span><input id="ci-ev" inputmode="decimal" value="${i.estV?qtBR(i.estV):""}" placeholder="em branco = calculado"></label>
+      <p class="small muted" id="ci-es-t"></p>`:""}`;
+    const ref=sh.querySelector("#ci-e"); if(ref) ref.insertAdjacentHTML("beforebegin",h); critItemTxt(); }; }
+function critItemTxt(){ if(!CRIT_ED) return; const {c,i}=CRIT_ED; const t1=document.getElementById("ci-cr-t"); if(!t1) return; const it=critItemCtx(c,i), k=critCalc(it);
+  t1.innerHTML=`${chipCrit(k.n)} <span class="muted">${esc(k.src)}</span>`;
+  const t2=document.getElementById("ci-es-t"); if(t2){ const e=estCalc(it); t2.innerHTML=!e?"Sem estimativa de custo para este item.":e.sem?esc(e.motivo):e.manual?"Valor manual: <b>"+estBRL(e.tot)+"</b>.":`Estimativa: <b>${estBRL(e.tot)}</b> (${qtBR(e.q)} ${esc(e.un)} × mediana ${estBRL(e.med)}/${esc(e.un)} · ${esc(e.nome)})${e.min!=null?`; faixa ${estBRL(e.min)} a ${estBRL(e.max)}`:""}. ${e.conf?esc(e.conf)+". ":""}${esc(e.nota||"")}`; } }
+const numIn=s=>{ const v=parseFloat(String(s||"").replace(/\./g,"").replace(",",".")); return v>0?v:0; };
+document.addEventListener("change",e=>{ const t=e.target; if(!t.id||!/^ci-(cn|es|eq|ev)$/.test(t.id)||!CRIT_ED||!t.closest("#sheet")) return; const i=CRIT_ED.i;
+  if(t.id==="ci-cn"){ if(t.value) i.critN=+t.value; else delete i.critN; }
+  else if(t.id==="ci-es"){ if(t.value) i.estS=t.value; else delete i.estS; }
+  else if(t.id==="ci-eq"){ const v=numIn(t.value); if(v) i.estQ=v; else delete i.estQ; }
+  else if(t.id==="ci-ev"){ const v=numIn(t.value); if(v) i.estV=v; else delete i.estV; }
+  save(); critItemTxt(); },true);
+
+/* ---- relatório por disciplina ---- */
+function critResumo(L){ const R={4:{q:0,v:0,sv:0},3:{q:0,v:0,sv:0},2:{q:0,v:0,sv:0},1:{q:0,v:0,sv:0}}; let tot=0,mn=0,mx=0;
+  for(const x of L){ if(x.st!=="Aberto") continue; const a=R[x.crit]; a.q++; const e=x.est; if(e&&!e.sem){ a.v+=e.tot; tot+=e.tot; if(e.min!=null){ mn+=e.min; mx+=e.max; } else { mn+=e.tot; mx+=e.tot; } } else a.sv++; }
+  return {R,tot,mn,mx}; }
+const CRIT_AVISO="Estimativa paramétrica baseada na mediana de preços de obras de retrofit da base de preços CTE (custo raso: sem BDI, taxas, contingência e impostos), com quantidades estimadas a partir da descrição do item. Não substitui orçamento nem composição de custo. Use o orçamento da obra quando houver.";
+function critBotoes(R,f,pv,acao,obra){ return `<div class="cr-g">${CRIT_NIV.map(n=>`<button type="button" class="cr-b cr-${n.n}" ${acao==="r11c"?`data-act="r11c" data-v="${n.n}" aria-pressed="${f&&f.crit===n.n}"`:`data-act="rel11" data-o="${esc(obra)}" data-s="CL" data-c="${n.n}"`}><b>${R[n.n].q}</b><span>${n.t}</span>${pv&&R[n.n].v?`<small>≈ ${estBRL(R[n.n].v)}</small>`:""}</button>`).join("")}</div>`; }
+{ const _v=vRel11; vRel11=function(){ let h=_v.apply(this,arguments); try{ const f=UI.r11, pv=podeValor(); const base=relFiltra(relLinhas(f.oid),Object.assign({},f,{crit:null})); const k=critResumo(base);
+      const sec=`<section class="card"><h2>Criticidade dos itens em aberto</h2>${critBotoes(k.R,f,pv,"r11c")}
+        ${pv&&k.tot?`<p class="cr-tot">Estimativa de correção dos itens em aberto: <b>${estBRL(k.tot)}</b> <span class="muted">(faixa ${estBRL(k.mn)} a ${estBRL(k.mx)})</span></p><p class="muted small">${CRIT_AVISO}</p>`:pv?`<p class="muted small">Sem estimativa: ${precosGet()?"nenhum item em aberto com serviço de referência.":"importe a base de preços (Dados deste aparelho > Critérios de criticidade)."}</p>`:""}
+        <p class="muted small">Toque num nível para filtrar o relatório, o Excel e o PDF. ${f.crit?`<b>Filtro ativo: ${critTxtN(f.crit)}.</b> <button class="link" data-act="r11c" data-v="0">Limpar</button>`:""} Critérios editáveis em Dados deste aparelho.</p></section>`;
+      h=h.replace('<section class="card"><h2>Por disciplina</h2>',sec+'<section class="card"><h2>Por disciplina</h2>');
+      const rows=UI.r11rows||[]; h=h.replace(/(data-act="r11go" data-n="(\d+)"><span class="rl-s[^>]*>[^<]*<\/span>)/g,(m,a,n)=>{ const x=rows[+n]; return x?a+chipCrit(x.crit)+(x.st==="Aberto"?chipEst(x.est,true):""):a; });
+    }catch(err){ console.error(err); } return h; }; }
+document.addEventListener("click",e=>{ if(e.target.closest("#sheet")) return; const a=e.target.closest('[data-act="r11c"]'); if(!a) return; e.stopImmediatePropagation(); const v=+a.dataset.v;
+  UI.r11.crit=(v&&UI.r11.crit!==v)?v:null; if(UI.r11.crit&&!UI.r11.sit) UI.r11.sit="Aberto"; if(!UI.r11.crit&&UI.r11.sit==="Aberto"&&UI.r11.disc===null) UI.r11.sit=null; UI.r11.lim=60; const y=scrollY; render();
+  if(UI.r11.crit){ const d=document.getElementById("r11-det"); if(d){ d.scrollIntoView({block:"start"}); return; } } scrollTo(0,y); },true);
+
+/* ---- dashboard da obra ---- */
+function blocoCrit(o){ const L=relLinhas(o.id).filter(x=>x.orig==="Checklist"); if(!L.length) return ""; const k=critResumo(L), pv=podeValor(); const ab=L.filter(x=>x.st==="Aberto"); if(!ab.length) return "";
+  const top=ab.filter(x=>x.crit===4).sort((a,b)=>((b.est&&b.est.tot)||0)-((a.est&&a.est.tot)||0)).slice(0,8); UI.dgRows=top;
+  return `<div class="ob-sec"><h3>Criticidade · itens em aberto</h3>${critBotoes(k.R,null,pv,"dash",o.id)}
+    ${pv&&k.tot?`<p class="cr-tot">Estimativa de correção: <b>${estBRL(k.tot)}</b> <span class="muted">(faixa ${estBRL(k.mn)} a ${estBRL(k.mx)})</span></p>`:""}
+    ${top.length?`<h3 class="h12">Itens críticos em aberto${pv?" · maior estimativa primeiro":""}</h3><ul class="cr-lst">${top.map((x,n)=>`<li><button type="button" class="rl-it" data-act="dgo" data-n="${n}">${chipCrit(x.crit)}${chipEst(x.est,true)}<b>${esc(x.doc)}</b> · ${esc(clTxt(x.txt,90))}<small>${esc(x.loc)}${x.disc?" · "+esc(x.disc):""}</small></button></li>`).join("")}</ul>`:""}
+    ${pv?`<p class="muted small">${CRIT_AVISO}</p>`:`<p class="muted small">Criticidade pelo critério da CTE (Dados deste aparelho > Critérios de criticidade).</p>`}</div>`; }
+{ const _bt=blocoTerm; blocoTerm=function(o){ let h=_bt.apply(this,arguments); let c=""; try{ c=blocoCrit(o); }catch(e){ console.error(e); } return h+c; }; }
+document.addEventListener("click",e=>{ if(e.target.closest("#sheet")) return; const a=e.target.closest('[data-act="dgo"]'); if(!a) return; e.stopImmediatePropagation(); const x=(UI.dgRows||[])[+a.dataset.n]; if(x) irItemRel(x); },true);
+
+/* ---- PDF: resumo de criticidade na primeira página ---- */
+function critPdfLinha(d,L,y,m){ const k=critResumo(L), pv=podeValor(); y+=7; d.text("Criticidade dos itens em aberto: "+CRIT_NIV.map(n=>`${n.t} ${k.R[n.n].q}`).join(" · ")+(pv&&k.tot?` · estimativa de correção ${estBRL(k.tot)} (faixa ${estBRL(k.mn)} a ${estBRL(k.mx)})`:""),m,y,7.6,true,NAVY);
+  if(pv&&k.tot){ y+=4.4; d.text("Estimativa paramétrica pela mediana de obras de retrofit (base de preços CTE, custo raso: sem BDI, taxas, contingência e impostos); quantidades estimadas pela descrição. Não substitui orçamento.",m,y,6.5,false,GR); } return y; }
+function critPdfItem(d,x,xr,y){ d.text(critTxtN(x.crit),xr,y,6.5,true,x.crit===4?RED:GR,"r"); if(podeValor()&&x.est&&!x.est.sem) d.text(estBRL(x.est.tot),xr-16,y,6.5,false,[20,35,45],"r"); }
+
+/* ---- editor da matriz (Dados deste aparelho) ---- */
+const critEh=()=>{ try{ return isCoord(); }catch(_){ return false; } };
+{ const _sd=sheetDados; sheetDados=function(){ _sd.apply(this,arguments); try{ if(!isEngOuCoord()) return; const h=[...document.querySelectorAll("#sheet h3")].find(x=>/^1\./.test(x.textContent)); if(!h) return; const P=precosGet();
+    h.insertAdjacentHTML("beforebegin",`<h3>Critérios de criticidade e estimativa</h3><p class="small">${P?`Base de preços ${esc(P.rev||"")} carregada (${P.servicos.length} serviços).`:"Base de preços ainda não importada neste aparelho."} Matriz de criticidade ${critEh()?"editável":"(somente leitura; edição pela coordenação)"}.</p><button class="btn block" data-crit="main">Matriz de criticidade e preços de referência</button>`); }catch(_){ } }; }
+document.addEventListener("click",e=>{ const b=e.target.closest&&e.target.closest("#sheet [data-crit]"); if(!b||b.dataset.crit!=="main") return; e.stopImmediatePropagation(); sheetCritMain(); },true);
+function critNivSel(n,attr){ return `<select ${attr} ${critEh()?"":"disabled"}>${CRIT_NIV.map(x=>`<option value="${x.n}" ${x.n===n?"selected":""}>${x.t}</option>`).join("")}</select>`; }
+function sheetCritMain(){ const C=critCfg(), P=precosGet(), ed=critEh(); const discs=[...new Set([...DISC_PAD,...Object.keys(C.disc)])];
+  abrirSheet(`<div class="row between"><h2>Matriz de criticidade</h2><button class="link" data-x="1">Fechar</button></div>
+   <p class="small">${esc(C.lastro)}</p>
+   <h3>Níveis</h3>${CRIT_NIV.map(n=>`<div class="cr-nv">${chipCrit(n.n)}<span class="small">${esc(C.niveis[n.n])}</span></div>`).join("")}
+   <h3>Nível padrão por disciplina</h3><p class="muted small">Vale quando nenhuma regra por palavra-chave indicar nível maior. Vence o maior nível entre a disciplina e as regras.</p>
+   ${discs.map(d=>`<label class="f cr-dl"><span>${esc(d)}</span>${critNivSel(C.disc[d]||2,`data-cd="${esc(d)}"`)}</label>`).join("")}
+   <h3>Regras por palavra-chave (${C.regras.length})</h3><p class="muted small">Cada regra tem a sua base. “A validar” indica que a referência deve ser conferida na versão vigente antes de citar em laudo.</p>
+   ${C.regras.map(r=>`<button type="button" class="cr-rg" data-crr="${esc(r.id)}">${chipCrit(r.nivel)}<span><b>${esc(r.nome)}</b><small>${esc(r.val||"")} · ${cTermos(r.kw).length} palavra(s)</small></span></button>`).join("")}
+   ${ed?`<button class="btn block" data-crn="1">+ Nova regra de criticidade</button>`:""}
+   <h3>Estimativa de custo</h3>
+   <p class="small">${P?`Base ${esc(P.rev||"")} · gerada em ${esc(P.geradoEm||"")} · ${P.servicos.length} serviços. ${esc(P.estatistica||"")}. ${esc(P.aviso||"")}`:"Importe o arquivo “precos-retrofit” (.json) pelo botão abaixo."}</p>
+   <button class="btn block" data-crp="import">Importar base de preços (.json)</button>
+   ${P?`<button class="btn block" data-crp="lista">Ver preços de referência</button>`:""}
+   <button class="btn block" data-cre="lista">Regras de serviço e quantidade (${C.est.length})</button>
+   <label class="f"><span>Quem vê os valores estimados</span><select id="cr-vis" ${ed?"":"disabled"}><option value="coord" ${C.vis!=="engcoord"?"selected":""}>Somente coordenação</option><option value="engcoord" ${C.vis==="engcoord"?"selected":""}>Engenheiros e coordenação</option></select></label>
+   <h3>Cópia e restauração</h3>
+   <button class="btn block" data-crx="exp">Exportar critérios (.json)</button>
+   ${ed&&S.critCfg?`<button class="btn block perigo" data-crx="rest">Restaurar critérios padrão</button>`:""}
+   <p class="muted small">Para levar os critérios a outro aparelho: exportar aqui e importar em “Importar pacote de obra”.</p>`,
+   e=>{ const t=e.target;
+    if(t.closest("[data-crr]")){ sheetCritRegra(t.closest("[data-crr]").dataset.crr); }
+    else if(t.closest("[data-crn]")){ sheetCritRegra(""); }
+    else if(t.closest("[data-crp]")){ const k=t.closest("[data-crp]").dataset.crp; if(k==="import"){ fechar(); importarPacote(); } else sheetPrecos(); }
+    else if(t.closest("[data-cre]")){ sheetEstRegras(); }
+    else if(t.closest("[data-crx]")){ const k=t.closest("[data-crx]").dataset.crx; if(k==="exp") critExportar(); else if(confirm("Restaurar a matriz e as regras de serviço para o padrão? As edições feitas serão perdidas (itens com criticidade definida manualmente não são afetados).")){ delete S.critCfg; save(); render(); sheetCritMain(); toast("Critérios padrão restaurados."); } } }); }
+document.addEventListener("change",e=>{ const t=e.target; if(!t.closest||!t.closest("#sheet")||!critEh()) return;
+  if(t.dataset&&t.dataset.cd!=null){ const C=critEdit(); C.disc[t.dataset.cd]=+t.value; critMarca(); save(); render(); toast("Nível da disciplina atualizado."); }
+  else if(t.id==="cr-vis"){ const C=critEdit(); C.vis=t.value; critMarca(); save(); render(); toast("Visibilidade dos valores atualizada."); } },true);
+function critMarca(){ const C=critEdit(); C.em=new Date().toISOString(); try{ C.por=(typeof usuarioAtual==="function"&&usuarioAtual()||{}).nome||""; }catch(_){ } C.rev="R"+String(((+String(C.rev||"R00").slice(1))||0)+1).padStart(2,"0"); }
+function critExportar(){ const d={tipo:"cte-vistoria-criterios",geradoEm:hoje(),criterios:JSON.parse(JSON.stringify(critCfg()))}; entregarArquivo(`criterios-criticidade_CTE_${hoje()}.json`,new Blob([JSON.stringify(d,null,1)],{type:"application/json"})); }
+function criteriosImportar(d){ if(!critEh()){ aviso("Sem permissão","Somente a coordenação pode importar critérios."); return; } const c=d&&d.criterios; if(!c||!Array.isArray(c.regras)||!c.disc||!Array.isArray(c.est)){ aviso("Arquivo não reconhecido","Este arquivo de critérios está incompleto."); return; }
+  S.critCfg=c; save(); render(); aviso("Critérios importados",`Matriz ${esc(c.rev||"")} com ${c.regras.length} regra(s) de criticidade e ${c.est.length} regra(s) de serviço.`); }
+function precosImportar(d){ if(!d||d.tipo!=="cte-vistoria-precos"||!Array.isArray(d.servicos)||!d.servicos.length){ aviso("Arquivo não reconhecido","Este arquivo não é uma base de preços de referência do app."); return; }
+  try{ localStorage.setItem(CRIT_KEY,JSON.stringify(d)); }catch(_){ aviso("Não foi possível guardar","O navegador recusou guardar a base de preços neste aparelho."); return; }
+  render(); aviso("Base de preços importada",`Base ${esc(d.rev||"")} com ${d.servicos.length} serviços, guardada somente neste aparelho. ${esc(d.aviso||"")}`); }
+function sheetPrecos(){ const P=precosGet(); if(!P) return; abrirSheet(`<div class="row between"><h2>Preços de referência</h2><button class="link" data-x="1">Fechar</button></div>
+  <p class="small">${esc(P.fonte||"")}. ${esc(P.estatistica||"")}. <b>${esc(P.aviso||"")}</b></p>
+  <div class="cr-tab">${P.servicos.map(s=>`<div class="cr-pl"><b>${esc(s.nome)}</b><span>${estBRL(s.med)}/${esc(s.un)}</span><small>faixa ${estBRL(s.min)} a ${estBRL(s.max)} · ${s.n} proposta(s)${s.cv>0.5?" · dispersão alta":""}</small></div>`).join("")}</div>
+  <button class="btn block" data-back="1">Voltar</button>`,e=>{ if(e.target.closest("[data-back]")) sheetCritMain(); }); }
+function sheetCritRegra(id){ const C=critEdit(); const ed=critEh(); let r=C.regras.find(x=>x.id===id); const novo=!r; if(novo) r={id:"u"+Date.now().toString(36),nome:"",nivel:3,kw:"",base:"",val:"Critério CTE"};
+  abrirSheet(`<div class="row between"><h2>${novo?"Nova regra":"Regra de criticidade"}</h2><button class="link" data-x="1">Fechar</button></div>
+   <label class="f"><span class="req">Nome do tema</span><input id="rg-n" maxlength="90" value="${esc(r.nome)}" ${ed?"":"disabled"}></label>
+   <label class="f"><span>Nível</span>${critNivSel(r.nivel,'id="rg-l"')}</label>
+   <label class="f"><span>Palavras-chave (separadas por vírgula)</span><textarea id="rg-k" rows="4" ${ed?"":"disabled"}>${esc(r.kw)}</textarea></label>
+   <p class="muted small">Sem acento e sem diferenciar maiúsculas. A palavra vale também no início de outras (“impermeabiliz” pega impermeabilização). Use = antes da palavra para exigir a palavra inteira (=gás).</p>
+   <label class="f"><span>Base técnica / lastro</span><textarea id="rg-b" rows="4" ${ed?"":"disabled"}>${esc(r.base)}</textarea></label>
+   <label class="f"><span>Situação do lastro</span><select id="rg-v" ${ed?"":"disabled"}>${["A validar","Validado","Critério CTE"].map(x=>`<option ${r.val===x?"selected":""}>${x}</option>`).join("")}</select></label>
+   <p id="rg-e" class="warn" hidden></p>
+   ${ed?`<button class="btn primary block" data-ok="1">Salvar regra</button>${novo?"":`<button class="btn block perigo" data-rm="1">Excluir regra</button>`}`:""}<button class="btn block" data-back="1">Voltar</button>`,
+   e=>{ const t=e.target; if(t.closest("[data-back]")){ sheetCritMain(); return; } if(!ed) return;
+    if(t.closest("[data-rm]")){ if(confirm("Excluir esta regra?")){ C.regras=C.regras.filter(x=>x.id!==r.id); critMarca(); save(); render(); sheetCritMain(); } return; }
+    if(!t.closest("[data-ok]")) return; const n=$("#rg-n").value.trim(), k=$("#rg-k").value.trim(); if(!n||!cTermos(k).length){ const x=$("#rg-e"); x.textContent="Informe o nome e ao menos uma palavra-chave."; x.hidden=false; return; }
+    r.nome=n; r.kw=k; r.nivel=+$("#rg-l").value; r.base=$("#rg-b").value.trim(); r.val=$("#rg-v").value; if(novo) C.regras.push(r); critMarca(); save(); render(); sheetCritMain(); toast("Regra salva."); }); }
+function sheetEstRegras(){ const C=critCfg(), ed=critEh(), P=precosGet();
+  abrirSheet(`<div class="row between"><h2>Regras de serviço e quantidade</h2><button class="link" data-x="1">Fechar</button></div>
+   <p class="muted small">Definem qual serviço da base de preços corrige cada tipo de item e a quantidade assumida quando o texto do item não traz medida. A primeira regra que combinar com a descrição vale. Quando a descrição traz uma medida (ex.: “12 m²”), ela é usada no lugar da premissa.</p>
+   ${C.est.map(r=>`<button type="button" class="cr-rg" data-ger="${esc(r.id)}"><span><b>${esc(r.nome)}</b><small>${r.serv?esc(((P&&P.map[r.serv])||{}).nome||r.serv)+" · "+qtBR(r.q)+" "+esc(((P&&P.map[r.serv])||{}).un||""):"sem referência na base"}</small></span></button>`).join("")}
+   ${ed?`<button class="btn block" data-gen="1">+ Nova regra de serviço</button>`:""}<button class="btn block" data-back="1">Voltar</button>`,
+   e=>{ const t=e.target; if(t.closest("[data-back]")) sheetCritMain(); else if(t.closest("[data-ger]")) sheetEstRegra(t.closest("[data-ger]").dataset.ger); else if(t.closest("[data-gen]")) sheetEstRegra(""); }); }
+function sheetEstRegra(id){ const C=critEdit(), ed=critEh(), P=precosGet(); let r=C.est.find(x=>x.id===id); const novo=!r; if(novo) r={id:"v"+Date.now().toString(36),nome:"",kw:"",serv:"",q:1,nota:"Premissa CTE: "};
+  abrirSheet(`<div class="row between"><h2>${novo?"Nova regra de serviço":"Regra de serviço"}</h2><button class="link" data-x="1">Fechar</button></div>
+   <label class="f"><span class="req">Nome</span><input id="er-n" maxlength="90" value="${esc(r.nome)}" ${ed?"":"disabled"}></label>
+   <label class="f"><span>Palavras-chave da descrição do item</span><textarea id="er-k" rows="3" ${ed?"":"disabled"}>${esc(r.kw)}</textarea></label>
+   <label class="f"><span>Serviço da base de preços</span><select id="er-s" ${ed?"":"disabled"}><option value="">Sem referência na base (valor manual no item)</option>${P?P.servicos.map(s=>`<option value="${esc(s.k)}" ${r.serv===s.k?"selected":""}>${esc(s.nome)} (${esc(s.un)})</option>`).join(""):""}</select></label>
+   <label class="f"><span>Quantidade assumida (na unidade do serviço)</span><input id="er-q" inputmode="decimal" value="${qtBR(r.q||0)}" ${ed?"":"disabled"}></label>
+   <label class="f"><span>Premissa / observação</span><textarea id="er-o" rows="3" ${ed?"":"disabled"}>${esc(r.nota||"")}</textarea></label>
+   <p id="er-e" class="warn" hidden></p>
+   ${ed?`<button class="btn primary block" data-ok="1">Salvar regra</button>${novo?"":`<button class="btn block perigo" data-rm="1">Excluir regra</button>`}`:""}<button class="btn block" data-back="1">Voltar</button>`,
+   e=>{ const t=e.target; if(t.closest("[data-back]")){ sheetEstRegras(); return; } if(!ed) return;
+    if(t.closest("[data-rm]")){ if(confirm("Excluir esta regra?")){ C.est=C.est.filter(x=>x.id!==r.id); critMarca(); save(); render(); sheetEstRegras(); } return; }
+    if(!t.closest("[data-ok]")) return; const n=$("#er-n").value.trim(), k=$("#er-k").value.trim(); if(!n||!cTermos(k).length){ const x=$("#er-e"); x.textContent="Informe o nome e ao menos uma palavra-chave."; x.hidden=false; return; }
+    r.nome=n; r.kw=k; r.serv=$("#er-s").value; r.q=numIn($("#er-q").value); r.nota=$("#er-o").value.trim(); if(novo) C.est.unshift(r); critMarca(); save(); render(); sheetEstRegras(); toast("Regra salva."); }); }
 
 (async function iniciar(){ $("#logo").src=LOGO_DARK; rede(); await openDB(); S=(await kvGet("state2"))||estadoInicial(); if(!S.rfs){ S.rfs=[]; } S.seqAV=S.seqAV||1;
   migrar(); purgarModelo(); await carregarIndiceFotosHist(); lastJSON=snapJSON(); kvSet("state2",S); UI.oid=(S.obras[0]||{}).id||null; render(); })();
